@@ -100,7 +100,7 @@ def select_account_role(
     return _token_response(account)
 
 
-_DEFAULT_PUBLIC_BASE = "https://arduinophysicslab-production.up.railway.app"
+_DEFAULT_PUBLIC_BASE = "https://arduinophysicslab-production-ab65.up.railway.app"
 
 
 def _public_base_url() -> str:
