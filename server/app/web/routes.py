@@ -77,8 +77,9 @@ def _require_account(account: AccountRecord | None) -> AccountRecord | RedirectR
 
 
 @router.get("/", response_class=HTMLResponse)
-def home(request: Request, account: AccountRecord | None = Depends(get_web_account)) -> HTMLResponse:
-    return templates.TemplateResponse(request, "home.html", {"account": account})
+def home(request: Request) -> HTMLResponse:
+    """Басты бет дерекқорсыз — Railway healthcheck `/` болса да 200."""
+    return templates.TemplateResponse(request, "home.html", {"account": None})
 
 
 @router.get("/login", response_class=HTMLResponse)

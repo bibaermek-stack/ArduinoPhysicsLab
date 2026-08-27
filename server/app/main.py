@@ -63,6 +63,12 @@ async def _lifespan(_app: FastAPI):
 
 app = FastAPI(title="Arduino Physics Lab Sync API", version="1", lifespan=_lifespan)
 
+
+@app.get("/health")
+def root_health() -> dict[str, str]:
+    """Railway network healthcheck — дерекқорсыз, әрқашан 200."""
+    return {"status": "ok"}
+
 # § Phase 4 (Raw Arduino Measurement Cloud Sync) "Compression" audit:
 # ``httpx`` (клиент жағы, § ``HttpSyncApiClient``) ӘДЕПКІ бойынша
 # ``Accept-Encoding: gzip``-ты жібереді ЖӘНЕ жауапты ӨЗІ автоматты

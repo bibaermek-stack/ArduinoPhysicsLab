@@ -1,6 +1,12 @@
 """Public FastAPI website pages."""
 
 
+def test_root_health_does_not_need_database(client) -> None:
+    response = client.get("/health")
+    assert response.status_code == 200
+    assert response.json()["status"] == "ok"
+
+
 def test_home_page_renders(client) -> None:
     response = client.get("/")
     assert response.status_code == 200

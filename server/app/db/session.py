@@ -60,9 +60,11 @@ def get_database_url() -> str:
 
 def create_session_factory(database_url: str | None = None) -> sessionmaker[Session]:
     url = database_url or get_database_url()
-    engine_kwargs: dict = {"pool_pre_ping": True}
+    engine_kwargs: dict = {"pool_pre_ping": True, "pool_timeout": 5}
     if url.startswith("sqlite"):
         engine_kwargs["connect_args"] = {"check_same_thread": False}
+    elif url.startswith("postgresql"):
+        engine_kwargs["connect_args"] = {"connect_timeout": 5}
     engine = create_engine(url, **engine_kwargs)
     Base.metadata.create_all(engine)
     return sessionmaker(bind=engine, autoflush=False, autocommit=False)
