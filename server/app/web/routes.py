@@ -76,9 +76,18 @@ def _require_account(account: AccountRecord | None) -> AccountRecord | RedirectR
     return account
 
 
-@router.get("/", response_class=HTMLResponse)
-def home(request: Request) -> HTMLResponse:
-    """Басты бет дерекқорсыз — Railway healthcheck `/` болса да 200."""
+@router.get("/", response_class=HTMLResponse, response_model=None)
+def home(request: Request) -> Response:
+    """Басты бет дерекқорсыз — Railway healthcheck `/` болса да 200.
+
+    Google Web клиент origin-ді redirect URI ретінде тіркегендіктен
+    callback `/`-ға келеді; кодты API өңдеушісіне жібереміз.
+    """
+    if request.query_params.get("code"):
+        return RedirectResponse(
+            f"/api/v1/auth/google/callback?{request.url.query}",
+            status_code=307,
+        )
     return templates.TemplateResponse(request, "home.html", {"account": None})
 
 

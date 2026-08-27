@@ -95,15 +95,15 @@ def test_legacy_railway_url_rewrites_to_ab65(monkeypatch) -> None:
     monkeypatch.delenv("APL_PUBLIC_BASE_URL", raising=False)
     monkeypatch.delenv("APL_GOOGLE_REDIRECT_URI", raising=False)
     assert accounts._public_base_url() == live
-    assert accounts._google_redirect_uri() == f"{live}/api/v1/auth/google/callback"
+    assert accounts._google_redirect_uri() == live
 
     monkeypatch.setenv("APL_PUBLIC_BASE_URL", "https://arduinophysicslab-production.up.railway.app")
     monkeypatch.setenv(
         "APL_GOOGLE_REDIRECT_URI",
-        "https://arduinophysicslab-production.up.railway.app/api/v1/auth/google/callback",
+        "https://arduinophysicslab-production.up.railway.app",
     )
     assert accounts._public_base_url() == live
-    assert accounts._google_redirect_uri() == f"{live}/api/v1/auth/google/callback"
+    assert accounts._google_redirect_uri() == live
 
 
 def test_wrong_password(client) -> None:

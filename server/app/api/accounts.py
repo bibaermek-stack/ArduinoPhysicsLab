@@ -122,11 +122,15 @@ def _public_base_url() -> str:
 
 
 def _google_redirect_uri(_request: Request | None = None) -> str:
-    """Google Console-дағы URI-мен БІРДЕЙ болуы керек — request host-қа тәуелді емес."""
+    """Google Console-дағы Authorized redirect URI-мен БІРДЕЙ болуы керек.
+
+    Web client 6-да тіркелген мән — origin (жол жоқ). Callback жолы
+    қосылса, APL_GOOGLE_REDIRECT_URI арқылы қайта ауыстырылады.
+    """
     explicit = os.environ.get("APL_GOOGLE_REDIRECT_URI", "").strip()
     if explicit:
         return _rewrite_legacy_public_url(explicit)
-    return f"{_public_base_url()}/api/v1/auth/google/callback"
+    return _public_base_url()
 
 
 @router.get("/google/start")

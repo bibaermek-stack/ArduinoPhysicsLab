@@ -30,11 +30,18 @@ def test_register_login_and_choose_role(client) -> None:
     assert "T-" in app_page.text
 
 
+def test_home_forwards_google_oauth_code(client) -> None:
+    response = client.get("/?code=abc&state=xyz", follow_redirects=False)
+    assert response.status_code == 307
+    assert response.headers["location"].startswith("/api/v1/auth/google/callback?")
+    assert "code=abc" in response.headers["location"]
+
+
 def test_google_setup_page_shows_web_client_uri(client) -> None:
     response = client.get("/google-setup")
     assert response.status_code == 200
     assert "Web application" in response.text
-    assert "/api/v1/auth/google/callback" in response.text
+    assert "arduinophysicslab-production-ab65.up.railway.app" in response.text
     assert "redirect_uri_mismatch" in response.text
 
 
