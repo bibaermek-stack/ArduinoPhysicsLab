@@ -10,9 +10,8 @@ NAVIGATION_ITEMS`` кестесінен, ағымдағы ``role``-ге сай �
 құрастырылады (§6: "Do not fork navigation into separate Student/Teacher
 Sidebar" — БІР класс, бір дерек көзі). ``set_role()`` батырма тізімін
 қауіпсіз қайта құрады (ескі батырмалар жойылады, жаңасы сол ретпен
-қосылады). Рөл индикаторы + "🔁 Режимді ауыстыру" батырмасы бұрыннан бар
-құрылғы-қорытынды секциясынан КЕЙІН қосылады (существующий layout ретін
-бұзбау үшін, тек толықтыру).
+қосылады). Рөл индикаторы сайдбарда қалады; "Режимді ауыстыру"
+батырмасы алынып тасталды — рөл аккаунтта бір рет таңдалады.
 """
 
 import logging
@@ -239,6 +238,7 @@ class Sidebar(QWidget):
             lambda: _trace_logger.info("14. Sidebar: switch_role_button ('Режімді ауыстыру') clicked")
         )
         self._switch_role_button.clicked.connect(self.switch_role_requested)
+        self._switch_role_button.hide()
 
         self._update_role_indicator()
         self._update_student_section_visibility()
@@ -254,7 +254,6 @@ class Sidebar(QWidget):
         layout.addWidget(self._active_teacher_label)
         layout.addWidget(self._active_student_label)
         layout.addWidget(self._switch_student_button)
-        layout.addWidget(self._switch_role_button)
         layout.addWidget(self._sync_status_label)
 
         self._connect_device_manager()
@@ -387,7 +386,7 @@ class Sidebar(QWidget):
         # expanded екеуінде setIcon() арқылы тұрақты көрінеді — тек мәтін
         # ("" / толық жазба) ауысады, ескі emoji-мен алмастыру ЕНДІ қажет
         # емес.
-        self._switch_role_button.setText("" if self._collapsed else _SWITCH_ROLE_BUTTON_LABEL)
+        self._switch_role_button.hide()
         self._switch_student_button.setText(
             "" if self._collapsed else _SWITCH_STUDENT_BUTTON_LABEL
         )

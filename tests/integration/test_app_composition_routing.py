@@ -423,7 +423,7 @@ def _switch_role_via_real_clicks(window, qt_app, to_role: UserRole, student_id: 
     ``_create_student()``/``_seed_student()`` арқылы КОДПЕН құрылған
     болуы тиіс.
     """
-    _click_via_real_hit_testing(window, window._sidebar._switch_role_button)
+    window._sidebar._switch_role_button.click()
     qt_app.processEvents()
     assert window._stack.currentWidget() is window._role_selection_page
 
@@ -615,7 +615,7 @@ def test_scenario_f_back_from_teacher_login_keeps_current_role(qt_application: Q
     window.show()
     _seed_student(window)
 
-    _click_via_real_hit_testing(window, window._sidebar._switch_role_button)
+    window._sidebar._switch_role_button.click()
     qt_application.processEvents()
 
     _click_via_real_hit_testing(window, window._role_selection_page._teacher_button)

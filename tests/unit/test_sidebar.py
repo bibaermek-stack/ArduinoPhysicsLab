@@ -316,6 +316,11 @@ def test_role_indicator_reflects_current_role() -> None:
     assert sidebar._role_indicator_label.text() == "Мұғалім режимі"
 
 
+def test_switch_role_button_is_hidden() -> None:
+    sidebar = Sidebar()
+    assert sidebar._switch_role_button.isHidden()
+
+
 def test_switch_role_button_emits_signal() -> None:
     sidebar = Sidebar()
     received = []
