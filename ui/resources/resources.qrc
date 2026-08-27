@@ -1,0 +1,8 @@
+<!-- Arduino Physics Lab — Qt Resource System файлы.
+     TODO: icons/ және images/ қалталарындағы файлдарды осында тіркеу,
+     мысалы: <file>icons/electricity.svg</file> -->
+<RCC>
+  <qresource prefix="/">
+    <!-- TODO: ресурс файлдарын осында қосу -->
+  </qresource>
+</RCC>

@@ -1,0 +1,22 @@
+# Arduino Physics Lab — Cloud Sync server-side dependencies.
+# Desktop client dependencies stay in the project-root requirements.txt
+# (§8 "Keep backend code separate from desktop client code").
+
+fastapi
+uvicorn[standard]
+sqlalchemy
+pydantic
+
+# § Phase 3 (Production Authentication + Authorization): short-lived
+# per-user JWT access tokens (HS256 only — no asymmetric keys needed),
+# replacing the shared X-API-Key as the per-user auth layer. PyJWT
+# chosen over python-jose/authlib for the smallest dependency surface
+# sufficient for symmetric-key signing/verification.
+PyJWT
+
+# Production Postgres driver — NOT required for local dev/tests (SQLite
+# is used by default, § db/session.py). Install only when DATABASE_URL
+# points at a real Postgres instance:
+#   pip install -r requirements-postgres.txt
+# (§ Phase 9 Production Deployment Part J — kept out of this base file
+# so the default SQLite-only install stays small/fast.)

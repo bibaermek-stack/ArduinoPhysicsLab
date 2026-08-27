@@ -1,0 +1,60 @@
+"""csv_exporter — ExperimentSession ішіндегі Measurement тарихын CSV
+файлына экспорттайтын domain сервисі.
+
+Экспорттың жалғыз дереккөзі — ``ExperimentSession.measurements``. Бұл
+сервис ``MeasurementTableWidget``-пен немесе ``LiveGraphWidget``-пен
+ешбір байланысы жоқ (UI бұл екеуінен деректі оқымайды).
+"""
+
+import csv
+
+from domain.entities.experiment_session import ExperimentSession
+
+_HEADER = ("No", "Time(s)", "Voltage(V)", "Current(A)", "Power(W)")
+_TIME_DECIMALS = 2
+
+# (Measurement ішіндегі кілт, ондық саны) — Voltage/Current/Power ретімен.
+_VALUE_COLUMNS: tuple[tuple[str, int], ...] = (
+    ("voltage", 3),
+    ("current", 3),
+    ("power", 3),
+)
+
+
+class CSVExporter:
+    """``ExperimentSession``-ды стандартты, Excel аша алатын CSV
+    файлына жазатын сервис.
+    """
+
+    def export(self, session: ExperimentSession, output_path: str) -> bool:
+        """``session.measurements``-ті ``output_path`` файлына CSV
+        түрінде жазады.
+
+        Session бос болса, файл жасалмайды және ``False`` қайтарылады.
+        Жазу кезінде кез келген қате (``IOError``, ``PermissionError``,
+        т.б.) ұсталады, ешбір exception сыртқа шықпайды — сәтсіз
+        болғанда да ``False`` қайтарылады.
+        """
+        if not session.measurements:
+            return False
+
+        try:
+            with open(output_path, mode="w", encoding="utf-8", newline="") as csv_file:
+                writer = csv.writer(csv_file)
+                writer.writerow(_HEADER)
+
+                start_time = session.measurements[0].timestamp
+                for index, measurement in enumerate(session.measurements, start=1):
+                    elapsed = measurement.get_value("time")
+                    if elapsed is None:
+                        elapsed = (measurement.timestamp - start_time).total_seconds()
+
+                    row = [str(index), f"{elapsed:.{_TIME_DECIMALS}f}"]
+                    for key, decimals in _VALUE_COLUMNS:
+                        value = measurement.get_value(key)
+                        row.append("" if value is None else f"{value:.{decimals}f}")
+
+                    writer.writerow(row)
+            return True
+        except Exception:  # қорғаныс: IOError/PermissionError/т.б. сыртқа шықпайды
+            return False

@@ -1,0 +1,12 @@
+# Arduino Physics Lab — build-time-only dependencies (Phase 9,
+# Production Deployment Part A/P).
+#
+# PyInstaller is NOT a runtime dependency of the shipped application —
+# it is only needed on the machine that PRODUCES the packaged .exe.
+# Keep this separate from requirements.txt so a normal dev/runtime
+# install never pulls it in unnecessarily.
+#
+#   pip install -r requirements.txt -r requirements-build.txt
+#   pwsh build/build.ps1
+
+pyinstaller
