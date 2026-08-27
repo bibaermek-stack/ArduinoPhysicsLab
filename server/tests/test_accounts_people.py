@@ -88,6 +88,24 @@ def test_student_friend_request(client) -> None:
     assert any(item["public_id"] == b["public_id"] for item in found.json()["results"])
 
 
+def test_legacy_railway_url_rewrites_to_ab65(monkeypatch) -> None:
+    from server.app.api import accounts
+
+    live = "https://arduinophysicslab-production-ab65.up.railway.app"
+    monkeypatch.delenv("APL_PUBLIC_BASE_URL", raising=False)
+    monkeypatch.delenv("APL_GOOGLE_REDIRECT_URI", raising=False)
+    assert accounts._public_base_url() == live
+    assert accounts._google_redirect_uri() == f"{live}/api/v1/auth/google/callback"
+
+    monkeypatch.setenv("APL_PUBLIC_BASE_URL", "https://arduinophysicslab-production.up.railway.app")
+    monkeypatch.setenv(
+        "APL_GOOGLE_REDIRECT_URI",
+        "https://arduinophysicslab-production.up.railway.app/api/v1/auth/google/callback",
+    )
+    assert accounts._public_base_url() == live
+    assert accounts._google_redirect_uri() == f"{live}/api/v1/auth/google/callback"
+
+
 def test_wrong_password(client) -> None:
     _auth(client, "x@school.kz", "secret1", "X", None)
     login = client.post(

@@ -101,18 +101,32 @@ def select_account_role(
 
 
 _DEFAULT_PUBLIC_BASE = "https://arduinophysicslab-production-ab65.up.railway.app"
+_LEGACY_PUBLIC_HOST = "arduinophysicslab-production.up.railway.app"
+
+
+def _rewrite_legacy_public_url(url: str) -> str:
+    """Ескі Railway хостын тірі ab65 доменіне ауыстырады."""
+    cleaned = (url or "").strip()
+    if not cleaned:
+        return _DEFAULT_PUBLIC_BASE
+    for scheme in ("https://", "http://"):
+        legacy = f"{scheme}{_LEGACY_PUBLIC_HOST}"
+        if cleaned == legacy or cleaned.startswith(legacy + "/"):
+            cleaned = _DEFAULT_PUBLIC_BASE + cleaned[len(legacy) :]
+            break
+    return cleaned.rstrip("/")
 
 
 def _public_base_url() -> str:
-    return os.environ.get("APL_PUBLIC_BASE_URL", _DEFAULT_PUBLIC_BASE).rstrip("/")
+    return _rewrite_legacy_public_url(os.environ.get("APL_PUBLIC_BASE_URL", _DEFAULT_PUBLIC_BASE))
 
 
 def _google_redirect_uri(_request: Request | None = None) -> str:
     """Google Console-дағы URI-мен БІРДЕЙ болуы керек — request host-қа тәуелді емес."""
-    return os.environ.get(
-        "APL_GOOGLE_REDIRECT_URI",
-        f"{_public_base_url()}/api/v1/auth/google/callback",
-    ).strip()
+    explicit = os.environ.get("APL_GOOGLE_REDIRECT_URI", "").strip()
+    if explicit:
+        return _rewrite_legacy_public_url(explicit)
+    return f"{_public_base_url()}/api/v1/auth/google/callback"
 
 
 @router.get("/google/start")
