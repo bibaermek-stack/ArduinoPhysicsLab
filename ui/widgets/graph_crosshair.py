@@ -26,7 +26,7 @@ from PySide6.QtCore import Qt
 from domain.services.graph_analysis import nearest_index
 from ui.themes.theme_manager import COLOR_BORDER, COLOR_SURFACE, COLOR_TEXT_PRIMARY
 
-_CROSSHAIR_PEN_COLOR = (31, 106, 165, 150)
+_CROSSHAIR_PEN_COLOR = (0, 120, 212, 160)
 _TOOLTIP_BORDER_COLOR = COLOR_BORDER
 _TOOLTIP_TEXT_COLOR = COLOR_TEXT_PRIMARY
 _TOOLTIP_BG_COLOR = (43, 43, 43, 235)

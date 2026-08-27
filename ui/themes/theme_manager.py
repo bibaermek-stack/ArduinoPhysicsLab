@@ -168,34 +168,36 @@ FONT_FAMILY = '"Segoe UI Variable", "Segoe UI", sans-serif'
 # көзге көрінетін бөлек тон, border екі деңгейі шынымен байқалатын
 # болуы үшін. Геометрияға (spacing/radius/padding/height) ЕШБІР тимейді
 # — тек түс мәндері.
-# CustomTkinter (blue / dark) палитрасы — Qt QSS арқылы.
-# Терезе gray14, карточка #2B2B2B, батырма #1F6AA5.
-COLOR_BACKGROUND = "#242424"
-COLOR_SURFACE = "#2B2B2B"
-COLOR_SIDEBAR_BACKGROUND = "#212121"
-COLOR_INPUT = "#343638"
+# Windows 11 Fluent 2 / mica dark — Custom QSS (кітапханасыз).
+COLOR_BACKGROUND = "#1C1C1E"
+COLOR_SURFACE = "#2C2C2E"
+COLOR_SIDEBAR_BACKGROUND = "#141416"
+COLOR_INPUT = "#3A3A3C"
+COLOR_GLASS_TOP = "#3A3A42"
+COLOR_GLASS_BOTTOM = "#26262A"
 
-COLOR_BORDER = "#565B5E"
-COLOR_BORDER_SUBTLE = "#3D3D3D"
+COLOR_BORDER = "#3F3F46"
+COLOR_BORDER_SUBTLE = "#2A2A2E"
 
-COLOR_TEXT_PRIMARY = "#E5E5E5"
-COLOR_TEXT_SECONDARY = "#A0A0A0"
-COLOR_TEXT_MUTED = "#7A7A7A"
+COLOR_TEXT_PRIMARY = "#F5F5F5"
+COLOR_TEXT_SECONDARY = "#C8C8C8"
+COLOR_TEXT_MUTED = "#8D8D8D"
 
-COLOR_ACCENT = "#1F6AA5"
-COLOR_ACCENT_HOVER = "#144870"
-COLOR_ACCENT_PRESSED = "#0E3250"
-COLOR_ACCENT_TEXT = "#DCE4EE"
+COLOR_ACCENT = "#0078D4"
+COLOR_ACCENT_HOVER = "#1B86D9"
+COLOR_ACCENT_PRESSED = "#006CBD"
+COLOR_ACCENT_TEXT = "#FFFFFF"
+COLOR_ACCENT_GLOW = "#60CDFF"
 
-COLOR_SUCCESS = "#2FA572"
+COLOR_SUCCESS = "#0F7B3A"
 COLOR_WARNING = "#F59E0B"
 COLOR_ERROR = "#E5534B"
 COLOR_ERROR_HOVER = "#C13E37"
-COLOR_INFO = "#3B8ED0"
+COLOR_INFO = "#4CC2FF"
 
-COLOR_HOVER = "#333337"
-COLOR_SELECTED = "#1F6AA5"
-COLOR_FOCUS_OUTLINE = "#1F6AA5"
+COLOR_HOVER = "#3A3A3C"
+COLOR_SELECTED = "#0078D4"
+COLOR_FOCUS_OUTLINE = "#60CDFF"
 
 # Phase 9 ("Fluent 2 Laboratory Professional Edition" — visual modernization):
 # сұралған семантикалық token атаулары — көбі ЖАҢА мән ЕМЕС, тек
@@ -206,7 +208,7 @@ COLOR_FOCUS_OUTLINE = "#1F6AA5"
 COLOR_SURFACE_SECONDARY = COLOR_BACKGROUND
 COLOR_SURFACE_HOVER = COLOR_HOVER
 COLOR_SURFACE_SELECTED = COLOR_SELECTED
-COLOR_BORDER_STRONG = "#6B7074"
+COLOR_BORDER_STRONG = "#5A5A62"
 COLOR_TEXT_DISABLED = COLOR_TEXT_MUTED
 # Phase 9-да ``COLOR_ACCENT_SUBTLE`` (#EFF6FF) ``COLOR_HOVER``-тен
 # (сол кездегі #E8F0FE) ЖЕҢІЛІРЕК болып шыққан — нәтижесінде icon-
@@ -342,7 +344,7 @@ _CONTROL_CONTENT_MIN_HEIGHT = (
 
 
 class ThemeManager:
-    """CustomTkinter blue/dark палитрасын Qt QSS-ке түсіретін сервис."""
+    """Windows 11 Fluent / mica dark — Custom QSS, толық пиксель бақылауы."""
 
     def build_stylesheet(self) -> str:
         """Бүкіл қолданбаға бір рет қолданылатын QSS мәтінін қайтарады."""
@@ -351,6 +353,15 @@ class ThemeManager:
             background-color: {COLOR_BACKGROUND};
             color: {COLOR_TEXT_PRIMARY};
             font-family: {FONT_FAMILY};
+        }}
+        QMainWindow, QStackedWidget {{
+            background-color: {COLOR_BACKGROUND};
+        }}
+        QSplitter::handle {{
+            background-color: {COLOR_BORDER_SUBTLE};
+        }}
+        QSplitter::handle:horizontal {{
+            width: 1px;
         }}
 
         /* ==================================================================
@@ -380,15 +391,17 @@ class ThemeManager:
             border-color: {COLOR_BORDER_SUBTLE};
         }}
 
-        /* Primary Button — негізгі әрекет (accent толтырылған). */
+        /* Primary Button — Fluent градиент. */
         QPushButton#PrimaryButton {{
-            background-color: {COLOR_ACCENT};
+            background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 {COLOR_ACCENT_HOVER}, stop:1 {COLOR_ACCENT});
             color: {COLOR_ACCENT_TEXT};
             border: none;
             font-weight: {FONT_WEIGHT_SEMIBOLD};
         }}
         QPushButton#PrimaryButton:hover {{
-            background-color: {COLOR_ACCENT_HOVER};
+            background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 {COLOR_ACCENT_GLOW}, stop:1 {COLOR_ACCENT_HOVER});
         }}
         QPushButton#PrimaryButton:pressed {{
             background-color: {COLOR_ACCENT_PRESSED};
@@ -407,8 +420,9 @@ class ThemeManager:
            күйлері базалық ``QPushButton``-нан мұраланады (§ objectName
            селекторы pseudo-класс ережелерін ЕШҚАШАН басып тастамайды). */
         QFrame#EntrySurfaceCard {{
-            background-color: {COLOR_SURFACE};
-            border: 1px solid {COLOR_BORDER};
+            background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 {COLOR_GLASS_TOP}, stop:1 {COLOR_GLASS_BOTTOM});
+            border: 1px solid rgba(255, 255, 255, 42);
             border-radius: {RADIUS_LG}px;
             padding: 8px;
         }}
@@ -710,8 +724,9 @@ class ThemeManager:
            көрінеді. border ені ӨЗГЕРМЕЙДІ (1px, барлық 4 жақ) —
            БИІКТІККЕ (176/339px, frozen) ЕШБІР әсер етпейді. */
         QFrame#GraphCard {{
-            background-color: {COLOR_SURFACE};
-            border: 1px solid {COLOR_BORDER_STRONG};
+            background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 {COLOR_GLASS_TOP}, stop:1 {COLOR_SURFACE});
+            border: 1px solid rgba(255, 255, 255, 40);
             border-radius: {RADIUS_LG}px;
         }}
         QLabel#GraphCardTitle {{
@@ -772,8 +787,9 @@ class ThemeManager:
            ================================================================== */
 
         QWidget#Sidebar {{
-            background-color: {COLOR_SIDEBAR_BACKGROUND};
-            border-right: 1px solid {COLOR_BORDER};
+            background-color: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                stop:0 #101012, stop:1 {COLOR_SIDEBAR_BACKGROUND});
+            border-right: 1px solid rgba(255, 255, 255, 28);
         }}
         QLabel#SidebarBrand {{
             font-weight: {FONT_WEIGHT_BOLD};
@@ -806,7 +822,8 @@ class ThemeManager:
             background-color: {COLOR_SELECTED};
         }}
         QPushButton#SidebarNavButton:checked {{
-            background-color: {COLOR_ACCENT};
+            background-color: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                stop:0 {COLOR_ACCENT}, stop:1 {COLOR_ACCENT_HOVER});
             color: {COLOR_ACCENT_TEXT};
             font-weight: {FONT_WEIGHT_SEMIBOLD};
         }}
@@ -855,8 +872,9 @@ class ThemeManager:
         }}
 
         QFrame#HomeHero {{
-            background-color: {COLOR_SURFACE};
-            border: 1px solid {COLOR_BORDER};
+            background-color: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                stop:0 {COLOR_GLASS_TOP}, stop:1 {COLOR_GLASS_BOTTOM});
+            border: 1px solid rgba(255, 255, 255, 36);
             border-radius: {RADIUS_LG}px;
         }}
         QLabel#HomeHeroTitle {{
@@ -877,8 +895,9 @@ class ThemeManager:
            MeasurementCard-пен БІРДЕЙ "instrument
            bezel" тілін алады — accent жолақ, дәйекті визуалды жүйе. */
         QFrame#HomeSummaryCard {{
-            background-color: {COLOR_SURFACE};
-            border: 1px solid {COLOR_BORDER};
+            background-color: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                stop:0 {COLOR_GLASS_TOP}, stop:1 {COLOR_SURFACE});
+            border: 1px solid rgba(255, 255, 255, 28);
             border-left: 3px solid {COLOR_ACCENT};
             border-radius: {RADIUS_LG}px;
         }}
@@ -1448,8 +1467,9 @@ class ThemeManager:
            ``HomeQuickLabsPanel``/``LabsSectionCard``-мен БІРДЕЙ рецепт
            (§ "Do not add arbitrary new hex colors in the page file"). */
         QFrame#DashboardPanel {{
-            background-color: {COLOR_SURFACE};
-            border: 1px solid {COLOR_BORDER};
+            background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 {COLOR_GLASS_TOP}, stop:1 {COLOR_SURFACE});
+            border: 1px solid rgba(255, 255, 255, 32);
             border-radius: {RADIUS_LG}px;
         }}
         QFrame#ActivitySlide {{
