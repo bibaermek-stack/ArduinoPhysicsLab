@@ -15,6 +15,16 @@ def test_download_page_renders(client) -> None:
     assert "ArduinoPhysicsLab.exe" in response.text
 
 
+def test_zip_download_url_is_rewritten_to_exe(monkeypatch) -> None:
+    from server.app.web import routes
+
+    monkeypatch.setenv(
+        "APL_WINDOWS_DOWNLOAD_URL",
+        "https://github.com/bibaermek-stack/ArduinoPhysicsLab/releases/latest/download/ArduinoPhysicsLab.zip",
+    )
+    assert routes._windows_exe_url().endswith("ArduinoPhysicsLab.exe")
+
+
 def test_download_windows_offers_exe(client) -> None:
     response = client.get("/download/windows", follow_redirects=False)
     assert response.status_code in (200, 303)

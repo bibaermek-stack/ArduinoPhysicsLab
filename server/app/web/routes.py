@@ -43,7 +43,10 @@ router = APIRouter()
 
 
 def _windows_exe_url() -> str:
-    return os.environ.get("APL_WINDOWS_DOWNLOAD_URL", _DEFAULT_WINDOWS_EXE_URL).strip() or _DEFAULT_WINDOWS_EXE_URL
+    url = os.environ.get("APL_WINDOWS_DOWNLOAD_URL", _DEFAULT_WINDOWS_EXE_URL).strip() or _DEFAULT_WINDOWS_EXE_URL
+    if url.lower().endswith(".zip"):
+        url = url[:-4] + ".exe"
+    return url
 
 
 def _local_windows_exe() -> Path | None:
