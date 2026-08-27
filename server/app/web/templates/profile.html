@@ -2,12 +2,13 @@
 {% block title %}Профиль · Arduino Physics Lab{% endblock %}
 {% block body %}
 <form class="auth" method="post" action="/profile" enctype="multipart/form-data">
-  <h1>Профиль</h1>
+  <span class="kicker">Профиль</span>
+  <h1>{{ account.display_name }}</h1>
   {% if saved %}<p class="ok">Сақталды</p>{% endif %}
   {% if error %}<p class="error">{{ error }}</p>{% endif %}
   <div class="avatar">
     {% if photo %}
-      <img class="avatar" src="data:image/jpeg;base64,{{ photo }}" alt="">
+      <img src="data:image/jpeg;base64,{{ photo }}" alt="">
     {% else %}
       {{ account.display_name[:1] }}
     {% endif %}

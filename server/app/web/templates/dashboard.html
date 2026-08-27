@@ -2,22 +2,39 @@
 {% block title %}Кабинет · Arduino Physics Lab{% endblock %}
 {% block body %}
 <div class="grid">
-  <section class="card" style="padding:28px">
-    <h1>Сәлем, {{ account.display_name }}</h1>
-    <p>Рөл: {% if account.role == 'teacher' %}мұғалім{% else %}оқушы{% endif %}</p>
-    <p>Сіздің ID: <span class="idpill">{{ account.public_id }}</span></p>
-    <p>Осы кодты достарыңызға немесе мұғаліміңізге жіберіңіз.</p>
+  <section class="card">
+    <div class="identity">
+      <div class="avatar">
+        {% if photo %}
+          <img src="data:image/jpeg;base64,{{ photo }}" alt="">
+        {% else %}
+          {{ account.display_name[:1] }}
+        {% endif %}
+      </div>
+      <div>
+        <span class="kicker">{% if account.role == 'teacher' %}Мұғалім{% else %}Оқушы{% endif %}</span>
+        <h1>Сәлем, {{ account.display_name }}</h1>
+        <p>Сіздің ID: <span class="idpill">{{ account.public_id }}</span></p>
+      </div>
+    </div>
+    <p class="lead">Осы кодты достарыңызға немесе мұғаліміңізге жіберіңіз. Windows қолданбасына сол аккаунтпен кіріңіз.</p>
     <div class="actions">
       <a class="btn btn-lab" href="/people">Адам іздеу</a>
       <a class="btn btn-ghost" href="/profile">Профиль</a>
-      <a class="btn btn-lab" href="/download/windows">Windows .exe жүктеу</a>
+      <a class="btn btn-accent" href="/download">Windows .exe</a>
     </div>
   </section>
   <aside>
-    <div class="stat"><span>Кіріс өтініш</span><b>{{ incoming_count }}</b></div>
-    <div class="stat" style="margin-top:12px"><span>Windows қолданбасы</span><b>.exe</b>
-      <p>Зертхананы компьютерде ашып, осы аккаунтпен синхрондаңыз.</p>
-      <p><a class="btn btn-lab" href="/download">Жүктеу нұсқаулығы</a></p>
+    <div class="stat">
+      <span>Кіріс өтініш</span>
+      <b>{{ incoming_count }}</b>
+      <p>Қабылдау немесе қабылдамау үшін адамдар бетіне өтіңіз.</p>
+    </div>
+    <div class="stat" style="margin-top:16px">
+      <span>Зертхана</span>
+      <b>.exe</b>
+      <p>Arduino датчиктері компьютердегі қолданба арқылы қосылады.</p>
+      <a class="btn btn-lab" href="/download/windows">Zip жүктеу</a>
     </div>
   </aside>
 </div>

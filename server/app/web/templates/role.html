@@ -1,12 +1,20 @@
 {% extends "base.html" %}
 {% block title %}Рөл · Arduino Physics Lab{% endblock %}
 {% block body %}
-<form class="auth" method="post" action="/role">
+<section class="card" style="max-width:720px;margin:24px auto">
+  <span class="kicker">Бір рет таңдалады</span>
   <h1>Кімсіз?</h1>
-  <p>Бір рет таңдалады. Кейін өз ID-ңыз беріледі.</p>
+  <p class="lead">Рөл кейін өзгертілмейді. Таңдаған соң сізге T- немесе S- ID беріледі.</p>
   {% if error %}<p class="error">{{ error }}</p>{% endif %}
-  <button class="btn btn-lab" type="submit" name="role" value="teacher">Мен мұғаліммін</button>
-  <div style="height:12px"></div>
-  <button class="btn btn-ghost" type="submit" name="role" value="student">Мен оқушымын</button>
-</form>
+  <form method="post" action="/role" class="role-grid">
+    <button class="role-card teacher" type="submit" name="role" value="teacher">
+      <strong>Мен мұғаліммін</strong>
+      <span>Сынып, оқушыларды іздеу және зертханалық жұмысты бақылау.</span>
+    </button>
+    <button class="role-card student" type="submit" name="role" value="student">
+      <strong>Мен оқушымын</strong>
+      <span>Мұғалімге қосылу, достар және тәжірибе деректерін сақтау.</span>
+    </button>
+  </form>
+</section>
 {% endblock %}

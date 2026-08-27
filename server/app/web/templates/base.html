@@ -12,22 +12,29 @@
   <div class="wrap">
     <nav class="nav">
       <a class="brand" href="/"><span class="mark">APL</span> Arduino Physics Lab</a>
-      <div>
+      <div class="nav-links">
         {% if account %}
-          <a href="/app">Кабинет</a>
-          <a href="/people">Адамдар</a>
-          <a href="/profile">Профиль</a>
-          <a href="/download">Жүктеу</a>
+          <a href="/app" class="{{ 'is-active' if request.url.path == '/app' else '' }}">Кабинет</a>
+          <a href="/people" class="{{ 'is-active' if request.url.path == '/people' else '' }}">Адамдар</a>
+          <a href="/profile" class="{{ 'is-active' if request.url.path == '/profile' else '' }}">Профиль</a>
+          <a href="/download" class="{{ 'is-active' if request.url.path.startswith('/download') else '' }}">Жүктеу</a>
           <a href="/logout">Шығу</a>
         {% else %}
-          <a href="/download">Жүктеу</a>
-          <a href="/login">Кіру</a>
-          <a href="/register">Тіркелу</a>
+          <a href="/download" class="{{ 'is-active' if request.url.path.startswith('/download') else '' }}">Жүктеу</a>
+          <a href="/login" class="{{ 'is-active' if request.url.path == '/login' else '' }}">Кіру</a>
+          <a href="/register" class="{{ 'is-active' if request.url.path == '/register' else '' }}">Тіркелу</a>
         {% endif %}
       </div>
     </nav>
     {% block body %}{% endblock %}
-    <p class="footer">Мектеп физикасына арналған цифрлық зертхана · FastAPI · Railway</p>
+    <p class="footer">
+      <span>Мектеп физикасына арналған цифрлық зертхана</span>
+      <span>
+        <a href="/download">Windows қолданбасы</a>
+        ·
+        <a href="/login">Кіру</a>
+      </span>
+    </p>
   </div>
 </body>
 </html>

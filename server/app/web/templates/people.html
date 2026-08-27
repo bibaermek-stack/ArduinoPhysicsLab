@@ -1,11 +1,12 @@
 {% extends "base.html" %}
 {% block title %}Адамдар · Arduino Physics Lab{% endblock %}
 {% block body %}
-<section class="card" style="padding:28px">
+<section class="card">
+  <span class="kicker">Байланыс</span>
   <h1>Адамдар</h1>
   {% if error %}<p class="error">{{ error }}</p>{% endif %}
   {% if ok %}<p class="ok">Өтініш жіберілді</p>{% endif %}
-  <form method="get" action="/people" class="actions">
+  <form method="get" action="/people" class="search-row">
     <input name="q" value="{{ q }}" placeholder="ID немесе аты, мысалы T-7K2M9Q">
     <button class="btn btn-lab" type="submit">Іздеу</button>
   </form>
@@ -24,8 +25,15 @@
         {% endif %}
       </form>
     </div>
+  {% else %}
+    {% if q %}
+      <p class="hint">Ештеңе табылмады. ID-ны дәл енгізіп көріңіз.</p>
+    {% else %}
+      <p class="hint">Іздеу үшін ID немесе ат жазыңыз.</p>
+    {% endif %}
   {% endfor %}
-
+</section>
+<section class="card">
   <h2>Өтініштер</h2>
   {% for row, from_acc, to_acc in requests %}
     <div class="person">
@@ -34,12 +42,14 @@
         <div>{{ "дос" if row.kind == "friend" else "мұғалім/оқушы" }} · {{ row.status }}</div>
       </div>
       {% if row.to_account_id == account.id and row.status == "pending" %}
-        <div class="actions">
+        <div class="actions" style="margin-top:0">
           <form method="post" action="/people/accept"><input type="hidden" name="request_id" value="{{ row.id }}"><button class="btn btn-lab">Қабылдау</button></form>
           <form method="post" action="/people/decline"><input type="hidden" name="request_id" value="{{ row.id }}"><button class="btn btn-danger">Жоқ</button></form>
         </div>
       {% endif %}
     </div>
+  {% else %}
+    <p class="hint">Әзірге өтініш жоқ.</p>
   {% endfor %}
 </section>
 {% endblock %}

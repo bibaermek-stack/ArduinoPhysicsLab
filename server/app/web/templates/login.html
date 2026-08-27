@@ -2,17 +2,18 @@
 {% block title %}Кіру · Arduino Physics Lab{% endblock %}
 {% block body %}
 <form class="auth" method="post" action="/login">
+  <span class="kicker">Аккаунт</span>
   <h1>Кіру</h1>
+  <p>Сайттағы және Windows қолданбасындағы бір аккаунт.</p>
   {% if error %}<p class="error">{{ error }}</p>{% endif %}
   <label>Email</label>
-  <input type="email" name="email" required>
+  <input type="email" name="email" required autocomplete="username">
   <label>Құпия сөз</label>
-  <input type="password" name="password" required>
+  <input type="password" name="password" required autocomplete="current-password">
   <div class="actions">
     <button class="btn btn-lab" type="submit">Кіру</button>
-    <a class="btn btn-google" href="/google">Google</a>
+    <a class="btn btn-google" href="/google"><span class="gmark"></span> Google</a>
   </div>
-  <p class="hint">Google <b>redirect_uri_mismatch</b> көрсетсе — клиент түрі Desktop. Сайт үшін <a href="/google-setup">Web application жасаңыз</a>.</p>
-  <p><a href="/register">Аккаунт жоқ па? Тіркелу</a></p>
+  <p class="hint"><a href="/register">Аккаунт жоқ па? Тіркелу</a></p>
 </form>
 {% endblock %}

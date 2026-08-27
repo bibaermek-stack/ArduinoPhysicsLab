@@ -96,23 +96,26 @@ def _require_account(account: AccountRecord | None) -> AccountRecord | RedirectR
 
 
 @router.get("/", response_class=HTMLResponse, response_model=None)
-def home(request: Request) -> Response:
-    """Басты бет дерекқорсыз — Railway healthcheck `/` болса да 200.
-
-    Google Web клиент origin-ді redirect URI ретінде тіркегендіктен
-    callback `/`-ға келеді; кодты API өңдеушісіне жібереміз.
-    """
+def home(
+    request: Request,
+    account: AccountRecord | None = Depends(get_web_account),
+) -> Response:
+    """Google callback origin-ге келсе API өңдеушісіне жібереміз."""
     if request.query_params.get("code"):
         return RedirectResponse(
             f"/api/v1/auth/google/callback?{request.url.query}",
             status_code=307,
         )
-    return templates.TemplateResponse(request, "home.html", {"account": None})
+    return templates.TemplateResponse(request, "home.html", {"account": account})
 
 
 @router.get("/login", response_class=HTMLResponse)
-def login_form(request: Request, error: str = "") -> HTMLResponse:
-    return templates.TemplateResponse(request, "login.html", {"error": error})
+def login_form(
+    request: Request,
+    account: AccountRecord | None = Depends(get_web_account),
+    error: str = "",
+) -> HTMLResponse:
+    return templates.TemplateResponse(request, "login.html", {"error": error, "account": account})
 
 
 @router.post("/login")
@@ -134,8 +137,12 @@ def login_submit(
 
 
 @router.get("/register", response_class=HTMLResponse)
-def register_form(request: Request, error: str = "") -> HTMLResponse:
-    return templates.TemplateResponse(request, "register.html", {"error": error})
+def register_form(
+    request: Request,
+    account: AccountRecord | None = Depends(get_web_account),
+    error: str = "",
+) -> HTMLResponse:
+    return templates.TemplateResponse(request, "register.html", {"error": error, "account": account})
 
 
 @router.post("/register")
@@ -165,14 +172,17 @@ def google_web() -> RedirectResponse:
 
 
 @router.get("/google-setup", response_class=HTMLResponse)
-def google_setup(request: Request) -> HTMLResponse:
+def google_setup(
+    request: Request,
+    account: AccountRecord | None = Depends(get_web_account),
+) -> HTMLResponse:
     from server.app.api.accounts import _google_redirect_uri
 
     uri = _google_redirect_uri()
     return templates.TemplateResponse(
         request,
         "google_setup.html",
-        {"redirect_uri": uri, "origin": uri.rsplit("/api/", 1)[0], "account": None},
+        {"redirect_uri": uri, "origin": uri.rsplit("/api/", 1)[0], "account": account},
     )
 
 

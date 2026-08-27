@@ -1,17 +1,42 @@
 {% extends "base.html" %}
 {% block body %}
 <section class="hero">
+  <span class="kicker">Мектеп физика зертханасы</span>
   <h1>Цифрлық физика зертханасы енді желіде</h1>
-  <p>Email немесе Google арқылы кіріңіз, мұғалім не оқушы болыңыз, өз ID-ңызбен табысыңыз және зертханалық деректерді ортақтасыңыз.</p>
+  <p class="lead">Email немесе Google арқылы кіріңіз, мұғалім не оқушы болыңыз, өз ID-ңызбен табысыңыз. Windows қолданбасы Arduino датчиктерімен жұмыс істейді және осы серверге синхрондалады.</p>
   <div class="actions">
     {% if account %}
       <a class="btn btn-lab" href="/app">Кабинетке өту</a>
+      <a class="btn btn-ghost" href="/download">Windows .exe жүктеу</a>
     {% else %}
       <a class="btn btn-lab" href="/register">Тіркелу</a>
       <a class="btn btn-ghost" href="/login">Кіру</a>
-      <a class="btn btn-google" href="/google">Google арқылы кіру</a>
-      <a class="btn btn-lab" href="/download">Windows .exe жүктеу</a>
+      <a class="btn btn-google" href="/google"><span class="gmark"></span> Google арқылы кіру</a>
     {% endif %}
   </div>
 </section>
+<section class="feature-grid">
+  <article class="feature">
+    <h3>Аккаунт</h3>
+    <p>Email немесе Google. Әр адамға бірегей ID беріледі: мұғалімге T-…, оқушыға S-…</p>
+  </article>
+  <article class="feature">
+    <h3>Байланыс</h3>
+    <p>ID бойынша іздеу, мұғалім/оқушы өтініші және оқушылар арасында дос сұрау.</p>
+  </article>
+  <article class="feature">
+    <h3>Windows қолданбасы</h3>
+    <p>Компьютердегі .exe Arduino-мен өлшейді, ал аккаунт осы сайтпен ортақ.</p>
+  </article>
+</section>
+{% if not account %}
+<section class="card">
+  <h2>Бастау</h2>
+  <p class="lead">Алдымен аккаунт ашыңыз, рөл таңдаңыз, сосын Windows zip-ті жүктеп зертхананы ашыңыз.</p>
+  <div class="actions">
+    <a class="btn btn-lab" href="/register">Аккаунт ашу</a>
+    <a class="btn btn-accent" href="/download">.exe жүктеу</a>
+  </div>
+</section>
+{% endif %}
 {% endblock %}

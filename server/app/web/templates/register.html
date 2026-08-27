@@ -2,18 +2,20 @@
 {% block title %}Тіркелу · Arduino Physics Lab{% endblock %}
 {% block body %}
 <form class="auth" method="post" action="/register">
+  <span class="kicker">Аккаунт</span>
   <h1>Тіркелу</h1>
+  <p>Кейін мұғалім немесе оқушы рөлін таңдайсыз.</p>
   {% if error %}<p class="error">{{ error }}</p>{% endif %}
   <label>Аты-жөні</label>
-  <input type="text" name="display_name" required>
+  <input type="text" name="display_name" required autocomplete="name">
   <label>Email</label>
-  <input type="email" name="email" required>
+  <input type="email" name="email" required autocomplete="email">
   <label>Құпия сөз (кемінде 6 таңба)</label>
-  <input type="password" name="password" minlength="6" required>
+  <input type="password" name="password" minlength="6" required autocomplete="new-password">
   <div class="actions">
     <button class="btn btn-lab" type="submit">Тіркелу</button>
-    <a class="btn btn-google" href="/google">Google</a>
+    <a class="btn btn-google" href="/google"><span class="gmark"></span> Google</a>
   </div>
-  <p class="hint">Google істемесе email арқылы тіркеліңіз. Web клиент үшін <a href="/google-setup">баптау</a>.</p>
+  <p class="hint"><a href="/login">Аккаунт бар ма? Кіру</a></p>
 </form>
 {% endblock %}

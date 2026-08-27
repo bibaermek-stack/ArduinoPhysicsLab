@@ -28,6 +28,8 @@ def test_home_page_renders(client) -> None:
     assert response.status_code == 200
     assert "Arduino Physics Lab" in response.text
     assert "Тіркелу" in response.text
+    assert "Windows қолданбасы" in response.text
+    assert "feature-grid" in response.text
 
 
 def test_register_login_and_choose_role(client) -> None:
