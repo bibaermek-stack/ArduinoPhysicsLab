@@ -92,4 +92,5 @@ app.include_router(people.router, prefix="/api/v1")
 app.include_router(sync.router, prefix="/api/v1")
 
 _static_dir = Path(__file__).resolve().parent / "web" / "static"
-app.mount("/static", StaticFiles(directory=str(_static_dir)), name="static")
+if _static_dir.is_dir():
+    app.mount("/static", StaticFiles(directory=str(_static_dir)), name="static")

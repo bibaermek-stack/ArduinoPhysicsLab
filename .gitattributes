@@ -1,0 +1,4 @@
+Procfile text eol=lf
+Dockerfile text eol=lf
+start.sh text eol=lf
+*.toml text eol=lf
