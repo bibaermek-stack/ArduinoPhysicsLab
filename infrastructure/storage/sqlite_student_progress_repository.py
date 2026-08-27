@@ -158,7 +158,7 @@ class SqliteStudentProgressRepository(IStudentProgressRepository):
             """
             SELECT session_id FROM session_student_link
             WHERE student_id = ? AND experiment_id = ?
-            ORDER BY linked_at DESC LIMIT 1
+            ORDER BY linked_at DESC, rowid DESC LIMIT 1
             """,
             (student_id, experiment_id),
         ).fetchone()
@@ -296,20 +296,27 @@ class SqliteStudentProgressRepository(IStudentProgressRepository):
         for classroom in self._classroom_repository.list_active():
             if allowed_classroom_ids is not None and classroom.id not in allowed_classroom_ids:
                 continue
+            # § "linked_at" секундтан кіші дәлдікте жазылады (§ Race
+            # condition түзетуі) — екі сессия БІРДЕЙ миллисекундта
+            # құрылса, ``ORDER BY latest DESC`` жалғыз өзі реттеуді
+            # КЕПІЛДЕМЕЙДІ (SQLite тең мәндерде анықталмаған ретпен
+            # қайтарады). ``MAX(rowid)`` (кірістіру реті бойынша
+            # монотонды өсетін implicit баған) екінші тиек-бұзушы
+            # ретінде қосылды.
             row = self._connection.execute(
                 """
-                SELECT experiment_id, MAX(linked_at) AS latest
+                SELECT experiment_id, MAX(linked_at) AS latest, MAX(rowid) AS latest_rowid
                 FROM session_student_link
                 WHERE classroom_id = ?
                 GROUP BY experiment_id
-                ORDER BY latest DESC
+                ORDER BY latest DESC, latest_rowid DESC
                 LIMIT 1
                 """,
                 (classroom.id,),
             ).fetchone()
             if row is None:
                 continue  # § "DO NOT fabricate activity" — белсенділігі жоқ сынып мүлде қосылмайды
-            experiment_id, latest_iso = row
+            experiment_id, latest_iso, _latest_rowid = row
             last_activity_at = datetime.fromisoformat(latest_iso) if latest_iso else None
 
             students = self._student_repository.list_by_classroom(classroom.id)
