@@ -12,6 +12,9 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QSizePolicy, QWidget
 
 from ui.navigation.navigation_config import NAVIGATION_ITEMS
+from ui.themes.theme_manager import COLOR_ACCENT
+
+_AVATAR_SIZE = 28
 
 _NAV_TITLES = {item.key: item.title for item in NAVIGATION_ITEMS}
 _ROUTE_ALIASES = {
@@ -64,12 +67,23 @@ class AppHeader(QWidget):
         )
         self._user_label.hide()
 
+        self._avatar_label = QLabel(self)
+        self._avatar_label.setObjectName("AppHeaderAvatar")
+        self._avatar_label.setFixedSize(_AVATAR_SIZE, _AVATAR_SIZE)
+        self._avatar_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._avatar_label.setStyleSheet(
+            f"background-color: {COLOR_ACCENT}; color: #FFFFFF; "
+            f"border-radius: {_AVATAR_SIZE // 2}px; font-weight: 600;"
+        )
+        self._avatar_label.hide()
+
         layout = QHBoxLayout(self)
         layout.setContentsMargins(16, 8, 16, 8)
         layout.setSpacing(10)
         layout.addWidget(self._title_label, 1)
         layout.addWidget(self._role_chip, 0)
         layout.addWidget(self._user_label, 0)
+        layout.addWidget(self._avatar_label, 0)
 
     def set_title(self, title: str) -> None:
         self._title_label.setText(title)
@@ -84,6 +98,10 @@ class AppHeader(QWidget):
         if name:
             self._user_label.setText(name)
             self._user_label.show()
+            self._avatar_label.setText(name.strip()[:1].upper())
+            self._avatar_label.show()
         else:
             self._user_label.clear()
             self._user_label.hide()
+            self._avatar_label.clear()
+            self._avatar_label.hide()

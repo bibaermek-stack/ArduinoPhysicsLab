@@ -174,7 +174,7 @@ FONT_FAMILY = '"Segoe UI Variable", "Segoe UI", sans-serif'
 # — тек түс мәндері.
 # Windows 11 Fluent 2 / mica dark — Custom QSS (кітапханасыз).
 COLOR_BACKGROUND = "#1C1C1E"
-COLOR_SURFACE = "#2C2C2E"
+COLOR_SURFACE = "#333336"
 COLOR_SIDEBAR_BACKGROUND = "#141416"
 COLOR_INPUT = "#3A3A3C"
 COLOR_GLASS_TOP = "#3A3A42"
@@ -239,7 +239,7 @@ _current_theme = THEME_DARK
 _PALETTES: dict[str, dict[str, str]] = {
     THEME_DARK: {
         "COLOR_BACKGROUND": "#1C1C1E",
-        "COLOR_SURFACE": "#2C2C2E",
+        "COLOR_SURFACE": "#333336",
         "COLOR_SIDEBAR_BACKGROUND": "#141416",
         "COLOR_SIDEBAR_START": "#101012",
         "COLOR_INPUT": "#3A3A3C",
@@ -269,7 +269,7 @@ _PALETTES: dict[str, dict[str, str]] = {
         "COLOR_GRAPH_GRID": "#3F3F46",
         "COLOR_GRAPH_AXIS": "#F5F5F5",
         "COLOR_GRAPH_TEXT": "#F5F5F5",
-        "COLOR_GLASS_BORDER": "rgba(255, 255, 255, 36)",
+        "COLOR_GLASS_BORDER": "rgba(255, 255, 255, 85)",
     },
     THEME_LIGHT: {
         "COLOR_BACKGROUND": "#EEF1F6",
@@ -303,7 +303,7 @@ _PALETTES: dict[str, dict[str, str]] = {
         "COLOR_GRAPH_GRID": "#CBD2DC",
         "COLOR_GRAPH_AXIS": "#111827",
         "COLOR_GRAPH_TEXT": "#111827",
-        "COLOR_GLASS_BORDER": "rgba(15, 23, 42, 22)",
+        "COLOR_GLASS_BORDER": "rgba(15, 23, 42, 55)",
     },
 }
 

@@ -56,7 +56,13 @@ from domain.services.teacher_scope import resolve_allowed_classroom_ids
 from infrastructure.storage.sqlite_active_teacher_repository import SqliteActiveTeacherRepository
 from infrastructure.storage.sqlite_teacher_repository import SqliteTeacherRepository
 from modules.module_registry import ModuleRegistry
-from ui.themes.theme_manager import COLOR_ERROR, COLOR_SUCCESS, COLOR_WARNING
+from ui.themes.theme_manager import (
+    COLOR_ACCENT,
+    COLOR_ERROR,
+    COLOR_INFO,
+    COLOR_SUCCESS,
+    COLOR_WARNING,
+)
 from ui.widgets.class_activity_carousel import (
     ActivityCardData,
     ClassActivityCarousel,
@@ -71,6 +77,20 @@ _PAGE_TITLE = "Бақылау тақтасы"
 _ICON_DIR = resource_path("Design", "02_FluentIcons", "svg")
 _ICON_RENDER_PX = 64
 _QUICK_ACTION_ICON_PX = 16
+_SUMMARY_ICON_BADGE_PX = 36
+_SUMMARY_ICON_PX = 18
+_SUMMARY_ICON_FILL = b'fill="#212121"'
+
+# § "KEEP the existing 4 summary cards... Do not enlarge them" (Phase 13) —
+# бір реттік accent-tinted badge, карточка биіктігін ӨЗГЕРТПЕЙДІ (§
+# ``_build_summary_card`` HBox layout, badge value+caption бағанасымен
+# қатар, ЖОҒАРЫДА ЕМЕС).
+_SUMMARY_CARD_ICON: dict[str, tuple[str, str]] = {
+    "classrooms": ("ic_fluent_book_24_regular.svg", COLOR_ACCENT),
+    "students": ("ic_fluent_person_24_regular.svg", COLOR_INFO),
+    "completed": ("ic_fluent_clipboard_data_bar_24_regular.svg", COLOR_SUCCESS),
+    "awaiting_review": ("ic_fluent_question_circle_24_regular.svg", COLOR_WARNING),
+}
 
 _EMPTY_RESULTS_TITLE = "Әзірге нәтижелер жоқ"
 _EMPTY_RESULTS_HINT = "Оқушылар зертханалық жұмыстарды аяқтағаннан кейін нәтижелер осы жерде көрінеді."
@@ -146,6 +166,21 @@ def _render_svg_pixmap(svg_bytes: bytes) -> QPixmap:
     renderer.render(painter)
     painter.end()
     pixmap.setDevicePixelRatio(_ICON_RENDER_PX / _QUICK_ACTION_ICON_PX)
+    return pixmap
+
+
+@lru_cache(maxsize=None)
+def _summary_icon_pixmap(svg_filename: str) -> QPixmap:
+    """Summary badge үшін ақ (§ түсті фонда контраст) иконка pixmap-ы."""
+    svg_bytes = (_ICON_DIR / svg_filename).read_bytes()
+    svg_bytes = svg_bytes.replace(_SUMMARY_ICON_FILL, b'fill="#FFFFFF"')
+    renderer = QSvgRenderer(QByteArray(svg_bytes))
+    pixmap = QPixmap(_ICON_RENDER_PX, _ICON_RENDER_PX)
+    pixmap.fill(Qt.GlobalColor.transparent)
+    painter = QPainter(pixmap)
+    renderer.render(painter)
+    painter.end()
+    pixmap.setDevicePixelRatio(_ICON_RENDER_PX / _SUMMARY_ICON_PX)
     return pixmap
 
 
@@ -237,9 +272,26 @@ class TeacherDashboardPage(QWidget):
         caption_label.setProperty("role", "cardLabel")
         _make_background_transparent(caption_label)
 
-        card_layout = QVBoxLayout(card)
-        card_layout.addWidget(value_label)
-        card_layout.addWidget(caption_label)
+        text_column = QVBoxLayout()
+        text_column.addWidget(value_label)
+        text_column.addWidget(caption_label)
+
+        # § "KEEP the existing 4 summary cards... Do not enlarge them" —
+        # badge мәтін бағанасымен ҚАТАР (жоғарыда ЕМЕС), карточка
+        # биіктігі ӨЗГЕРМЕЙДІ (badge value+caption-дың жалпы биіктігінен
+        # кіші).
+        icon_file, accent = _SUMMARY_CARD_ICON[key]
+        icon_badge = QLabel(card)
+        icon_badge.setFixedSize(_SUMMARY_ICON_BADGE_PX, _SUMMARY_ICON_BADGE_PX)
+        icon_badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        icon_badge.setPixmap(_summary_icon_pixmap(icon_file))
+        icon_badge.setStyleSheet(
+            f"background-color: {accent}; border-radius: {_SUMMARY_ICON_BADGE_PX // 2}px;"
+        )
+
+        card_layout = QHBoxLayout(card)
+        card_layout.addLayout(text_column, 1)
+        card_layout.addWidget(icon_badge, 0, Qt.AlignmentFlag.AlignVCenter)
         return card
 
     # ---- "Бүгінгі белсенділік" ---------------------------------------------
