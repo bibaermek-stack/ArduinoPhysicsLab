@@ -32,8 +32,16 @@ class Base(DeclarativeBase):
 def get_database_url() -> str:
     """§25 "Configuration": ешбір localhost-қа ғана бекітілмеген —
     ``DATABASE_URL`` орнатылса, соны қолданады (Postgres production
-    үшін), әйтпесе жергілікті файл-негізді SQLite-ке құлайды."""
-    return os.environ.get(_ENV_VAR_NAME) or f"sqlite:///{_DEFAULT_SQLITE_PATH}"
+    үшін), әйтпесе жергілікті файл-негізді SQLite-ке құлайды.
+
+    Railway ``postgres://`` схемасын береді; SQLAlchemy + psycopg2
+    ``postgresql+psycopg2://`` күтеді."""
+    url = os.environ.get(_ENV_VAR_NAME) or f"sqlite:///{_DEFAULT_SQLITE_PATH}"
+    if url.startswith("postgres://"):
+        return "postgresql+psycopg2://" + url[len("postgres://") :]
+    if url.startswith("postgresql://"):
+        return "postgresql+psycopg2://" + url[len("postgresql://") :]
+    return url
 
 
 def create_session_factory(database_url: str | None = None) -> sessionmaker[Session]:
