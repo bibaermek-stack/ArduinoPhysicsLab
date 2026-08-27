@@ -48,6 +48,14 @@ def test_dark_palette_uses_dark_background() -> None:
     assert "#1C1C1E" in sheet
 
 
+def test_stylesheet_includes_header_dialog_and_tooltip_chrome() -> None:
+    sheet = ThemeManager().build_stylesheet()
+    assert "QWidget#AppHeader" in sheet
+    assert "QToolTip" in sheet
+    assert "QDialog, QMessageBox" in sheet
+    assert "QMenu" in sheet
+
+
 def test_apply_application_theme_sets_app_stylesheet(qt_application: QApplication) -> None:
     apply_application_theme(THEME_LIGHT)
     sheet = qt_application.styleSheet()

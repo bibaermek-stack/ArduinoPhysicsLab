@@ -14,6 +14,12 @@ from PySide6.QtWidgets import (
 )
 
 from domain.entities.connected_device import ConnectedDevice
+from ui.themes.theme_manager import (
+    COLOR_ERROR,
+    COLOR_SUCCESS,
+    COLOR_TEXT_SECONDARY,
+    COLOR_WARNING,
+)
 
 _SENSOR_TYPE_NAMES_KK: dict[str, str] = {
     "VOLTAGE": "Кернеу датчигі",
@@ -35,10 +41,10 @@ _STATUS_TEXT_KK: dict[str, str] = {
     STATUS_DISCONNECTED: "Байланыс үзілді",
 }
 _STATUS_COLOR: dict[str, str] = {
-    STATUS_CONNECTED: "#2e7d32",
-    STATUS_IDENTIFYING: "#f9a825",
-    STATUS_ERROR: "#c62828",
-    STATUS_DISCONNECTED: "#9e9e9e",
+    STATUS_CONNECTED: COLOR_SUCCESS,
+    STATUS_IDENTIFYING: COLOR_WARNING,
+    STATUS_ERROR: COLOR_ERROR,
+    STATUS_DISCONNECTED: COLOR_TEXT_SECONDARY,
 }
 
 _CARD_WIDTH = 220

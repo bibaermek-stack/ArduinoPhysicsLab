@@ -1070,6 +1070,30 @@ class ThemeManager:
             background-color: {COLOR_SELECTED};
         }}
 
+        QWidget#AppHeader {{
+            background-color: {COLOR_SURFACE};
+            border-bottom: 1px solid {COLOR_GLASS_BORDER};
+        }}
+        QLabel#AppHeaderTitle {{
+            background-color: transparent;
+            color: {COLOR_TEXT_PRIMARY};
+            font-weight: {FONT_WEIGHT_SEMIBOLD};
+            font-size: {FONT_SIZE_CARD_TITLE}px;
+        }}
+        QLabel#AppHeaderUser {{
+            background-color: transparent;
+            color: {COLOR_TEXT_SECONDARY};
+            font-size: {FONT_SIZE_CAPTION}px;
+        }}
+        QLabel#AppHeaderRoleChip {{
+            background-color: {COLOR_ACCENT_SUBTLE};
+            color: {COLOR_ACCENT};
+            border-radius: {RADIUS_SM}px;
+            padding: 2px 10px;
+            font-size: {FONT_SIZE_SMALL}px;
+            font-weight: {FONT_WEIGHT_SEMIBOLD};
+        }}
+
         QFrame#HomeHero {{
             background-color: qlineargradient(x1:0, y1:0, x2:1, y2:1,
                 stop:0 {COLOR_GLASS_TOP}, stop:1 {COLOR_GLASS_BOTTOM});
@@ -1099,6 +1123,10 @@ class ThemeManager:
             border: 1px solid {COLOR_GLASS_BORDER};
             border-left: 3px solid {COLOR_ACCENT};
             border-radius: {RADIUS_LG}px;
+        }}
+        QFrame#HomeSummaryCard:hover {{
+            border-color: {COLOR_ACCENT};
+            border-left: 3px solid {COLOR_ACCENT};
         }}
 
         QFrame#HomeModuleCard {{
@@ -1389,21 +1417,22 @@ class ThemeManager:
            TABLE SYSTEM
            ================================================================== */
 
-        QTableView {{
+        QTableView, QTableWidget {{
             background-color: {COLOR_SURFACE};
-            gridline-color: {COLOR_BORDER};
+            gridline-color: {COLOR_BORDER_SUBTLE};
             border: 1px solid {COLOR_BORDER};
+            border-radius: {RADIUS_MD}px;
             alternate-background-color: {COLOR_BACKGROUND};
             selection-background-color: {COLOR_ACCENT};
             selection-color: {COLOR_ACCENT_TEXT};
         }}
-        QTableView::item {{
+        QTableView::item, QTableWidget::item {{
             padding: 3px 6px;
         }}
-        QTableView::item:hover {{
+        QTableView::item:hover, QTableWidget::item:hover {{
             background-color: {COLOR_HOVER};
         }}
-        QTableView::item:selected {{
+        QTableView::item:selected, QTableWidget::item:selected {{
             background-color: {COLOR_ACCENT};
             color: {COLOR_ACCENT_TEXT};
         }}
@@ -1522,7 +1551,9 @@ class ThemeManager:
         DataJournalPage, SettingsPage, HelpPage, RoleSelectionPage,
         ClassManagementPage, StudentSelectionPage, StudentResultsPage,
         TeacherDashboardPage, TeacherFeedbackReviewPage, PlaceholderPage,
-        StudentFeedbackPage, ResultsPage, AnalyticsPage, QuestionBankPage {{
+        StudentFeedbackPage, ResultsPage, AnalyticsPage, QuestionBankPage,
+        PeoplePage, ProfilePage, TeacherManagementPage,
+        ClassroomMonitoringPage, StudentMonitoringDetailPage {{
             background-color: transparent;
         }}
 
@@ -1671,6 +1702,9 @@ class ThemeManager:
             border: 1px solid {COLOR_GLASS_BORDER};
             border-radius: {RADIUS_LG}px;
         }}
+        QFrame#DashboardPanel:hover, QFrame#GraphCard:hover, QFrame#HomeHero:hover {{
+            border-color: {COLOR_ACCENT};
+        }}
         QFrame#ActivitySlide {{
             background-color: transparent;
             border: none;
@@ -1720,5 +1754,53 @@ class ThemeManager:
         QProgressBar#DashboardActivityBar::chunk {{
             background-color: {COLOR_ACCENT};
             border-radius: 4px;
+        }}
+
+        QProgressBar {{
+            border: none;
+            border-radius: 6px;
+            background-color: {COLOR_BORDER_SUBTLE};
+            text-align: center;
+            color: {COLOR_TEXT_PRIMARY};
+            min-height: 8px;
+        }}
+        QProgressBar::chunk {{
+            background-color: {COLOR_ACCENT};
+            border-radius: 6px;
+        }}
+
+        QDialog, QMessageBox {{
+            background-color: {COLOR_SURFACE};
+            color: {COLOR_TEXT_PRIMARY};
+        }}
+        QMessageBox QLabel {{
+            background-color: transparent;
+            color: {COLOR_TEXT_PRIMARY};
+        }}
+        QToolTip {{
+            background-color: {COLOR_SURFACE};
+            color: {COLOR_TEXT_PRIMARY};
+            border: 1px solid {COLOR_BORDER};
+            border-radius: {RADIUS_SM}px;
+            padding: 6px 10px;
+        }}
+        QMenu {{
+            background-color: {COLOR_SURFACE};
+            color: {COLOR_TEXT_PRIMARY};
+            border: 1px solid {COLOR_BORDER};
+            border-radius: {RADIUS_MD}px;
+            padding: 4px;
+        }}
+        QMenu::item {{
+            padding: 6px 16px;
+            border-radius: {RADIUS_SM}px;
+        }}
+        QMenu::item:selected {{
+            background-color: {COLOR_HOVER};
+        }}
+        QMenu::separator {{
+            height: 1px;
+            background: {COLOR_BORDER_SUBTLE};
+            margin: 4px 8px;
         }}
         """

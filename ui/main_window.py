@@ -95,6 +95,7 @@ from ui.pages.teacher_dashboard_page import TeacherDashboardPage
 from ui.pages.teacher_feedback_review_page import TeacherFeedbackReviewPage
 from ui.pages.teacher_management_page import TeacherManagementPage
 from ui.themes.theme_manager import apply_application_theme
+from ui.widgets.app_header import AppHeader, header_visible_for_route, title_for_route
 from ui.widgets.sidebar import Sidebar
 from ui.widgets.workspace_background import WorkspaceBackdrop
 
@@ -400,7 +401,10 @@ class MainWindow(QMainWindow):
         self._workspace_backdrop = WorkspaceBackdrop(self)
         backdrop_layout = QVBoxLayout(self._workspace_backdrop)
         backdrop_layout.setContentsMargins(0, 0, 0, 0)
-        backdrop_layout.addWidget(self._stack)
+        backdrop_layout.setSpacing(0)
+        self._app_header = AppHeader(self._workspace_backdrop)
+        backdrop_layout.addWidget(self._app_header)
+        backdrop_layout.addWidget(self._stack, 1)
 
         # Phase 41: Sidebar/жұмыс кеңістігі арасында сүйрелетін бөлгіш.
         # ``setChildrenCollapsible(False)`` — сүйреумен КЕЗДЕЙСОҚ толық
@@ -738,6 +742,7 @@ class MainWindow(QMainWindow):
         # alter sidebar width"). Qt QSplitter жасырын пейнаның тұтқасын
         # автоматты жасырады — "ghost divider" қалмайды.
         self._sidebar.setVisible(route_name != "role_selection")
+        self._update_app_header(route_name)
 
     def _on_sidebar_collapse_toggled(self, collapsed: bool) -> None:
         """Sidebar батырмасы жаңа collapsed күйін хабарлағанда, splitter-дің
@@ -868,6 +873,7 @@ class MainWindow(QMainWindow):
             self._sidebar.set_active_student_text(None)
             self._experiment_workspace_page.set_active_student_header_text(None)
             self._home_page.set_student_context(None, None, None)
+            self._update_app_header_user()
             return
 
         context = self.active_student_repository.get()
@@ -875,6 +881,7 @@ class MainWindow(QMainWindow):
             self._sidebar.set_active_student_text(None)
             self._experiment_workspace_page.set_active_student_header_text(None)
             self._home_page.set_student_context(None, None, None)
+            self._update_app_header_user()
             return
 
         student = self.student_repository.get(context.student_id)
@@ -883,6 +890,7 @@ class MainWindow(QMainWindow):
             self._sidebar.set_active_student_text(None)
             self._experiment_workspace_page.set_active_student_header_text(None)
             self._home_page.set_student_context(None, None, None)
+            self._update_app_header_user()
             return
 
         classroom_name = classroom.name if classroom is not None else "—"
@@ -894,6 +902,7 @@ class MainWindow(QMainWindow):
             self._module_registry, self.student_progress_repository, student.id
         )
         self._home_page.set_student_context(student.display_name, classroom_name, summary)
+        self._update_app_header_user()
 
     def _refresh_active_teacher_display(self) -> None:
         """§5 "Teacher Dashboard": Sidebar-дағы аутентификацияланған
@@ -904,16 +913,40 @@ class MainWindow(QMainWindow):
         """
         if self._current_role is not UserRole.TEACHER:
             self._sidebar.set_active_teacher_text(None)
+            self._update_app_header_user()
             return
         context = self.active_teacher_repository.get()
         if context is None:
             self._sidebar.set_active_teacher_text(None)
+            self._update_app_header_user()
             return
         teacher = self.teacher_repository.get(context.teacher_id)
         if teacher is None:
             self._sidebar.set_active_teacher_text(None)
+            self._update_app_header_user()
             return
         self._sidebar.set_active_teacher_text(teacher.full_name)
+        self._update_app_header_user()
+
+    def _update_app_header(self, route_name: str | None = None) -> None:
+        route = route_name or getattr(self, "_current_route_name", "")
+        self._app_header.setVisible(header_visible_for_route(route))
+        if not header_visible_for_route(route):
+            return
+        self._app_header.set_title(title_for_route(route))
+        self._update_app_header_user()
+
+    def _update_app_header_user(self) -> None:
+        if self._current_role is UserRole.TEACHER:
+            name = self._sidebar._active_teacher_label.text().strip() or None
+            self._app_header.set_user(name, "Мұғалім")
+            return
+        if self._current_role is UserRole.STUDENT:
+            text = self._sidebar._active_student_label.text().strip()
+            name = text.split("\n", 1)[0].replace("Оқушы:", "").strip() if text else None
+            self._app_header.set_user(name or None, "Оқушы")
+            return
+        self._app_header.set_user(None, None)
 
     def _on_teachers_changed(self) -> None:
         """``TeacherManagementPage.teachers_changed`` — мұғалім қосылған/

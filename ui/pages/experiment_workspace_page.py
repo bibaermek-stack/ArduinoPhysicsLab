@@ -74,7 +74,13 @@ from ui.widgets.experiment_workflow_indicator import (
 from ui.widgets.measurement_summary_card import MeasurementSummaryCard
 from ui.widgets.motion import fade_label_color
 from ui.widgets.simplified_device_connect_dialog import SimplifiedDeviceConnectDialog
-from ui.themes.theme_manager import COLOR_ACCENT
+from ui.themes.theme_manager import (
+    COLOR_ACCENT,
+    COLOR_SUCCESS,
+    COLOR_TEXT_MUTED,
+    COLOR_TEXT_SECONDARY,
+    COLOR_WARNING,
+)
 from ui.widgets.measurement_workspace import MeasurementWorkspace
 
 _ControllerFactory = Callable[[ExperimentDefinition], ExperimentController]
@@ -92,11 +98,11 @@ _STATUS_CONFIG: dict[str, tuple[str, str]] = {
     # Phase 32.1: көпше түрге ауыстырылды — endi workspace hardware
     # жоқ кезде де толық көрінетіндіктен, бұл статус енді нақты
     # required-device checklist-пен (бірнеше сенсор) бірге көрінеді.
-    _STATUS_WAITING: ("Құрылғылар күтілуде", "#9AA1AC"),
-    _STATUS_READY: ("Дайын", "#2E7D32"),
-    _STATUS_STARTING: ("Іске қосылуда...", "#F9A825"),
+    _STATUS_WAITING: ("Құрылғылар күтілуде", COLOR_TEXT_SECONDARY),
+    _STATUS_READY: ("Дайын", COLOR_SUCCESS),
+    _STATUS_STARTING: ("Іске қосылуда...", COLOR_WARNING),
     _STATUS_RUNNING: ("Өлшеу жүріп жатыр", COLOR_ACCENT),
-    _STATUS_STOPPED: ("Тоқтатылды", "#606772"),
+    _STATUS_STOPPED: ("Тоқтатылды", COLOR_TEXT_MUTED),
 }
 # Elapsed-time readout UI refresh жиілігі ("Ток жұмысы мен қуаты"-дағы
 # "УАҚЫТ" картасы) — 10Hz жеткілікті (spec §4/§18), authoritative clock

@@ -40,14 +40,8 @@ from ui.themes.theme_manager import (
     ANIMATION_BUTTON_MS,
     ANIMATION_FADE_MS,
     ANIMATION_HOVER_MS,
-    COLOR_ACCENT,
-    COLOR_ACCENT_HOVER,
-    COLOR_ACCENT_PRESSED,
-    COLOR_ACCENT_SUBTLE,
-    COLOR_HOVER,
-    COLOR_SELECTED,
-    COLOR_SURFACE,
     MOTION_VALUE_HIGHLIGHT_MS,
+    theme_color,
 )
 
 MOTION_ENABLED = True
@@ -67,22 +61,36 @@ class _Palette:
         self.checked = checked
 
 
-# Sidebar nav батырмасы: §2 "Hover ~120ms / Selected ~150ms / Pressed ~80ms".
-_PALETTES: dict[str, _Palette] = {
-    "SidebarNavButton": _Palette(
-        _TRANSPARENT, QColor(COLOR_HOVER), QColor(COLOR_SELECTED), QColor(COLOR_ACCENT)
-    ),
-    "PrimaryButton": _Palette(
-        QColor(COLOR_ACCENT), QColor(COLOR_ACCENT_HOVER), QColor(COLOR_ACCENT_PRESSED)
-    ),
-}
-# variant="icon" — graph toolbar-дың checkable батырмаларын да қамтиды
-# (§ live_graph.py: pan/zoom/region/т.б. батырмалары ЕСКІ Phase 10/11-де
-# осы variant-ты ҚОЛДАНАДЫ, бөлек интеграция ҚАЖЕТ ЕМЕС).
-_VARIANT_PALETTES: dict[str, _Palette] = {
-    "secondary": _Palette(QColor(COLOR_SURFACE), QColor(COLOR_HOVER), QColor(COLOR_SELECTED)),
-    "icon": _Palette(_TRANSPARENT, QColor(COLOR_HOVER), QColor(COLOR_SELECTED), QColor(COLOR_SELECTED)),
-}
+def _named_palettes() -> dict[str, _Palette]:
+    return {
+        "SidebarNavButton": _Palette(
+            _TRANSPARENT,
+            QColor(theme_color("COLOR_HOVER")),
+            QColor(theme_color("COLOR_SELECTED")),
+            QColor(theme_color("COLOR_ACCENT")),
+        ),
+        "PrimaryButton": _Palette(
+            QColor(theme_color("COLOR_ACCENT")),
+            QColor(theme_color("COLOR_ACCENT_HOVER")),
+            QColor(theme_color("COLOR_ACCENT_PRESSED")),
+        ),
+    }
+
+
+def _variant_palettes() -> dict[str, _Palette]:
+    return {
+        "secondary": _Palette(
+            QColor(theme_color("COLOR_SURFACE")),
+            QColor(theme_color("COLOR_HOVER")),
+            QColor(theme_color("COLOR_SELECTED")),
+        ),
+        "icon": _Palette(
+            _TRANSPARENT,
+            QColor(theme_color("COLOR_HOVER")),
+            QColor(theme_color("COLOR_SELECTED")),
+            QColor(theme_color("COLOR_SELECTED")),
+        ),
+    }
 
 _WATCHED_EVENTS = frozenset(
     {
@@ -95,12 +103,12 @@ _WATCHED_EVENTS = frozenset(
 
 
 def _palette_for(button: QPushButton) -> _Palette | None:
-    palette = _PALETTES.get(button.objectName())
+    palette = _named_palettes().get(button.objectName())
     if palette is not None:
         return palette
     variant = button.property("variant")
     if isinstance(variant, str):
-        return _VARIANT_PALETTES.get(variant)
+        return _variant_palettes().get(variant)
     return None
 
 
@@ -124,7 +132,7 @@ class ButtonMotionFilter(QObject):
         if palette is None or not obj.isEnabled():
             return False
 
-        self._wire_toggled(obj, palette)
+        self._wire_toggled(obj)
 
         et = event.type()
         if et == QEvent.Type.Enter:
@@ -143,17 +151,20 @@ class ButtonMotionFilter(QObject):
             self._animate_to(obj, target, ANIMATION_BUTTON_MS)
         return False
 
-    def _wire_toggled(self, obj: QPushButton, palette: _Palette) -> None:
+    def _wire_toggled(self, obj: QPushButton) -> None:
         key = id(obj)
         if key in self._wired:
             return
         self._wired.add(key)
-        if obj.isCheckable() and palette.checked is not None:
-            obj.toggled.connect(lambda checked, w=obj, p=palette: self._on_toggled(w, p, checked))
+        if obj.isCheckable():
+            obj.toggled.connect(lambda checked, w=obj: self._on_toggled(w, checked))
         obj.destroyed.connect(lambda *_args, k=key: self._forget(k))
 
-    def _on_toggled(self, obj: QPushButton, palette: _Palette, checked: bool) -> None:
+    def _on_toggled(self, obj: QPushButton, checked: bool) -> None:
         if not MOTION_ENABLED:
+            return
+        palette = _palette_for(obj)
+        if palette is None:
             return
         target = palette.checked if checked else (palette.hover if obj.underMouse() else palette.normal)
         self._animate_to(obj, target, ANIMATION_FADE_MS)
@@ -262,11 +273,14 @@ def _apply_text_color(label: QLabel, value: QColor) -> None:
 _value_flash_animations: dict[int, QVariantAnimation] = {}
 _value_flash_last: dict[int, float] = {}
 
-_FLASH_COLOR = QColor(COLOR_ACCENT_SUBTLE)
-_FLASH_TRANSPARENT = QColor(COLOR_ACCENT_SUBTLE)
-_FLASH_TRANSPARENT.setAlpha(0)
-
 _FLASH_MIN_INTERVAL_MS = 250  # § "If measurements update rapidly, suppress per-sample animation"
+
+
+def _flash_colors() -> tuple[QColor, QColor]:
+    color = QColor(theme_color("COLOR_ACCENT_SUBTLE"))
+    transparent = QColor(color)
+    transparent.setAlpha(0)
+    return color, transparent
 
 
 def flash_value_update(
@@ -299,8 +313,9 @@ def flash_value_update(
 
         label.destroyed.connect(_cleanup)
 
+    start, end = _flash_colors()
     anim.stop()
     anim.setDuration(max(1, duration))
-    anim.setStartValue(_FLASH_COLOR)
-    anim.setEndValue(_FLASH_TRANSPARENT)
+    anim.setStartValue(start)
+    anim.setEndValue(end)
     anim.start()
