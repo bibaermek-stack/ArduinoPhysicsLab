@@ -2,12 +2,43 @@
 {% block title %}Google баптау{% endblock %}
 {% block body %}
 <section class="card" style="padding:28px">
-  <h1>Google Console-ға қойылатын URI</h1>
-  <p>OAuth клиент түрі: <b>Web application</b> (Desktop емес).</p>
-  <p><b>Authorized redirect URIs</b> — дәл осы жол:</p>
-  <p class="idpill">{{ redirect_uri }}</p>
-  <p><b>Authorized JavaScript origins</b>:</p>
-  <p class="idpill">{{ origin }}</p>
-  <p>Сақтаған соң 2–5 минут күтіп, <a href="/login">кіру</a> бетінен Google-ды қайта басыңыз.</p>
+  <h1>Google кіру неге істемейді</h1>
+  <p class="error">Қазіргі Client ID — <b>Desktop</b> қосымшаның клиенті. Ол тек <code>localhost</code>-қа рұқсат береді, интернеттегі сайтқа емес. Сондықтан Google <b>redirect_uri_mismatch</b> көрсетеді.</p>
+  <p>Сайт үшін <b>жаңа</b> клиент жасаңыз: түрі міндетті түрде <b>Web application</b>.</p>
+
+  <ol class="steps">
+    <li>Ашыңыз: <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">Google Cloud → Credentials</a></li>
+    <li><b>Create credentials</b> → <b>OAuth client ID</b></li>
+    <li>Application type: <b>Web application</b> (Desktop / iOS / Android емес)</li>
+    <li>Name: <code>Arduino Physics Lab Web</code></li>
+    <li><b>Authorized JavaScript origins</b> — Add URI, дәл осыны қойыңыз:</li>
+  </ol>
+  <p class="idpill" id="originUri">{{ origin }}</p>
+  <p><button class="btn btn-ghost" type="button" onclick="copyId('originUri')">Көшіру</button></p>
+
+  <p><b>Authorized redirect URIs</b> — Add URI, дәл осыны қойыңыз (соңында <code>/</code> жоқ):</p>
+  <p class="idpill" id="redirectUri">{{ redirect_uri }}</p>
+  <p><button class="btn btn-ghost" type="button" onclick="copyId('redirectUri')">Көшіру</button></p>
+
+  <ol class="steps" start="6">
+    <li><b>Create</b> басыңыз. Жаңа <b>Client ID</b> мен <b>Client secret</b> көшіріңіз.</li>
+    <li>Railway → жоба → <b>Variables</b> ішінде ауыстырыңыз:
+      <ul>
+        <li><code>GOOGLE_CLIENT_ID</code> = жаңа Web Client ID</li>
+        <li><code>GOOGLE_CLIENT_SECRET</code> = жаңа Web Client secret</li>
+        <li><code>APL_PUBLIC_BASE_URL</code> = <code>{{ origin }}</code></li>
+      </ul>
+    </li>
+    <li>Сақтаған соң Railway қайта іске қосылады. 1–2 минут күтіп, <a href="/login">кіру</a> бетінен Google-ды қайта басыңыз.</li>
+  </ol>
+
+  <p>Ескі Desktop клиентті сайтқа қоюдың қажеті жоқ — ол ешқашан жұмыс істемейді.</p>
+  <p>Google-сыз кіру үшін <a href="/register">email арқылы тіркеліңіз</a> — бұл жол қазір істейді.</p>
 </section>
+<script>
+function copyId(id) {
+  const text = document.getElementById(id).innerText.trim();
+  navigator.clipboard.writeText(text);
+}
+</script>
 {% endblock %}

@@ -30,6 +30,14 @@ def test_register_login_and_choose_role(client) -> None:
     assert "T-" in app_page.text
 
 
+def test_google_setup_page_shows_web_client_uri(client) -> None:
+    response = client.get("/google-setup")
+    assert response.status_code == 200
+    assert "Web application" in response.text
+    assert "/api/v1/auth/google/callback" in response.text
+    assert "redirect_uri_mismatch" in response.text
+
+
 def test_login_required_for_people(client) -> None:
     response = client.get("/people", follow_redirects=False)
     assert response.status_code == 303

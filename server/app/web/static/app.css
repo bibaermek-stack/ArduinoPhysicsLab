@@ -88,6 +88,9 @@ input, select {
 }
 .error { color: var(--danger); font-size: 14px; }
 .ok { color: var(--ok); font-size: 14px; }
+.hint { color: var(--muted); font-size: 13px; margin-top: 16px; line-height: 1.45; }
+.steps { color: var(--text); line-height: 1.55; padding-left: 20px; }
+.steps li { margin: 8px 0; }
 
 .grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 20px; }
 @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } .hero { padding: 28px 22px; } }
@@ -96,7 +99,8 @@ input, select {
 .stat b { display: block; font-size: 22px; }
 .idpill {
   font-family: ui-monospace, Consolas, monospace;
-  background: #ecfdf8; color: var(--lab-dark); padding: 4px 8px; border-radius: 8px;
+  background: #ecfdf8; color: var(--lab-dark); padding: 8px 10px; border-radius: 8px;
+  display: block; overflow-wrap: anywhere; margin: 8px 0 12px;
 }
 
 .person {
