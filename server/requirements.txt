@@ -14,9 +14,7 @@ pydantic
 # sufficient for symmetric-key signing/verification.
 PyJWT
 
-# Production Postgres driver — NOT required for local dev/tests (SQLite
-# is used by default, § db/session.py). Install only when DATABASE_URL
-# points at a real Postgres instance:
-#   pip install -r requirements-postgres.txt
-# (§ Phase 9 Production Deployment Part J — kept out of this base file
-# so the default SQLite-only install stays small/fast.)
+# Postgres driver is included so Railway/Nixpacks deploys keep working
+# the moment DATABASE_URL is attached. Local SQLite still works if the
+# variable is unset.
+psycopg2-binary

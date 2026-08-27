@@ -23,10 +23,22 @@ from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 _DEFAULT_SQLITE_PATH = Path(__file__).resolve().parents[2] / "arduino_physics_lab_server.db"
 _ENV_VAR_NAME = "DATABASE_URL"
+_PUBLIC_PG_HOST_MARKERS = ("rlwy.net", "railway.app")
 
 
 class Base(DeclarativeBase):
     pass
+
+
+def _with_public_railway_ssl(url: str) -> str:
+    """Railway public proxy (``*.rlwy.net``) TLS талап етеді; ішкі
+    ``*.railway.internal`` хостқа sslmode қосылмайды."""
+    if "sslmode=" in url:
+        return url
+    if any(marker in url for marker in _PUBLIC_PG_HOST_MARKERS):
+        separator = "&" if "?" in url else "?"
+        return f"{url}{separator}sslmode=require"
+    return url
 
 
 def get_database_url() -> str:
@@ -38,16 +50,20 @@ def get_database_url() -> str:
     ``postgresql+psycopg2://`` күтеді."""
     url = os.environ.get(_ENV_VAR_NAME) or f"sqlite:///{_DEFAULT_SQLITE_PATH}"
     if url.startswith("postgres://"):
-        return "postgresql+psycopg2://" + url[len("postgres://") :]
-    if url.startswith("postgresql://"):
-        return "postgresql+psycopg2://" + url[len("postgresql://") :]
+        url = "postgresql+psycopg2://" + url[len("postgres://") :]
+    elif url.startswith("postgresql://"):
+        url = "postgresql+psycopg2://" + url[len("postgresql://") :]
+    if url.startswith("postgresql"):
+        url = _with_public_railway_ssl(url)
     return url
 
 
 def create_session_factory(database_url: str | None = None) -> sessionmaker[Session]:
     url = database_url or get_database_url()
-    connect_args = {"check_same_thread": False} if url.startswith("sqlite") else {}
-    engine = create_engine(url, connect_args=connect_args)
+    engine_kwargs: dict = {"pool_pre_ping": True}
+    if url.startswith("sqlite"):
+        engine_kwargs["connect_args"] = {"check_same_thread": False}
+    engine = create_engine(url, **engine_kwargs)
     Base.metadata.create_all(engine)
     return sessionmaker(bind=engine, autoflush=False, autocommit=False)
 

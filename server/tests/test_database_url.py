@@ -22,3 +22,25 @@ def test_sqlalchemy_postgresql_scheme_gets_psycopg2_driver(monkeypatch) -> None:
         "postgresql://user:pass@host:5432/railway",
     )
     assert get_database_url() == "postgresql+psycopg2://user:pass@host:5432/railway"
+
+
+def test_public_railway_proxy_gets_sslmode(monkeypatch) -> None:
+    monkeypatch.setenv(
+        "DATABASE_URL",
+        "postgres://user:pass@switchyard.proxy.rlwy.net:12345/railway",
+    )
+    assert (
+        get_database_url()
+        == "postgresql+psycopg2://user:pass@switchyard.proxy.rlwy.net:12345/railway?sslmode=require"
+    )
+
+
+def test_internal_railway_host_does_not_force_ssl(monkeypatch) -> None:
+    monkeypatch.setenv(
+        "DATABASE_URL",
+        "postgresql://user:pass@postgres.railway.internal:5432/railway",
+    )
+    assert (
+        get_database_url()
+        == "postgresql+psycopg2://user:pass@postgres.railway.internal:5432/railway"
+    )
