@@ -36,6 +36,8 @@ def _panel_titles(page: SettingsPage) -> list[str]:
     for frame in page.findChildren(QFrame):
         if frame.objectName() != "DashboardPanel":
             continue
+        if frame.isHidden():
+            continue
         for label in frame.findChildren(QLabel):
             if label.property("role") == "cardTitle":
                 titles.append(label.text())
@@ -84,7 +86,7 @@ def test_all_five_sections_present() -> None:
     кейін қосылды."""
     page = SettingsPage()
     titles = _panel_titles(page)
-    assert titles == ["ЖАЛПЫ", "ӨЛШЕУ", "ҚҰРЫЛҒЫЛАР", "ДЕРЕКТЕР", "МҰҒАЛІМДЕР", "БҰЛТТЫҚ СИНХРОНДАУ"]
+    assert titles == ["ЖАЛПЫ", "ӨЛШЕУ", "ҚҰРЫЛҒЫЛАР", "ДЕРЕКТЕР", "МҰҒАЛІМДЕР"]
 
 
 # =====================================================================
@@ -310,10 +312,10 @@ def test_buttons_have_no_instance_level_stylesheet() -> None:
     assert page._reset_button.styleSheet() == ""
 
 
-def test_sync_enabled_checkbox_and_url_field_are_present() -> None:
+def test_cloud_sync_panel_is_hidden() -> None:
     page = SettingsPage()
-    assert page._sync_enabled_checkbox.text() == "Онлайн синхрондауды қосу"
-    assert isinstance(page._sync_url_edit, QLineEdit)
+    assert page._sync_enabled_checkbox.parent().isHidden()
+    assert "БҰЛТТЫҚ СИНХРОНДАУ" not in _panel_titles(page)
 
 
 def test_toggling_sync_enabled_persists_immediately(temp_preferences) -> None:
@@ -371,7 +373,7 @@ def test_1366x768_smoke_layout() -> None:
     page.show()
 
     assert page.width() == 1366
-    assert _panel_titles(page) == ["ЖАЛПЫ", "ӨЛШЕУ", "ҚҰРЫЛҒЫЛАР", "ДЕРЕКТЕР", "МҰҒАЛІМДЕР", "БҰЛТТЫҚ СИНХРОНДАУ"]
+    assert _panel_titles(page) == ["ЖАЛПЫ", "ӨЛШЕУ", "ҚҰРЫЛҒЫЛАР", "ДЕРЕКТЕР", "МҰҒАЛІМДЕР"]
     assert page._reset_button.isVisible()
 
 
@@ -381,7 +383,7 @@ def test_1920x1080_smoke_layout() -> None:
     page.show()
 
     assert page.width() == 1920
-    assert _panel_titles(page) == ["ЖАЛПЫ", "ӨЛШЕУ", "ҚҰРЫЛҒЫЛАР", "ДЕРЕКТЕР", "МҰҒАЛІМДЕР", "БҰЛТТЫҚ СИНХРОНДАУ"]
+    assert _panel_titles(page) == ["ЖАЛПЫ", "ӨЛШЕУ", "ҚҰРЫЛҒЫЛАР", "ДЕРЕКТЕР", "МҰҒАЛІМДЕР"]
     assert page._reset_button.isVisible()
 
 

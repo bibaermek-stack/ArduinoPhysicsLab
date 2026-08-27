@@ -151,7 +151,8 @@ class SettingsPage(QWidget):
         layout.addWidget(self._build_devices_panel())
         layout.addWidget(self._build_data_panel())
         layout.addWidget(self._build_teachers_panel())
-        layout.addWidget(self._build_sync_panel())
+        sync_panel = self._build_sync_panel()
+        sync_panel.hide()
         layout.addWidget(self._reset_button, 0, Qt.AlignmentFlag.AlignLeft)
         layout.addStretch(1)
 
