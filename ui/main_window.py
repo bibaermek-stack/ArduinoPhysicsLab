@@ -94,6 +94,7 @@ from ui.pages.student_results_page import StudentResultsPage
 from ui.pages.teacher_dashboard_page import TeacherDashboardPage
 from ui.pages.teacher_feedback_review_page import TeacherFeedbackReviewPage
 from ui.pages.teacher_management_page import TeacherManagementPage
+from ui.themes.theme_manager import apply_application_theme
 from ui.widgets.sidebar import Sidebar
 from ui.widgets.workspace_background import WorkspaceBackdrop
 
@@ -382,6 +383,7 @@ class MainWindow(QMainWindow):
         self._sidebar.navigate_requested.connect(self._on_sidebar_navigate)
         self._sidebar.switch_role_requested.connect(self._on_switch_role_requested)
         self._sidebar.switch_student_requested.connect(self._on_switch_student_requested)
+        self._sidebar.theme_toggle_requested.connect(self._on_sidebar_theme_toggle)
 
         self._stack = QStackedWidget(self)
         self._stack.setObjectName("WorkspaceStack")
@@ -926,6 +928,12 @@ class MainWindow(QMainWindow):
 
     def _on_theme_changed(self, _name: str) -> None:
         self._sidebar.refresh_theme()
+        self._settings_page.sync_theme_control()
+
+    def _on_sidebar_theme_toggle(self, name: str) -> None:
+        self.app_preferences.set_theme(name)
+        apply_application_theme(name)
+        self._on_theme_changed(name)
 
     def trigger_manual_sync(self) -> None:
         """§15 "Manual Sync": Баптаулар бетіндегі "Қазір синхрондау"

@@ -64,6 +64,10 @@ theme_manager.py``) ЕШҚАШАН осыны қамтамасыз ете алм
 хабарлап, бөлек қаралуы керек.
 """
 
+from __future__ import annotations
+
+import sys
+
 # ==========================================================================
 # SPACING SCALE
 # ==========================================================================
@@ -265,6 +269,7 @@ _PALETTES: dict[str, dict[str, str]] = {
         "COLOR_GRAPH_GRID": "#3F3F46",
         "COLOR_GRAPH_AXIS": "#F5F5F5",
         "COLOR_GRAPH_TEXT": "#F5F5F5",
+        "COLOR_GLASS_BORDER": "rgba(255, 255, 255, 36)",
     },
     THEME_LIGHT: {
         "COLOR_BACKGROUND": "#EEF1F6",
@@ -298,6 +303,7 @@ _PALETTES: dict[str, dict[str, str]] = {
         "COLOR_GRAPH_GRID": "#CBD2DC",
         "COLOR_GRAPH_AXIS": "#111827",
         "COLOR_GRAPH_TEXT": "#111827",
+        "COLOR_GLASS_BORDER": "rgba(15, 23, 42, 22)",
     },
 }
 
@@ -309,6 +315,10 @@ def current_theme() -> str:
 def set_theme(name: str) -> None:
     global _current_theme
     _current_theme = THEME_LIGHT if name == THEME_LIGHT else THEME_DARK
+    pal = _PALETTES[_current_theme]
+    module = sys.modules[__name__]
+    for key, value in pal.items():
+        setattr(module, key, value)
 
 
 def theme_color(name: str) -> str:
@@ -316,6 +326,34 @@ def theme_color(name: str) -> str:
     if name in pal:
         return pal[name]
     return str(globals().get(name, "#888888"))
+
+
+def _style_plot_widget(plot_widget: object, background: str, foreground: str) -> None:
+    set_background = getattr(plot_widget, "setBackground", None)
+    if callable(set_background):
+        set_background(background)
+    get_axis = getattr(plot_widget, "getAxis", None)
+    if callable(get_axis):
+        try:
+            import pyqtgraph as pg
+        except Exception:
+            pg = None
+        for axis_name in ("bottom", "left", "right", "top"):
+            try:
+                axis = get_axis(axis_name)
+                if pg is not None:
+                    axis.setPen(pg.mkPen(foreground))
+                axis.setTextPen(foreground)
+            except Exception:
+                continue
+    get_plot_item = getattr(plot_widget, "getPlotItem", None)
+    if callable(get_plot_item):
+        try:
+            title = get_plot_item().titleLabel
+            if title is not None:
+                title.setColor(foreground)
+        except Exception:
+            pass
 
 
 def apply_application_theme(name: str | None = None) -> None:
@@ -327,15 +365,29 @@ def apply_application_theme(name: str | None = None) -> None:
     app = QApplication.instance()
     if app is not None:
         app.setStyleSheet(ThemeManager().build_stylesheet())
+        for widget in app.topLevelWidgets():
+            widget.update()
     try:
         import pyqtgraph as pg
 
-        pg.setConfigOptions(
-            background=theme_color("COLOR_GRAPH_BACKGROUND"),
-            foreground=theme_color("COLOR_GRAPH_AXIS"),
-        )
+        background = theme_color("COLOR_GRAPH_BACKGROUND")
+        foreground = theme_color("COLOR_GRAPH_AXIS")
+        pg.setConfigOptions(background=background, foreground=foreground)
+        if app is not None:
+            for widget in app.allWidgets():
+                if isinstance(widget, pg.PlotWidget):
+                    _style_plot_widget(widget, background, foreground)
     except Exception:
         pass
+    if app is not None:
+        try:
+            from ui.widgets.live_graph import LiveGraphWidget
+
+            for widget in app.allWidgets():
+                if isinstance(widget, LiveGraphWidget):
+                    widget.refresh_theme_icons()
+        except Exception:
+            pass
 
 # Laboratory Catalog — секция identity accent түстері (HomePage карточкалары,
 # STEM модульдер). heat/electricity/electromagnetism/light — Phase 32-ден
@@ -486,6 +538,7 @@ class ThemeManager:
         COLOR_SELECTED = pal["COLOR_SELECTED"]
         COLOR_FOCUS_OUTLINE = pal["COLOR_FOCUS_OUTLINE"]
         COLOR_ACCENT_SUBTLE = pal["COLOR_ACCENT_SUBTLE"]
+        COLOR_GLASS_BORDER = pal["COLOR_GLASS_BORDER"]
         COLOR_TEXT_DISABLED = pal["COLOR_TEXT_MUTED"]
         COLOR_STATUS_CONNECTED = pal["COLOR_SUCCESS"]
         COLOR_STATUS_DISCONNECTED = pal["COLOR_TEXT_SECONDARY"]
@@ -568,7 +621,7 @@ class ThemeManager:
         QFrame#EntrySurfaceCard {{
             background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1,
                 stop:0 {COLOR_GLASS_TOP}, stop:1 {COLOR_GLASS_BOTTOM});
-            border: 1px solid rgba(255, 255, 255, 42);
+            border: 1px solid {COLOR_GLASS_BORDER};
             border-radius: {RADIUS_LG}px;
             padding: 8px;
         }}
@@ -872,7 +925,7 @@ class ThemeManager:
         QFrame#GraphCard {{
             background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1,
                 stop:0 {COLOR_GLASS_TOP}, stop:1 {COLOR_SURFACE});
-            border: 1px solid rgba(255, 255, 255, 40);
+            border: 1px solid {COLOR_GLASS_BORDER};
             border-radius: {RADIUS_LG}px;
         }}
         QLabel#GraphCardTitle {{
@@ -935,7 +988,7 @@ class ThemeManager:
         QWidget#Sidebar {{
             background-color: qlineargradient(x1:0, y1:0, x2:1, y2:1,
                 stop:0 {COLOR_SIDEBAR_START}, stop:1 {COLOR_SIDEBAR_BACKGROUND});
-            border-right: 1px solid rgba(255, 255, 255, 28);
+            border-right: 1px solid {COLOR_GLASS_BORDER};
         }}
         QLabel#SidebarBrand {{
             font-weight: {FONT_WEIGHT_BOLD};
@@ -1000,7 +1053,7 @@ class ThemeManager:
             font-size: {FONT_SIZE_CAPTION}px;
             font-weight: {FONT_WEIGHT_MEDIUM};
         }}
-        QPushButton#SidebarSwitchRoleButton, QPushButton#SidebarSwitchStudentButton {{
+        QPushButton#SidebarSwitchRoleButton, QPushButton#SidebarSwitchStudentButton, QPushButton#SidebarThemeButton {{
             text-align: left;
             border: none;
             border-radius: {RADIUS_SM}px;
@@ -1010,17 +1063,17 @@ class ThemeManager:
             font-size: {FONT_SIZE_CAPTION}px;
             min-height: 0px;
         }}
-        QPushButton#SidebarSwitchRoleButton:hover, QPushButton#SidebarSwitchStudentButton:hover {{
+        QPushButton#SidebarSwitchRoleButton:hover, QPushButton#SidebarSwitchStudentButton:hover, QPushButton#SidebarThemeButton:hover {{
             background-color: {COLOR_HOVER};
         }}
-        QPushButton#SidebarSwitchRoleButton:pressed, QPushButton#SidebarSwitchStudentButton:pressed {{
+        QPushButton#SidebarSwitchRoleButton:pressed, QPushButton#SidebarSwitchStudentButton:pressed, QPushButton#SidebarThemeButton:pressed {{
             background-color: {COLOR_SELECTED};
         }}
 
         QFrame#HomeHero {{
             background-color: qlineargradient(x1:0, y1:0, x2:1, y2:1,
                 stop:0 {COLOR_GLASS_TOP}, stop:1 {COLOR_GLASS_BOTTOM});
-            border: 1px solid rgba(255, 255, 255, 36);
+            border: 1px solid {COLOR_GLASS_BORDER};
             border-radius: {RADIUS_LG}px;
         }}
         QLabel#HomeHeroTitle {{
@@ -1043,7 +1096,7 @@ class ThemeManager:
         QFrame#HomeSummaryCard {{
             background-color: qlineargradient(x1:0, y1:0, x2:1, y2:1,
                 stop:0 {COLOR_GLASS_TOP}, stop:1 {COLOR_SURFACE});
-            border: 1px solid rgba(255, 255, 255, 28);
+            border: 1px solid {COLOR_GLASS_BORDER};
             border-left: 3px solid {COLOR_ACCENT};
             border-radius: {RADIUS_LG}px;
         }}
@@ -1615,7 +1668,7 @@ class ThemeManager:
         QFrame#DashboardPanel {{
             background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1,
                 stop:0 {COLOR_GLASS_TOP}, stop:1 {COLOR_SURFACE});
-            border: 1px solid rgba(255, 255, 255, 32);
+            border: 1px solid {COLOR_GLASS_BORDER};
             border-radius: {RADIUS_LG}px;
         }}
         QFrame#ActivitySlide {{

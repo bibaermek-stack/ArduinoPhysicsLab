@@ -33,7 +33,7 @@ from PySide6.QtWidgets import (
 
 from core.resource_paths import resource_path
 from domain.entities.user_role import UserRole
-from ui.themes.theme_manager import current_theme
+from ui.themes.theme_manager import THEME_DARK, THEME_LIGHT, current_theme
 from infrastructure.serial_comm.device_manager import DeviceManager
 from ui.navigation.navigation_config import NavigationItem, items_for_role
 
@@ -65,6 +65,11 @@ _ROLE_INDICATOR_TEXT: dict[UserRole, str] = {
 # ауыстыруға 10/10 сәйкестік) қолданады.
 _SWITCH_ROLE_BUTTON_LABEL = "Режимді ауыстыру"
 _SWITCH_STUDENT_BUTTON_LABEL = "Оқушыны ауыстыру"
+_THEME_ICON_FILE = "ic_fluent_dark_theme_24_regular.svg"
+_THEME_BUTTON_LABEL = {
+    THEME_DARK: "Ашық тема",
+    THEME_LIGHT: "Қараңғы тема",
+}
 
 # Design/02_FluentIcons/svg/ — Phase 5 PoC-те расталған, MIT лицензиялы
 # Fluent System Icons жиынтығы (§ Design/02_FluentIcons/SOURCE.md).
@@ -144,6 +149,7 @@ class Sidebar(QWidget):
     navigate_requested = Signal(str)
     switch_role_requested = Signal()
     switch_student_requested = Signal()
+    theme_toggle_requested = Signal(str)
     # Phase 41: жабу/ашу батырмасы басылған сайын жаңа collapsed күйін
     # хабарлайды — MainWindow осыны splitter.setSizes(...) арқылы нақты
     # пиксель енін ЖЕДЕЛ (анимациясыз) қайта бөлу үшін тыңдайды.
@@ -244,6 +250,12 @@ class Sidebar(QWidget):
         self._switch_role_button.clicked.connect(self.switch_role_requested)
         self._switch_role_button.hide()
 
+        self._theme_button = QPushButton(self)
+        self._theme_button.setObjectName("SidebarThemeButton")
+        self._theme_button.setIconSize(QSize(_SIDEBAR_ICON_PX, _SIDEBAR_ICON_PX))
+        self._theme_button.clicked.connect(self._on_theme_button_clicked)
+        self._sync_theme_button()
+
         self._update_role_indicator()
         self._update_student_section_visibility()
         self._update_teacher_section_visibility()
@@ -258,6 +270,7 @@ class Sidebar(QWidget):
         layout.addWidget(self._active_teacher_label)
         layout.addWidget(self._active_student_label)
         layout.addWidget(self._switch_student_button)
+        layout.addWidget(self._theme_button)
         layout.addWidget(self._sync_status_label)
 
         self._connect_device_manager()
@@ -289,6 +302,18 @@ class Sidebar(QWidget):
         theme = current_theme()
         self._switch_student_button.setIcon(_load_nav_icon(_SWITCH_STUDENT_ICON_FILE, theme))
         self._switch_role_button.setIcon(_load_nav_icon(_SWITCH_ROLE_ICON_FILE, theme))
+        self._sync_theme_button()
+
+    def _on_theme_button_clicked(self) -> None:
+        next_theme = THEME_LIGHT if current_theme() == THEME_DARK else THEME_DARK
+        self.theme_toggle_requested.emit(next_theme)
+
+    def _sync_theme_button(self) -> None:
+        theme = current_theme()
+        label = _THEME_BUTTON_LABEL.get(theme, _THEME_BUTTON_LABEL[THEME_DARK])
+        self._theme_button.setIcon(_load_nav_icon(_THEME_ICON_FILE, theme))
+        self._theme_button.setText("" if self._collapsed else label)
+        self._theme_button.setToolTip(label)
 
     def set_active_student_text(self, text: str | None) -> None:
         """Белсенді оқушы мәтінін орнатады (мыс. "Оқушы: Айдос С.\\nСынып:
@@ -402,6 +427,7 @@ class Sidebar(QWidget):
         self._switch_student_button.setText(
             "" if self._collapsed else _SWITCH_STUDENT_BUTTON_LABEL
         )
+        self._sync_theme_button()
         self._update_student_section_visibility()
         self._update_teacher_section_visibility()
         self.collapse_toggled.emit(self._collapsed)

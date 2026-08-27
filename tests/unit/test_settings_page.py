@@ -108,7 +108,7 @@ def test_theme_combo_offers_light_and_dark() -> None:
 
 
 def test_changing_theme_persists(temp_preferences) -> None:
-    from ui.themes.theme_manager import apply_application_theme
+    from ui.themes.theme_manager import apply_application_theme, current_theme
 
     preferences, path = temp_preferences
     page = SettingsPage(app_preferences=preferences)
@@ -116,6 +116,7 @@ def test_changing_theme_persists(temp_preferences) -> None:
 
     reloaded = AppPreferences(QSettings(path, QSettings.Format.IniFormat))
     assert reloaded.get_theme() == "light"
+    assert current_theme() == "light"
     apply_application_theme("dark")
 
 

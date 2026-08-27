@@ -82,7 +82,7 @@ from domain.services.region_analysis_exporter import (
     format_region_analysis_summary,
 )
 from ui.widgets.graph_analysis_panel import GraphAnalysisPanel
-from ui.themes.theme_manager import COLOR_GRAPH_AXIS, COLOR_GRAPH_BACKGROUND
+from ui.themes.theme_manager import current_theme, theme_color
 from ui.widgets.graph_crosshair import PlotCrosshair
 
 # Жеңіл, Vernier Graphical Analysis тәрізді ғылыми тема — ашық фон, қара
@@ -92,7 +92,10 @@ from ui.widgets.graph_crosshair import PlotCrosshair
 # Phase 9: pure "w"/"k" орнына ThemeManager-дің ``COLOR_GRAPH_BACKGROUND``/
 # ``COLOR_GRAPH_AXIS`` токендері қолданылады (мәні дәл сол — #FFFFFF/
 # #111827 — тек ЕНДІ орталық токен көзінен, "сиқырлы әріп" емес).
-pg.setConfigOptions(background=COLOR_GRAPH_BACKGROUND, foreground=COLOR_GRAPH_AXIS)
+pg.setConfigOptions(
+    background=theme_color("COLOR_GRAPH_BACKGROUND"),
+    foreground=theme_color("COLOR_GRAPH_AXIS"),
+)
 
 # Phase 3 (Experiment Workspace graph geometry fix): бұрын ешбір
 # plot widget-те минималды биіктік болмаған — QSplitter/QVBoxLayout
@@ -217,18 +220,17 @@ _TOOLBAR_ICON_FILL_DARK = b'fill="#212121"'
 
 
 @lru_cache(maxsize=None)
-def _load_toolbar_icon(svg_filename: str) -> QIcon:
+def _load_toolbar_icon(svg_filename: str, theme: str = "dark") -> QIcon:
     """Вендорленген Fluent SVG-ден бір pixmap-пен ``QIcon`` құрады.
 
     Sidebar-дегі ``_load_nav_icon()``-нан айырмашылығы: мұнда Off/On
     (қараңғы/ақ) екі pixmap ЖОҚ — graph toolbar батырмаларының
-    ешқайсысында accent-көк "таңдалған" фон жоқ (тексерілді), сондықтан
-    қараңғы (#212121) иконка normal/hover/pressed/checked/disabled
-    БАРЛЫҒЫНДА ЖЕТКІЛІКТІ контраст береді (disabled — Qt-тың өз
-    автоматты generatedIconPixmap сұрлануымен).
+    ешқайсысында accent-көк "таңдалған" фон жоқ (тексерілді). Қараңғы
+    темада ашық fill, ашық темада қараңғы fill қолданылады.
     """
     svg_bytes = (_TOOLBAR_ICON_DIR / svg_filename).read_bytes()
-    svg_bytes = svg_bytes.replace(_TOOLBAR_ICON_FILL_DARK, b'fill="#DCE4EE"')
+    fill = b'fill="#212121"' if theme == "light" else b'fill="#DCE4EE"'
+    svg_bytes = svg_bytes.replace(_TOOLBAR_ICON_FILL_DARK, fill)
     icon = QIcon()
     icon.addPixmap(_render_toolbar_svg_pixmap(svg_bytes), QIcon.Mode.Normal, QIcon.State.Off)
     return icon
@@ -369,7 +371,7 @@ class LiveGraphWidget(QWidget):
         self._fit_toggle_checkbox.setVisible(False)
 
         self._clear_button = QPushButton(" Тазалау", self)
-        self._clear_button.setIcon(_load_toolbar_icon("ic_fluent_delete_24_regular.svg"))
+        self._clear_button.setIcon(_load_toolbar_icon("ic_fluent_delete_24_regular.svg", current_theme()))
         self._clear_button.setIconSize(QSize(_TOOLBAR_ICON_PX, _TOOLBAR_ICON_PX))
         self._clear_button.clicked.connect(self.clear)
 
@@ -389,7 +391,7 @@ class LiveGraphWidget(QWidget):
         # splitter арақатынасын бұзатыны эмпирикалық түрде табылды
         # (pytest: 65:35 күтілген орнына 92:8 болып шықты).
         self._zoom_reset_button = QPushButton("", self)
-        self._zoom_reset_button.setIcon(_load_toolbar_icon("ic_fluent_arrow_reset_24_regular.svg"))
+        self._zoom_reset_button.setIcon(_load_toolbar_icon("ic_fluent_arrow_reset_24_regular.svg", current_theme()))
         self._zoom_reset_button.setIconSize(QSize(_TOOLBAR_ICON_PX, _TOOLBAR_ICON_PX))
         self._zoom_reset_button.setProperty("variant", "icon")
         self._zoom_reset_button.setToolTip("Көріністі қалпына келтіру")
@@ -400,7 +402,7 @@ class LiveGraphWidget(QWidget):
         # ЖОҚ). Дөңгелек scroll екі режимде де ӘРҚАШАН масштабтайды
         # (pyqtgraph-тың кірістірілген мінез-құлқы).
         self._pan_mode_button = QPushButton("", self)
-        self._pan_mode_button.setIcon(_load_toolbar_icon("ic_fluent_hand_left_24_regular.svg"))
+        self._pan_mode_button.setIcon(_load_toolbar_icon("ic_fluent_hand_left_24_regular.svg", current_theme()))
         self._pan_mode_button.setIconSize(QSize(_TOOLBAR_ICON_PX, _TOOLBAR_ICON_PX))
         self._pan_mode_button.setProperty("variant", "icon")
         self._pan_mode_button.setCheckable(True)
@@ -409,7 +411,7 @@ class LiveGraphWidget(QWidget):
         self._pan_mode_button.clicked.connect(self._on_pan_mode_clicked)
 
         self._zoom_mode_button = QPushButton("", self)
-        self._zoom_mode_button.setIcon(_load_toolbar_icon("ic_fluent_zoom_in_24_regular.svg"))
+        self._zoom_mode_button.setIcon(_load_toolbar_icon("ic_fluent_zoom_in_24_regular.svg", current_theme()))
         self._zoom_mode_button.setIconSize(QSize(_TOOLBAR_ICON_PX, _TOOLBAR_ICON_PX))
         self._zoom_mode_button.setProperty("variant", "icon")
         self._zoom_mode_button.setCheckable(True)
@@ -422,7 +424,7 @@ class LiveGraphWidget(QWidget):
         self._mouse_mode_group.addButton(self._zoom_mode_button)
 
         self._maximize_button = QPushButton("", self)
-        self._maximize_button.setIcon(_load_toolbar_icon("ic_fluent_full_screen_maximize_24_regular.svg"))
+        self._maximize_button.setIcon(_load_toolbar_icon("ic_fluent_full_screen_maximize_24_regular.svg", current_theme()))
         self._maximize_button.setIconSize(QSize(_TOOLBAR_ICON_PX, _TOOLBAR_ICON_PX))
         self._maximize_button.setProperty("variant", "icon")
         self._maximize_button.setCheckable(True)
@@ -439,7 +441,7 @@ class LiveGraphWidget(QWidget):
         # "recommended, imperfect" деп бағаланған дәл сол қорытынды
         # растады) — сондықтан интеграцияланды.
         self._region_button = QPushButton("", self)
-        self._region_button.setIcon(_load_toolbar_icon("ic_fluent_select_object_24_regular.svg"))
+        self._region_button.setIcon(_load_toolbar_icon("ic_fluent_select_object_24_regular.svg", current_theme()))
         self._region_button.setIconSize(QSize(_TOOLBAR_ICON_PX, _TOOLBAR_ICON_PX))
         self._region_button.setProperty("variant", "icon")
         self._region_button.setCheckable(True)
@@ -472,7 +474,7 @@ class LiveGraphWidget(QWidget):
 
         # Phase 34 §9: snapshot экспорты (PNG/SVG).
         self._image_export_button = QPushButton("", self)
-        self._image_export_button.setIcon(_load_toolbar_icon("ic_fluent_arrow_export_24_regular.svg"))
+        self._image_export_button.setIcon(_load_toolbar_icon("ic_fluent_arrow_export_24_regular.svg", current_theme()))
         self._image_export_button.setIconSize(QSize(_TOOLBAR_ICON_PX, _TOOLBAR_ICON_PX))
         self._image_export_button.setProperty("variant", "icon")
         self._image_export_button.setToolTip(_IMAGE_EXPORT_TOOLTIP)
@@ -480,7 +482,7 @@ class LiveGraphWidget(QWidget):
 
         # Phase 34 §10: жай мәтін қорытындысын clipboard-қа көшіру.
         self._copy_summary_button = QPushButton("", self)
-        self._copy_summary_button.setIcon(_load_toolbar_icon("ic_fluent_copy_24_regular.svg"))
+        self._copy_summary_button.setIcon(_load_toolbar_icon("ic_fluent_copy_24_regular.svg", current_theme()))
         self._copy_summary_button.setIconSize(QSize(_TOOLBAR_ICON_PX, _TOOLBAR_ICON_PX))
         self._copy_summary_button.setProperty("variant", "icon")
         self._copy_summary_button.setToolTip(_COPY_SUMMARY_TOOLTIP)
@@ -601,6 +603,41 @@ class LiveGraphWidget(QWidget):
         layout.addLayout(self._plot_container_layout, 1)
 
         self._build_plot_widget()
+
+    def refresh_theme_icons(self) -> None:
+        """Тема ауысқанда toolbar иконкаларының fill түсін жаңартады."""
+        theme = current_theme()
+        _load_toolbar_icon.cache_clear()
+        icons = (
+            (self._clear_button, "ic_fluent_delete_24_regular.svg"),
+            (self._zoom_reset_button, "ic_fluent_arrow_reset_24_regular.svg"),
+            (self._pan_mode_button, "ic_fluent_hand_left_24_regular.svg"),
+            (self._zoom_mode_button, "ic_fluent_zoom_in_24_regular.svg"),
+            (self._maximize_button, "ic_fluent_full_screen_maximize_24_regular.svg"),
+            (self._region_button, "ic_fluent_select_object_24_regular.svg"),
+            (self._image_export_button, "ic_fluent_arrow_export_24_regular.svg"),
+            (self._copy_summary_button, "ic_fluent_copy_24_regular.svg"),
+        )
+        for button, filename in icons:
+            button.setIcon(_load_toolbar_icon(filename, theme))
+
+    def apply_theme(self) -> None:
+        """Қолданыстағы PlotWidget фон/ось түстерін ағымдағы темаға сай жаңартады."""
+        background = theme_color("COLOR_GRAPH_BACKGROUND")
+        foreground = theme_color("COLOR_GRAPH_AXIS")
+        plots = list(self._all_plot_widgets())
+        plots.append(self._residual_plot_widget)
+        for plot in plots:
+            plot.setBackground(background)
+            for axis_name in ("bottom", "left", "right", "top"):
+                axis = plot.getAxis(axis_name)
+                axis.setPen(pg.mkPen(foreground))
+                axis.setTextPen(foreground)
+            try:
+                plot.getPlotItem().titleLabel.setColor(foreground)
+            except Exception:
+                pass
+        self.refresh_theme_icons()
 
     # ---- Public API -----------------------------------------------------
 

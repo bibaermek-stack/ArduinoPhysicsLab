@@ -45,6 +45,20 @@ def _make_measurement(
     )
 
 
+def test_apply_theme_updates_plot_background() -> None:
+    from ui.themes.theme_manager import THEME_DARK, THEME_LIGHT, apply_application_theme
+
+    graph = LiveGraphWidget()
+    apply_application_theme(THEME_LIGHT)
+    graph.apply_theme()
+    light = graph._plot_widget.backgroundBrush().color().name().upper()
+    assert light == "#FFFFFF"
+    apply_application_theme(THEME_DARK)
+    graph.apply_theme()
+    dark = graph._plot_widget.backgroundBrush().color().name().upper()
+    assert dark == "#2C2C2E"
+
+
 def test_graph_has_no_curves_before_configure() -> None:
     graph = LiveGraphWidget()
 

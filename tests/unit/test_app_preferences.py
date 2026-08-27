@@ -42,6 +42,32 @@ def test_set_auto_scale_default_persists() -> None:
         os.unlink(handle.name)
 
 
+def test_theme_defaults_to_dark(temp_settings) -> None:
+    preferences = AppPreferences(temp_settings)
+    assert preferences.get_theme() == "dark"
+
+
+def test_set_theme_persists() -> None:
+    handle = tempfile.NamedTemporaryFile(suffix=".ini", delete=False)
+    handle.close()
+    try:
+        settings = QSettings(handle.name, QSettings.Format.IniFormat)
+        AppPreferences(settings).set_theme("light")
+        settings.sync()
+
+        reloaded_settings = QSettings(handle.name, QSettings.Format.IniFormat)
+        assert AppPreferences(reloaded_settings).get_theme() == "light"
+    finally:
+        os.unlink(handle.name)
+
+
+def test_reset_to_defaults_restores_theme(temp_settings) -> None:
+    preferences = AppPreferences(temp_settings)
+    preferences.set_theme("light")
+    preferences.reset_to_defaults()
+    assert preferences.get_theme() == "dark"
+
+
 def test_reset_to_defaults_restores_auto_scale(temp_settings) -> None:
     preferences = AppPreferences(temp_settings)
     preferences.set_auto_scale_default(False)

@@ -316,6 +316,24 @@ def test_role_indicator_reflects_current_role() -> None:
     assert sidebar._role_indicator_label.text() == "Мұғалім режимі"
 
 
+def test_theme_button_emits_opposite_theme() -> None:
+    from ui.themes.theme_manager import THEME_DARK, THEME_LIGHT, apply_application_theme
+
+    apply_application_theme(THEME_DARK)
+    sidebar = Sidebar()
+    received: list[str] = []
+    sidebar.theme_toggle_requested.connect(received.append)
+
+    assert sidebar._theme_button.text() == "Ашық тема"
+    sidebar._theme_button.click()
+    assert received == [THEME_LIGHT]
+
+    apply_application_theme(THEME_LIGHT)
+    sidebar.refresh_theme()
+    assert sidebar._theme_button.text() == "Қараңғы тема"
+    apply_application_theme(THEME_DARK)
+
+
 def test_switch_role_button_is_hidden() -> None:
     sidebar = Sidebar()
     assert sidebar._switch_role_button.isHidden()

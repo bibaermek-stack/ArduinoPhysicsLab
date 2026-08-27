@@ -3,12 +3,12 @@
 
 Осы бет ешбір жаңа баптау сақтау жүйесін ЖАСАМАЙДЫ — ``core/config.py``/
 ``infrastructure/storage/paths.py`` бос TODO stub-тар болғандықтан,
-жалғыз шын мәнінде РЕСТАРТТАН аман қалатын, өзгертілетін баптау —
-"Графикті автоматты масштабтау" — ``AppPreferences`` (``QSettings``-негізді
-сервис) арқылы сақталады. Қалған жолдар (тіл/тема/baud rate/экспорт
-пішімі/дерекқор орны) ҚАЗІР архитектурада бір ғана нақты мәнге ие,
-сондықтан ТЕК ақпараттық түрде (өзгертуге болмайтын) көрсетіледі — §
-"Do not fake localization/dark mode/export formats".
+шын мәнінде РЕСТАРТТАН аман қалатын, өзгертілетін баптаулар —
+"Графикті автоматты масштабтау" және "Тема" (ашық/қараңғы) —
+``AppPreferences`` (``QSettings``-негізді сервис) арқылы сақталады.
+Қалған жолдар (тіл/baud rate/экспорт пішімі/дерекқор орны) ҚАЗІР
+архитектурада бір ғана нақты мәнге ие, сондықтан ТЕК ақпараттық
+түрде (өзгертуге болмайтын) көрсетіледі.
 
 Әдейі ОМИТ етілген (себебі):
 - "График терезесі" (10с/30с/60с) — ``LiveGraphWidget._MAX_POINTS`` тек
@@ -409,6 +409,10 @@ class SettingsPage(QWidget):
         if index >= 0:
             self._theme_combo.setCurrentIndex(index)
         self._theme_combo.blockSignals(False)
+
+    def sync_theme_control(self) -> None:
+        """Сайдбардан тема ауысқанда combobox-ты қайта синхрондайды."""
+        self._reload_theme_control()
 
     def _reload_sync_controls(self) -> None:
         self._sync_enabled_checkbox.blockSignals(True)
