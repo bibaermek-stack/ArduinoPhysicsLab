@@ -74,6 +74,7 @@ from ui.widgets.experiment_workflow_indicator import (
 from ui.widgets.measurement_summary_card import MeasurementSummaryCard
 from ui.widgets.motion import fade_label_color
 from ui.widgets.simplified_device_connect_dialog import SimplifiedDeviceConnectDialog
+from ui.themes.theme_manager import COLOR_ACCENT
 from ui.widgets.measurement_workspace import MeasurementWorkspace
 
 _ControllerFactory = Callable[[ExperimentDefinition], ExperimentController]
@@ -94,7 +95,7 @@ _STATUS_CONFIG: dict[str, tuple[str, str]] = {
     _STATUS_WAITING: ("Құрылғылар күтілуде", "#9AA1AC"),
     _STATUS_READY: ("Дайын", "#2E7D32"),
     _STATUS_STARTING: ("Іске қосылуда...", "#F9A825"),
-    _STATUS_RUNNING: ("Өлшеу жүріп жатыр", "#2563EB"),
+    _STATUS_RUNNING: ("Өлшеу жүріп жатыр", COLOR_ACCENT),
     _STATUS_STOPPED: ("Тоқтатылды", "#606772"),
 }
 # Elapsed-time readout UI refresh жиілігі ("Ток жұмысы мен қуаты"-дағы

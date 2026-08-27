@@ -24,11 +24,12 @@ import pyqtgraph as pg
 from PySide6.QtCore import Qt
 
 from domain.services.graph_analysis import nearest_index
+from ui.themes.theme_manager import COLOR_BORDER, COLOR_SURFACE, COLOR_TEXT_PRIMARY
 
-_CROSSHAIR_PEN_COLOR = (37, 99, 235, 150)  # ThemeManager.COLOR_ACCENT, жартылай мөлдір
-_TOOLTIP_BORDER_COLOR = "#E5E7EB"  # ThemeManager.COLOR_BORDER
-_TOOLTIP_TEXT_COLOR = "#111827"  # ThemeManager.COLOR_TEXT_PRIMARY
-_TOOLTIP_BG_COLOR = (255, 255, 255, 235)
+_CROSSHAIR_PEN_COLOR = (31, 106, 165, 150)
+_TOOLTIP_BORDER_COLOR = COLOR_BORDER
+_TOOLTIP_TEXT_COLOR = COLOR_TEXT_PRIMARY
+_TOOLTIP_BG_COLOR = (43, 43, 43, 235)
 _MOUSE_MOVE_MIN_INTERVAL_S = 1.0 / 45.0
 # Phase 34.1.1: нүкте мен tooltip жиегі арасындағы саңылау — НАҚТЫ экран
 # пиксельдерінде (data-fraction ЕМЕС — Phase 34.1-дегі бастапқы түзету дәл

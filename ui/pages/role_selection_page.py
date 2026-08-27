@@ -136,7 +136,9 @@ def _load_entry_icon(svg_filename: str) -> QIcon:
     """§ ``ui/widgets/sidebar.py::_load_nav_icon()``-мен БІРДЕЙ рендеринг
     тәсілі, бірақ жеңілдетілген (жалғыз күй — бұл батырмалар checkable
     ЕМЕС, dark/white ауысу қажет емес)."""
-    svg_bytes = (_ICON_DIR / svg_filename).read_bytes()
+    svg_bytes = (_ICON_DIR / svg_filename).read_bytes().replace(
+        b'fill="#212121"', b'fill="#DCE4EE"'
+    )
     renderer = QSvgRenderer(QByteArray(svg_bytes))
     pixmap = QPixmap(_ICON_RENDER_PX, _ICON_RENDER_PX)
     pixmap.fill(Qt.GlobalColor.transparent)

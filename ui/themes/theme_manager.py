@@ -168,31 +168,34 @@ FONT_FAMILY = '"Segoe UI Variable", "Segoe UI", sans-serif'
 # көзге көрінетін бөлек тон, border екі деңгейі шынымен байқалатын
 # болуы үшін. Геометрияға (spacing/radius/padding/height) ЕШБІР тимейді
 # — тек түс мәндері.
-COLOR_BACKGROUND = "#EEF1F6"
-COLOR_SURFACE = "#FFFFFF"
-COLOR_SIDEBAR_BACKGROUND = "#E1E5ED"  # ``COLOR_BACKGROUND``-тан НАҚТЫ, көзге көрінетін дәрежеде күңгірттеу панель тоны
+# CustomTkinter (blue / dark) палитрасы — Qt QSS арқылы.
+# Терезе gray14, карточка #2B2B2B, батырма #1F6AA5.
+COLOR_BACKGROUND = "#242424"
+COLOR_SURFACE = "#2B2B2B"
+COLOR_SIDEBAR_BACKGROUND = "#212121"
+COLOR_INPUT = "#343638"
 
-COLOR_BORDER = "#CBD2DC"  # бұрынғы #E5E7EB тым бозғылт еді — карточка контурлары іс жүзінде көрінбейтін
-COLOR_BORDER_SUBTLE = "#EEF0F3"  # "Very subtle" жиек — карточка ІШІНДЕГІ бөлгіштер үшін (әдейі СОЛ қалпы жеңіл)
+COLOR_BORDER = "#565B5E"
+COLOR_BORDER_SUBTLE = "#3D3D3D"
 
-COLOR_TEXT_PRIMARY = "#111827"
-COLOR_TEXT_SECONDARY = "#6B7280"
-COLOR_TEXT_MUTED = "#9CA3AF"
+COLOR_TEXT_PRIMARY = "#E5E5E5"
+COLOR_TEXT_SECONDARY = "#A0A0A0"
+COLOR_TEXT_MUTED = "#7A7A7A"
 
-COLOR_ACCENT = "#2563EB"
-COLOR_ACCENT_HOVER = "#1D4ED8"
-COLOR_ACCENT_PRESSED = "#1E40AF"
-COLOR_ACCENT_TEXT = "#FFFFFF"
+COLOR_ACCENT = "#1F6AA5"
+COLOR_ACCENT_HOVER = "#144870"
+COLOR_ACCENT_PRESSED = "#0E3250"
+COLOR_ACCENT_TEXT = "#DCE4EE"
 
-COLOR_SUCCESS = "#16A34A"
+COLOR_SUCCESS = "#2FA572"
 COLOR_WARNING = "#F59E0B"
-COLOR_ERROR = "#DC2626"
-COLOR_ERROR_HOVER = "#B91C1C"
-COLOR_INFO = "#0891B2"
+COLOR_ERROR = "#E5534B"
+COLOR_ERROR_HOVER = "#C13E37"
+COLOR_INFO = "#3B8ED0"
 
-COLOR_HOVER = "#DCE7FB"  # жұмсақ көк hover wash — Phase 10-да сәл тереңдетілді
-COLOR_SELECTED = "#C7DBFA"  # primary tint (таңдалған/pressed/checked фоны) — hover-ден НАҚТЫ тереңірек
-COLOR_FOCUS_OUTLINE = "#2563EB"  # қолжетімді focus сақинасы (accent-пен бірдей)
+COLOR_HOVER = "#333337"
+COLOR_SELECTED = "#1F6AA5"
+COLOR_FOCUS_OUTLINE = "#1F6AA5"
 
 # Phase 9 ("Fluent 2 Laboratory Professional Edition" — visual modernization):
 # сұралған семантикалық token атаулары — көбі ЖАҢА мән ЕМЕС, тек
@@ -200,10 +203,10 @@ COLOR_FOCUS_OUTLINE = "#2563EB"  # қолжетімді focus сақинасы (
 # ғана "ащы шындық" мәні сақталады (екі бөлек, сәл ажыратылатын хекс
 # мән жоқ). Жаңа НАҚТЫ мән тек шынымен жетіспейтін орындарда қосылды
 # (``COLOR_BORDER_STRONG``, ``COLOR_ACCENT_SUBTLE``, ``COLOR_GRAPH_*``).
-COLOR_SURFACE_SECONDARY = COLOR_BACKGROUND  # карточкадан БІР деңгей "төмен" бет/панель фоны
+COLOR_SURFACE_SECONDARY = COLOR_BACKGROUND
 COLOR_SURFACE_HOVER = COLOR_HOVER
 COLOR_SURFACE_SELECTED = COLOR_SELECTED
-COLOR_BORDER_STRONG = "#9CA6B4"  # Phase 10: COLOR_BORDER-ден (#CBD2DC) НАҚТЫ бір деңгей қоюырақ — мақсатты бөлу үшін
+COLOR_BORDER_STRONG = "#6B7074"
 COLOR_TEXT_DISABLED = COLOR_TEXT_MUTED
 # Phase 9-да ``COLOR_ACCENT_SUBTLE`` (#EFF6FF) ``COLOR_HOVER``-тен
 # (сол кездегі #E8F0FE) ЖЕҢІЛІРЕК болып шыққан — нәтижесінде icon-
@@ -211,7 +214,7 @@ COLOR_TEXT_DISABLED = COLOR_TEXT_MUTED
 # Phase 10 root cause). Түзету: checked ЕНДІ ``COLOR_SELECTED``
 # қолданады (§ төмен), ол Phase 10-да hover-ден НАҚТЫ тереңірек
 # болатындай қайта калибрленген — checked ӘРҚАШАН hover-ден күштірек.
-COLOR_ACCENT_SUBTLE = "#EFF6FF"
+COLOR_ACCENT_SUBTLE = "#1A3A52"
 
 # Графиктің (pyqtgraph) фон/тор/ось/мәтін түстері — ``ui/widgets/
 # live_graph.py``-де Python арқылы қолданылады (QSS ЕМЕС, себебі
@@ -339,7 +342,7 @@ _CONTROL_CONTENT_MIN_HEIGHT = (
 
 
 class ThemeManager:
-    """Жеңіл, ашық ғылыми-зертхана тақырыбының QSS-ін құрастыратын сервис."""
+    """CustomTkinter blue/dark палитрасын Qt QSS-ке түсіретін сервис."""
 
     def build_stylesheet(self) -> str:
         """Бүкіл қолданбаға бір рет қолданылатын QSS мәтінін қайтарады."""
@@ -355,7 +358,7 @@ class ThemeManager:
            ================================================================== */
 
         QPushButton {{
-            background-color: {COLOR_SURFACE};
+            background-color: {COLOR_INPUT};
             border: {_CONTROL_BORDER_WIDTH}px solid {COLOR_BORDER};
             border-radius: {RADIUS_SM}px;
             padding: {_CONTROL_VERTICAL_PADDING}px 12px;
@@ -1022,7 +1025,7 @@ class ThemeManager:
            ================================================================== */
 
         QLineEdit {{
-            background-color: {COLOR_SURFACE};
+            background-color: {COLOR_INPUT};
             border: 1px solid {COLOR_BORDER};
             border-radius: {RADIUS_SM}px;
             padding: 6px 10px;
@@ -1045,7 +1048,7 @@ class ThemeManager:
         }}
 
         QComboBox {{
-            background-color: {COLOR_SURFACE};
+            background-color: {COLOR_INPUT};
             border: {_CONTROL_BORDER_WIDTH}px solid {COLOR_BORDER};
             border-radius: {RADIUS_SM}px;
             padding: {_CONTROL_VERTICAL_PADDING}px 10px;

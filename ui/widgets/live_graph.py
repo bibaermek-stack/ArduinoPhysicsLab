@@ -228,6 +228,7 @@ def _load_toolbar_icon(svg_filename: str) -> QIcon:
     автоматты generatedIconPixmap сұрлануымен).
     """
     svg_bytes = (_TOOLBAR_ICON_DIR / svg_filename).read_bytes()
+    svg_bytes = svg_bytes.replace(_TOOLBAR_ICON_FILL_DARK, b'fill="#DCE4EE"')
     icon = QIcon()
     icon.addPixmap(_render_toolbar_svg_pixmap(svg_bytes), QIcon.Mode.Normal, QIcon.State.Off)
     return icon

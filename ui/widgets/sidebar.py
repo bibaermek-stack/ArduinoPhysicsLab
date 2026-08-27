@@ -78,6 +78,7 @@ _SWITCH_ROLE_ICON_FILE = "ic_fluent_people_swap_24_regular.svg"
 # қолданады — вендорленген SVG файлдардың өзі ЕШҚАШАН өзгертілмейді
 # (жады ішінде ғана, лицензияланған файлдар бүтін қалады).
 _ICON_DARK_FILL = b'fill="#212121"'
+_ICON_NORMAL_FILL = b'fill="#DCE4EE"'
 _ICON_SELECTED_FILL = b'fill="#FFFFFF"'
 # Нақты дисплей өлшемінен тәуелсіз, әрдайым жоғары ажыратымдылықта
 # рендерленеді — HiDPI/масштабтауда анық қалуы үшін.
@@ -104,7 +105,8 @@ def _load_nav_icon(svg_filename: str) -> QIcon:
     """
     svg_bytes = (_ICON_DIR / svg_filename).read_bytes()
     icon = QIcon()
-    icon.addPixmap(_render_svg_pixmap(svg_bytes), QIcon.Mode.Normal, QIcon.State.Off)
+    normal_svg_bytes = svg_bytes.replace(_ICON_DARK_FILL, _ICON_NORMAL_FILL)
+    icon.addPixmap(_render_svg_pixmap(normal_svg_bytes), QIcon.Mode.Normal, QIcon.State.Off)
     white_svg_bytes = svg_bytes.replace(_ICON_DARK_FILL, _ICON_SELECTED_FILL)
     icon.addPixmap(_render_svg_pixmap(white_svg_bytes), QIcon.Mode.Normal, QIcon.State.On)
     return icon
