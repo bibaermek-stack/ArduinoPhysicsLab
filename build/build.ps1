@@ -32,28 +32,11 @@ pyinstaller (Join-Path $ProjectRoot "build\app.spec") `
     --workpath $WorkPath `
     --noconfirm
 
-$ReleaseDir = Join-Path $DistPath "ArduinoPhysicsLab"
-$DestDeploy = Join-Path $ReleaseDir "deployment.json"
-$LocalDeploy = Join-Path $ProjectRoot "deployment.json"
-$ExampleDeploy = Join-Path $ProjectRoot "deployment.example.json"
-if (Test-Path $LocalDeploy) {
-    Copy-Item $LocalDeploy $DestDeploy -Force
-} else {
-    Copy-Item $ExampleDeploy $DestDeploy -Force
-}
-if ($env:APL_SYNC_API_BASE_URL) {
-    $cfg = Get-Content $DestDeploy -Raw -Encoding UTF8 | ConvertFrom-Json
-    $cfg.sync_api_base_url = $env:APL_SYNC_API_BASE_URL
-    $cfg.sync_enabled = $true
-    $cfg | ConvertTo-Json | Set-Content $DestDeploy -Encoding utf8
-}
-
-$ReadmeSrc = Join-Path $ProjectRoot "build\README-release.txt"
-$ReadmePath = Join-Path $ReleaseDir "README.txt"
-if (Test-Path $ReadmeSrc) {
-    Copy-Item $ReadmeSrc $ReadmePath -Force
+$ExePath = Join-Path $DistPath "ArduinoPhysicsLab.exe"
+if (-not (Test-Path $ExePath)) {
+    throw "Onefile exe табылмады: $ExePath"
 }
 
 Write-Host ""
-Write-Host "Build OK: $ReleaseDir\ArduinoPhysicsLab.exe" -ForegroundColor Green
-Write-Host "Distribute the entire ArduinoPhysicsLab folder, not only the exe." -ForegroundColor Green
+Write-Host "Build OK: $ExePath" -ForegroundColor Green
+Write-Host "Бір ArduinoPhysicsLab.exe файлын таратыңыз — zip/_internal қажет емес." -ForegroundColor Green

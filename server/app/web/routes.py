@@ -35,21 +35,21 @@ import jwt
 
 COOKIE = "apl_web_token"
 _WEB_DIR = Path(__file__).resolve().parent
-_DEFAULT_WINDOWS_ZIP_URL = (
-    "https://github.com/bibaermek-stack/ArduinoPhysicsLab/releases/latest/download/ArduinoPhysicsLab.zip"
+_DEFAULT_WINDOWS_EXE_URL = (
+    "https://github.com/bibaermek-stack/ArduinoPhysicsLab/releases/latest/download/ArduinoPhysicsLab.exe"
 )
 templates = Jinja2Templates(directory=str(_WEB_DIR / "templates"))
 router = APIRouter()
 
 
-def _windows_zip_url() -> str:
-    return os.environ.get("APL_WINDOWS_DOWNLOAD_URL", _DEFAULT_WINDOWS_ZIP_URL).strip() or _DEFAULT_WINDOWS_ZIP_URL
+def _windows_exe_url() -> str:
+    return os.environ.get("APL_WINDOWS_DOWNLOAD_URL", _DEFAULT_WINDOWS_EXE_URL).strip() or _DEFAULT_WINDOWS_EXE_URL
 
 
-def _local_windows_zip() -> Path | None:
+def _local_windows_exe() -> Path | None:
     candidates = (
-        _WEB_DIR / "downloads" / "ArduinoPhysicsLab.zip",
-        Path(__file__).resolve().parents[3] / "release" / "ArduinoPhysicsLab.zip",
+        _WEB_DIR / "downloads" / "ArduinoPhysicsLab.exe",
+        Path(__file__).resolve().parents[3] / "release" / "ArduinoPhysicsLab.exe",
     )
     for path in candidates:
         if path.is_file() and path.stat().st_size > 1024:
@@ -193,17 +193,17 @@ def download_page(request: Request, account: AccountRecord | None = Depends(get_
 
 @router.get("/download/windows")
 def download_windows() -> Response:
-    local = _local_windows_zip()
+    local = _local_windows_exe()
     if local is not None:
         return FileResponse(
             local,
-            media_type="application/zip",
-            filename="ArduinoPhysicsLab.zip",
+            media_type="application/vnd.microsoft.portable-executable",
+            filename="ArduinoPhysicsLab.exe",
         )
-    url = _windows_zip_url()
+    url = _windows_exe_url()
     if url:
         return RedirectResponse(url, status_code=HTTP_303_SEE_OTHER)
-    raise HTTPException(status_code=404, detail="Windows пакеті әлі жүктелмеген")
+    raise HTTPException(status_code=404, detail="Windows .exe әлі жүктелмеген")
 
 
 @router.get("/logout")

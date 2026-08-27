@@ -1,14 +1,6 @@
-# Arduino Physics Lab — PyInstaller onedir спецификациясы (Phase 9,
-# Production Deployment & Release Readiness, Part A "Windows Desktop
-# Packaging").
-#
-# Onedir таңдалды, onefile ЕМЕС (§ Phase 9 Architecture Decision #1):
-# onefile әр іске қосылымда уақытша қалтаға өзін-өзі ашады (баяу
-# бастапқы жүктелу, PySide6/pyqtgraph көп Qt plugin-мен нашар
-# үйлеседі), антивирус эвристикасын жиірек тудырады (бір "белгісіз"
-# exe өзін-өзі runtime-да ашуы классикалық маркер), болашақ
-# incremental жаңартуды қиындатады. Onedir мектеп IT қызметкеріне
-# инспекциялауға/allowlist-ке қосуға ыңғайлырақ.
+# Arduino Physics Lab — PyInstaller onefile спецификациясы.
+# Бір ArduinoPhysicsLab.exe жүктеледі; _internal қалта қажет емес.
+# Алғашқы іске қосылу баяуырақ (уақытша қалтаға ашылады).
 #
 # ``Design/02_FluentIcons/svg/`` мен ``ui/resources/images/`` ғана
 # ``core/resource_paths.py::resource_path()`` арқылы runtime-да
@@ -17,6 +9,7 @@
 # қатысы жоқ, сондықтан bundle-ге ЕНГІЗІЛМЕЙДІ (§ "keep the packaged
 # app lean").
 
+import shutil
 from pathlib import Path
 
 from PyInstaller.utils.hooks import collect_data_files, collect_submodules
@@ -28,8 +21,15 @@ _PROJECT_ROOT = Path(SPECPATH).resolve().parent
 _DATAS = [
     (str(_PROJECT_ROOT / "Design" / "02_FluentIcons" / "svg"), "Design/02_FluentIcons/svg"),
     (str(_PROJECT_ROOT / "ui" / "resources" / "images"), "ui/resources/images"),
-    (str(_PROJECT_ROOT / "deployment.example.json"), "."),
 ]
+_pack_dir = _PROJECT_ROOT / "build" / "packaged"
+_pack_dir.mkdir(parents=True, exist_ok=True)
+_pack_deploy = _pack_dir / "deployment.json"
+_deploy_src = _PROJECT_ROOT / "deployment.json"
+if not _deploy_src.is_file():
+    _deploy_src = _PROJECT_ROOT / "deployment.example.json"
+shutil.copy2(_deploy_src, _pack_deploy)
+_DATAS.append((str(_pack_deploy), "."))
 _DATAS += collect_data_files("certifi")
 
 # § "runtime does not depend on Python being installed system-wide" —
@@ -88,28 +88,21 @@ pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 exe = EXE(
     pyz,
     a.scripts,
+    a.binaries,
+    a.zipfiles,
+    a.datas,
     [],
-    exclude_binaries=True,
     name="ArduinoPhysicsLab",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=False,
+    upx_exclude=[],
+    runtime_tmpdir=None,
     console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-)
-
-coll = COLLECT(
-    exe,
-    a.binaries,
-    a.zipfiles,
-    a.datas,
-    strip=False,
-    upx=False,
-    upx_exclude=[],
-    name="ArduinoPhysicsLab",
 )

@@ -32,12 +32,12 @@ def _candidate_paths() -> list[Path]:
     paths: list[Path] = []
     env_path = os.environ.get("APL_DEPLOYMENT_CONFIG", "").strip()
     if env_path:
-        paths.append(Path(env_path))
+        return [Path(env_path)]
     if getattr(sys, "frozen", False):
-        paths.append(Path(sys.executable).resolve().parent / "deployment.json")
         meipass = getattr(sys, "_MEIPASS", None)
         if meipass:
             paths.append(Path(meipass) / "deployment.json")
+        paths.append(Path(sys.executable).resolve().parent / "deployment.json")
     else:
         paths.append(Path(__file__).resolve().parent.parent / "deployment.json")
     return paths
