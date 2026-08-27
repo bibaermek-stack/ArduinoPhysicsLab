@@ -136,6 +136,97 @@ def test_token_role_and_subject_match_login_identity(client, auth_headers) -> No
     assert "exp" in decoded
 
 
+# ---- Login rate-limiting (brute-force lockout) ------------------------------
+
+
+def test_teacher_login_locks_out_after_repeated_failures(client, auth_headers) -> None:
+    client.post("/api/v1/auth/teacher-login", json=_TEACHER_LOGIN, headers=auth_headers)  # registers t1
+
+    last_response = None
+    for _ in range(5):
+        last_response = client.post(
+            "/api/v1/auth/teacher-login",
+            json={**_TEACHER_LOGIN, "pin_hash": "wrong-hash"},
+            headers=auth_headers,
+        )
+        assert last_response.status_code == 401
+
+    locked_response = client.post(
+        "/api/v1/auth/teacher-login",
+        json={**_TEACHER_LOGIN, "pin_hash": "wrong-hash"},
+        headers=auth_headers,
+    )
+    assert locked_response.status_code == 429
+
+    # § Дұрыс PIN-мен де құлыпталған кезде кіру мүмкін болмауы тиіс —
+    # ЕШБІР "дұрыс құпия арқылы аттап өту" бос орны жоқ.
+    still_locked = client.post("/api/v1/auth/teacher-login", json=_TEACHER_LOGIN, headers=auth_headers)
+    assert still_locked.status_code == 429
+
+
+def test_student_login_locks_out_after_repeated_failures(client, auth_headers) -> None:
+    client.post("/api/v1/auth/student-login", json=_STUDENT_LOGIN, headers=auth_headers)  # registers s1
+
+    for _ in range(5):
+        response = client.post(
+            "/api/v1/auth/student-login",
+            json={**_STUDENT_LOGIN, "student_code": "wrong-code"},
+            headers=auth_headers,
+        )
+        assert response.status_code == 401
+
+    locked_response = client.post(
+        "/api/v1/auth/student-login",
+        json={**_STUDENT_LOGIN, "student_code": "wrong-code"},
+        headers=auth_headers,
+    )
+    assert locked_response.status_code == 429
+
+
+def test_successful_login_resets_failure_counter(client, auth_headers) -> None:
+    client.post("/api/v1/auth/teacher-login", json=_TEACHER_LOGIN, headers=auth_headers)  # registers t1
+
+    for _ in range(4):  # § _MAX_ATTEMPTS - 1, құлыпқа жетпейді
+        response = client.post(
+            "/api/v1/auth/teacher-login",
+            json={**_TEACHER_LOGIN, "pin_hash": "wrong-hash"},
+            headers=auth_headers,
+        )
+        assert response.status_code == 401
+
+    ok_response = client.post("/api/v1/auth/teacher-login", json=_TEACHER_LOGIN, headers=auth_headers)
+    assert ok_response.status_code == 200
+
+    # § Санағыш тазаланды — тағы 4 сәтсіз әрекет ӘЛІ де құлыптамауы тиіс.
+    for _ in range(4):
+        response = client.post(
+            "/api/v1/auth/teacher-login",
+            json={**_TEACHER_LOGIN, "pin_hash": "wrong-hash"},
+            headers=auth_headers,
+        )
+        assert response.status_code == 401
+
+
+def test_teacher_and_student_lockouts_are_independent(client, auth_headers) -> None:
+    client.post("/api/v1/auth/teacher-login", json=_TEACHER_LOGIN, headers=auth_headers)
+    client.post("/api/v1/auth/student-login", json=_STUDENT_LOGIN, headers=auth_headers)
+
+    for _ in range(5):
+        client.post(
+            "/api/v1/auth/teacher-login",
+            json={**_TEACHER_LOGIN, "pin_hash": "wrong-hash"},
+            headers=auth_headers,
+        )
+
+    locked_teacher = client.post("/api/v1/auth/teacher-login", json=_TEACHER_LOGIN, headers=auth_headers)
+    assert locked_teacher.status_code == 429
+
+    # § Бір sync_id мұғалім ретінде құлыпталғанмен, БІРДЕЙ sync_id (немесе
+    # басқа) оқушы ретінде әлі кіре алуы тиіс — namespace бойынша бөлек.
+    ok_student = client.post("/api/v1/auth/student-login", json=_STUDENT_LOGIN, headers=auth_headers)
+    assert ok_student.status_code == 200
+
+
 def test_pin_hash_and_student_code_never_appear_in_health_or_auth_error_bodies(client, auth_headers) -> None:
     """§27 "Logging"/§10 sanity — credential values never echoed back in
     error responses."""

@@ -143,6 +143,8 @@ _STATUS_NO_DATA = "Деректер жоқ."
 _STATUS_UNSTABLE = "Мән тұрақталған жоқ. Бірнеше секунд күтіңіз."
 _STATUS_VALUE_NEAR_ZERO = "Мән нөлге тым жақын — нүкте сақталмады."
 _STATUS_DUPLICATE = "Бұл нүкте алдыңғы сақталған нүктеге тым жақын — қосылмады."
+_STATUS_IMAGE_EXPORT_FAILED = "Суретті сақтау сәтсіз аяқталды. Файл жолын/дискіні тексеріңіз."
+_STATUS_IMAGE_EXPORT_SAVED = "Сурет сақталды."
 
 # Phase 32.1: hardware-тәуелсіз workspace — графикте әлі бірде-бір нүкте
 # жоқ кезде (0/N немесе ішінара N/M құрылғы), осьтер/тор/toolbar толық
@@ -1758,7 +1760,9 @@ class LiveGraphWidget(QWidget):
             else:
                 self._export_plot_as_png(file_path)
         except Exception:  # қорғаныс: диск/формат қатесі UI-ды құлатпайды
-            pass
+            self.capture_status.emit(_STATUS_IMAGE_EXPORT_FAILED)
+        else:
+            self.capture_status.emit(_STATUS_IMAGE_EXPORT_SAVED)
         finally:
             self._set_overlays_visible_for_export(True)
 

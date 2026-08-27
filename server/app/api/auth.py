@@ -17,18 +17,25 @@ from sqlalchemy.orm import Session
 from server.app.api.deps import require_api_key
 from server.app.db.session import get_db
 from server.app.schemas.auth import StudentLoginRequest, TeacherLoginRequest, TokenResponse
-from server.app.services import auth_service
+from server.app.services import auth_service, login_rate_limiter
 from server.app.services.auth_service import AuthenticationError
 
 router = APIRouter(prefix="/auth", tags=["auth"], dependencies=[Depends(require_api_key)])
 
+_RATE_LIMIT_DETAIL = "Тым көп сәтсіз кіру әрекеті. Бірнеше минуттан кейін қайталап көріңіз."
+
 
 @router.post("/teacher-login", response_model=TokenResponse)
 def teacher_login(request: TeacherLoginRequest, db: Session = Depends(get_db)) -> TokenResponse:
+    identity = f"teacher:{request.sync_id}"
+    if login_rate_limiter.is_locked(identity):
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=_RATE_LIMIT_DETAIL)
     try:
         record = auth_service.authenticate_teacher(db, request)
     except AuthenticationError as error:
+        login_rate_limiter.record_failure(identity)
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(error)) from None
+    login_rate_limiter.record_success(identity)
     db.commit()
     token, expires_at = auth_service.create_access_token(record.sync_id, auth_service.ROLE_TEACHER)
     return TokenResponse(
@@ -39,10 +46,15 @@ def teacher_login(request: TeacherLoginRequest, db: Session = Depends(get_db)) -
 
 @router.post("/student-login", response_model=TokenResponse)
 def student_login(request: StudentLoginRequest, db: Session = Depends(get_db)) -> TokenResponse:
+    identity = f"student:{request.sync_id}"
+    if login_rate_limiter.is_locked(identity):
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=_RATE_LIMIT_DETAIL)
     try:
         record = auth_service.authenticate_student(db, request)
     except AuthenticationError as error:
+        login_rate_limiter.record_failure(identity)
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(error)) from None
+    login_rate_limiter.record_success(identity)
     db.commit()
     token, expires_at = auth_service.create_access_token(record.sync_id, auth_service.ROLE_STUDENT)
     return TokenResponse(

@@ -15,8 +15,19 @@ from sqlalchemy.pool import StaticPool
 
 from server.app.db.session import Base, get_db
 from server.app.main import app
+from server.app.services import login_rate_limiter
 
 _TEST_API_KEY = "dev-local-only-key"
+
+
+@pytest.fixture(autouse=True)
+def _reset_login_rate_limiter():
+    """§ ``login_rate_limiter`` процесс-деңгейлік (модуль-глобал) күйді
+    ұстайды — "t1"/"s1" секілді sync_id-лар КӨП тест файлында қайталанып
+    қолданылатындықтан, тесттер арасында сәтсіз-әрекет санағышы сарқылып
+    қалмауы үшін әр тесттен БҰРЫН тазаланады."""
+    login_rate_limiter.reset_all()
+    yield
 
 
 @pytest.fixture()
