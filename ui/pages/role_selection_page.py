@@ -98,7 +98,7 @@ from infrastructure.storage.sqlite_active_student_repository import SqliteActive
 from infrastructure.storage.sqlite_active_teacher_repository import SqliteActiveTeacherRepository
 from infrastructure.storage.sqlite_student_repository import SqliteStudentRepository
 from infrastructure.storage.sqlite_teacher_repository import SqliteTeacherRepository
-from ui.themes.theme_manager import COLOR_BACKGROUND, COLOR_ERROR
+from ui.themes.theme_manager import COLOR_ERROR, theme_color
 from ui.widgets.animated_atom_widget import paint_atom
 
 _WINDOW_TITLE = "Arduino Physics Lab"
@@ -218,7 +218,7 @@ class RoleSelectionPage(QWidget):
     def paintEvent(self, event) -> None:  # noqa: N802 (Qt override name)
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
-        painter.fillRect(self.rect(), QColor(COLOR_BACKGROUND))
+        painter.fillRect(self.rect(), QColor(theme_color("COLOR_BACKGROUND")))
 
         # § "large low-opacity atom orbit motif... opacity approximately
         # 0.04-0.08" — карточкадан аулақ, жоғарғы сол бұрышқа орналасқан

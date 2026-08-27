@@ -53,8 +53,8 @@ from ui.navigation.background_category import (
     CATEGORY_LABORATORY,
 )
 from ui.themes.theme_manager import (
-    COLOR_BACKGROUND,
     COLOR_SECTION_ELECTRICITY,
+    theme_color,
     COLOR_SECTION_ELECTROMAGNETISM,
     COLOR_SECTION_HEAT,
     COLOR_SECTION_LIGHT,
@@ -234,7 +234,7 @@ class WorkspaceBackdrop(QWidget):
     def paintEvent(self, event) -> None:  # noqa: N802 (Qt override name)
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
-        painter.fillRect(self.rect(), QColor(COLOR_BACKGROUND))
+        painter.fillRect(self.rect(), QColor(theme_color("COLOR_BACKGROUND")))
         if self._category == CATEGORY_HOME:
             self._paint_atom(painter)
         elif self._category == CATEGORY_LABORATORY:

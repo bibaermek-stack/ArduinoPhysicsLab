@@ -25,6 +25,8 @@ from PySide6.QtCore import QSettings
 from core.deployment_config import load_deployment_config
 
 _KEY_AUTO_SCALE_DEFAULT = "measurement/auto_scale_default"
+_KEY_THEME = "appearance/theme"
+_DEFAULT_THEME = "dark"
 
 # § ``ui/widgets/live_graph.py``-дегі ``self._auto_scale_checkbox.
 # setChecked(True)`` бұрыннан бар НАҚТЫ әдепкі мәні — осы жерде ЕШҚАШАН
@@ -119,12 +121,20 @@ class AppPreferences:
     def set_auto_scale_default(self, value: bool) -> None:
         self._settings.setValue(_KEY_AUTO_SCALE_DEFAULT, bool(value))
 
+    def get_theme(self) -> str:
+        value = str(self._settings.value(_KEY_THEME, _DEFAULT_THEME) or _DEFAULT_THEME).strip().lower()
+        return "light" if value == "light" else "dark"
+
+    def set_theme(self, value: str) -> None:
+        self._settings.setValue(_KEY_THEME, "light" if value == "light" else "dark")
+
     def reset_to_defaults(self) -> None:
         """§11 "Reset" — тек осы сервис иеленетін баптау кілттерін
         әдепкіге қайтарады. Домен/дерекқор деректеріне (студенттер,
         сыныптар, нәтижелер) ЕШБІР қатысы жоқ (§ "must NOT delete
         students/classrooms/experiments/results/measurement data")."""
         self._settings.remove(_KEY_AUTO_SCALE_DEFAULT)
+        self._settings.remove(_KEY_THEME)
         self._settings.remove(_KEY_SYNC_API_BASE_URL)
         self._settings.remove(_KEY_SYNC_ENABLED)
 

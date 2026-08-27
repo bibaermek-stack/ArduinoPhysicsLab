@@ -683,6 +683,7 @@ class MainWindow(QMainWindow):
         # SettingsPage-тің "Қазір синхрондау" батырмасы — ``trigger_
         # manual_sync()`` контроллер жоқ болса қауіпсіз ешнәрсе жасамайды.
         self._settings_page.sync_now_requested.connect(self.trigger_manual_sync)
+        self._settings_page.theme_changed.connect(self._on_theme_changed)
         if self.sync_thread_controller is not None:
             self.sync_thread_controller.sync_started.connect(self._on_sync_started)
             self.sync_thread_controller.sync_finished.connect(self._on_sync_finished)
@@ -922,6 +923,9 @@ class MainWindow(QMainWindow):
         self._refresh_active_teacher_display()
 
     # ---- Offline-First + Cloud Sync Foundation §14/§15 --------------------
+
+    def _on_theme_changed(self, _name: str) -> None:
+        self._sidebar.refresh_theme()
 
     def trigger_manual_sync(self) -> None:
         """§15 "Manual Sync": Баптаулар бетіндегі "Қазір синхрондау"

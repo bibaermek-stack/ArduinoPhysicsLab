@@ -226,6 +226,116 @@ COLOR_GRAPH_BACKGROUND = COLOR_SURFACE
 COLOR_GRAPH_GRID = COLOR_BORDER
 COLOR_GRAPH_AXIS = COLOR_TEXT_PRIMARY
 COLOR_GRAPH_TEXT = COLOR_TEXT_PRIMARY
+COLOR_SIDEBAR_START = "#101012"
+
+THEME_LIGHT = "light"
+THEME_DARK = "dark"
+_current_theme = THEME_DARK
+
+_PALETTES: dict[str, dict[str, str]] = {
+    THEME_DARK: {
+        "COLOR_BACKGROUND": "#1C1C1E",
+        "COLOR_SURFACE": "#2C2C2E",
+        "COLOR_SIDEBAR_BACKGROUND": "#141416",
+        "COLOR_SIDEBAR_START": "#101012",
+        "COLOR_INPUT": "#3A3A3C",
+        "COLOR_GLASS_TOP": "#3A3A42",
+        "COLOR_GLASS_BOTTOM": "#26262A",
+        "COLOR_BORDER": "#3F3F46",
+        "COLOR_BORDER_SUBTLE": "#2A2A2E",
+        "COLOR_BORDER_STRONG": "#5A5A62",
+        "COLOR_TEXT_PRIMARY": "#F5F5F5",
+        "COLOR_TEXT_SECONDARY": "#C8C8C8",
+        "COLOR_TEXT_MUTED": "#8D8D8D",
+        "COLOR_ACCENT": "#0078D4",
+        "COLOR_ACCENT_HOVER": "#1B86D9",
+        "COLOR_ACCENT_PRESSED": "#006CBD",
+        "COLOR_ACCENT_TEXT": "#FFFFFF",
+        "COLOR_ACCENT_GLOW": "#60CDFF",
+        "COLOR_SUCCESS": "#0F7B3A",
+        "COLOR_WARNING": "#F59E0B",
+        "COLOR_ERROR": "#E5534B",
+        "COLOR_ERROR_HOVER": "#C13E37",
+        "COLOR_INFO": "#4CC2FF",
+        "COLOR_HOVER": "#3A3A3C",
+        "COLOR_SELECTED": "#0078D4",
+        "COLOR_FOCUS_OUTLINE": "#60CDFF",
+        "COLOR_ACCENT_SUBTLE": "#1A3A52",
+        "COLOR_GRAPH_BACKGROUND": "#2C2C2E",
+        "COLOR_GRAPH_GRID": "#3F3F46",
+        "COLOR_GRAPH_AXIS": "#F5F5F5",
+        "COLOR_GRAPH_TEXT": "#F5F5F5",
+    },
+    THEME_LIGHT: {
+        "COLOR_BACKGROUND": "#EEF1F6",
+        "COLOR_SURFACE": "#FFFFFF",
+        "COLOR_SIDEBAR_BACKGROUND": "#E1E5ED",
+        "COLOR_SIDEBAR_START": "#D5DAE3",
+        "COLOR_INPUT": "#FFFFFF",
+        "COLOR_GLASS_TOP": "#FFFFFF",
+        "COLOR_GLASS_BOTTOM": "#F8FAFC",
+        "COLOR_BORDER": "#CBD2DC",
+        "COLOR_BORDER_SUBTLE": "#EEF0F3",
+        "COLOR_BORDER_STRONG": "#9CA6B4",
+        "COLOR_TEXT_PRIMARY": "#111827",
+        "COLOR_TEXT_SECONDARY": "#6B7280",
+        "COLOR_TEXT_MUTED": "#9CA3AF",
+        "COLOR_ACCENT": "#2563EB",
+        "COLOR_ACCENT_HOVER": "#1D4ED8",
+        "COLOR_ACCENT_PRESSED": "#1E40AF",
+        "COLOR_ACCENT_TEXT": "#FFFFFF",
+        "COLOR_ACCENT_GLOW": "#93C5FD",
+        "COLOR_SUCCESS": "#16A34A",
+        "COLOR_WARNING": "#F59E0B",
+        "COLOR_ERROR": "#DC2626",
+        "COLOR_ERROR_HOVER": "#B91C1C",
+        "COLOR_INFO": "#0891B2",
+        "COLOR_HOVER": "#DCE7FB",
+        "COLOR_SELECTED": "#C7DBFA",
+        "COLOR_FOCUS_OUTLINE": "#2563EB",
+        "COLOR_ACCENT_SUBTLE": "#EFF6FF",
+        "COLOR_GRAPH_BACKGROUND": "#FFFFFF",
+        "COLOR_GRAPH_GRID": "#CBD2DC",
+        "COLOR_GRAPH_AXIS": "#111827",
+        "COLOR_GRAPH_TEXT": "#111827",
+    },
+}
+
+
+def current_theme() -> str:
+    return _current_theme
+
+
+def set_theme(name: str) -> None:
+    global _current_theme
+    _current_theme = THEME_LIGHT if name == THEME_LIGHT else THEME_DARK
+
+
+def theme_color(name: str) -> str:
+    pal = _PALETTES[_current_theme]
+    if name in pal:
+        return pal[name]
+    return str(globals().get(name, "#888888"))
+
+
+def apply_application_theme(name: str | None = None) -> None:
+    """Сақталған немесе берілген теманы бүкіл QApplication-ға қолданады."""
+    if name is not None:
+        set_theme(name)
+    from PySide6.QtWidgets import QApplication
+
+    app = QApplication.instance()
+    if app is not None:
+        app.setStyleSheet(ThemeManager().build_stylesheet())
+    try:
+        import pyqtgraph as pg
+
+        pg.setConfigOptions(
+            background=theme_color("COLOR_GRAPH_BACKGROUND"),
+            foreground=theme_color("COLOR_GRAPH_AXIS"),
+        )
+    except Exception:
+        pass
 
 # Laboratory Catalog — секция identity accent түстері (HomePage карточкалары,
 # STEM модульдер). heat/electricity/electromagnetism/light — Phase 32-ден
@@ -346,8 +456,44 @@ _CONTROL_CONTENT_MIN_HEIGHT = (
 class ThemeManager:
     """Windows 11 Fluent / mica dark — Custom QSS, толық пиксель бақылауы."""
 
-    def build_stylesheet(self) -> str:
+    def build_stylesheet(self, theme: str | None = None) -> str:
         """Бүкіл қолданбаға бір рет қолданылатын QSS мәтінін қайтарады."""
+        pal = _PALETTES[theme if theme in _PALETTES else _current_theme]
+        COLOR_BACKGROUND = pal["COLOR_BACKGROUND"]
+        COLOR_SURFACE = pal["COLOR_SURFACE"]
+        COLOR_SIDEBAR_BACKGROUND = pal["COLOR_SIDEBAR_BACKGROUND"]
+        COLOR_SIDEBAR_START = pal["COLOR_SIDEBAR_START"]
+        COLOR_INPUT = pal["COLOR_INPUT"]
+        COLOR_GLASS_TOP = pal["COLOR_GLASS_TOP"]
+        COLOR_GLASS_BOTTOM = pal["COLOR_GLASS_BOTTOM"]
+        COLOR_BORDER = pal["COLOR_BORDER"]
+        COLOR_BORDER_SUBTLE = pal["COLOR_BORDER_SUBTLE"]
+        COLOR_BORDER_STRONG = pal["COLOR_BORDER_STRONG"]
+        COLOR_TEXT_PRIMARY = pal["COLOR_TEXT_PRIMARY"]
+        COLOR_TEXT_SECONDARY = pal["COLOR_TEXT_SECONDARY"]
+        COLOR_TEXT_MUTED = pal["COLOR_TEXT_MUTED"]
+        COLOR_ACCENT = pal["COLOR_ACCENT"]
+        COLOR_ACCENT_HOVER = pal["COLOR_ACCENT_HOVER"]
+        COLOR_ACCENT_PRESSED = pal["COLOR_ACCENT_PRESSED"]
+        COLOR_ACCENT_TEXT = pal["COLOR_ACCENT_TEXT"]
+        COLOR_ACCENT_GLOW = pal["COLOR_ACCENT_GLOW"]
+        COLOR_SUCCESS = pal["COLOR_SUCCESS"]
+        COLOR_WARNING = pal["COLOR_WARNING"]
+        COLOR_ERROR = pal["COLOR_ERROR"]
+        COLOR_ERROR_HOVER = pal["COLOR_ERROR_HOVER"]
+        COLOR_INFO = pal["COLOR_INFO"]
+        COLOR_HOVER = pal["COLOR_HOVER"]
+        COLOR_SELECTED = pal["COLOR_SELECTED"]
+        COLOR_FOCUS_OUTLINE = pal["COLOR_FOCUS_OUTLINE"]
+        COLOR_ACCENT_SUBTLE = pal["COLOR_ACCENT_SUBTLE"]
+        COLOR_TEXT_DISABLED = pal["COLOR_TEXT_MUTED"]
+        COLOR_STATUS_CONNECTED = pal["COLOR_SUCCESS"]
+        COLOR_STATUS_DISCONNECTED = pal["COLOR_TEXT_SECONDARY"]
+        COLOR_STATUS_MEASURING = pal["COLOR_ACCENT"]
+        COLOR_STATUS_RECORDING = pal["COLOR_ERROR"]
+        COLOR_STATUS_ERROR = pal["COLOR_ERROR"]
+        COLOR_STATUS_WARNING = pal["COLOR_WARNING"]
+        COLOR_STATUS_IDLE = pal["COLOR_TEXT_MUTED"]
         return f"""
         QWidget {{
             background-color: {COLOR_BACKGROUND};
@@ -788,7 +934,7 @@ class ThemeManager:
 
         QWidget#Sidebar {{
             background-color: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-                stop:0 #101012, stop:1 {COLOR_SIDEBAR_BACKGROUND});
+                stop:0 {COLOR_SIDEBAR_START}, stop:1 {COLOR_SIDEBAR_BACKGROUND});
             border-right: 1px solid rgba(255, 255, 255, 28);
         }}
         QLabel#SidebarBrand {{

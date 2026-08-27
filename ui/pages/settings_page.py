@@ -35,6 +35,7 @@ from PySide6.QtCore import QUrl, Qt, Signal
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
     QCheckBox,
+    QComboBox,
     QFrame,
     QHBoxLayout,
     QLabel,
@@ -46,6 +47,7 @@ from PySide6.QtWidgets import (
 )
 
 from infrastructure.storage.app_preferences import AppPreferences
+from ui.themes.theme_manager import apply_application_theme
 from infrastructure.storage.database import get_default_database_path
 
 # § ``infrastructure/serial_comm/device_identifier.py``/``device_manager.py``/
@@ -98,6 +100,7 @@ class SettingsPage(QWidget):
     # "Sidebar-дың Router-ді өзі білмейді" принципімен БІРДЕЙ), тек
     # сұраныс сигналын шығарады.
     sync_now_requested = Signal()
+    theme_changed = Signal(str)
 
     def __init__(
         self,
@@ -197,12 +200,15 @@ class SettingsPage(QWidget):
         language_value.setProperty("role", "secondary")
         layout.addLayout(self._build_row("Тіл", language_value))
 
-        # § "theme control showing 'Ашық' only unless dark mode is
-        # genuinely, fully implemented app-wide" — audit: ThemeManager-де
-        # ЖАЛҒЫЗ ғана light палитра бар, dark mode МҮЛДЕ ЖОҚ.
-        theme_value = QLabel("Ашық", panel)
-        theme_value.setProperty("role", "secondary")
-        layout.addLayout(self._build_row("Тема", theme_value))
+        self._theme_combo = QComboBox(panel)
+        self._theme_combo.addItem("Ашық", "light")
+        self._theme_combo.addItem("Қараңғы", "dark")
+        current = self._app_preferences.get_theme()
+        index = self._theme_combo.findData(current)
+        if index >= 0:
+            self._theme_combo.setCurrentIndex(index)
+        self._theme_combo.currentIndexChanged.connect(self._on_theme_changed)
+        layout.addLayout(self._build_row("Тема", self._theme_combo))
 
         return panel
 
@@ -394,7 +400,15 @@ class SettingsPage(QWidget):
             self._app_preferences.get_auto_scale_default()
         )
         self._auto_scale_checkbox.blockSignals(False)
+        self._reload_theme_control()
         self._reload_sync_controls()
+
+    def _reload_theme_control(self) -> None:
+        self._theme_combo.blockSignals(True)
+        index = self._theme_combo.findData(self._app_preferences.get_theme())
+        if index >= 0:
+            self._theme_combo.setCurrentIndex(index)
+        self._theme_combo.blockSignals(False)
 
     def _reload_sync_controls(self) -> None:
         self._sync_enabled_checkbox.blockSignals(True)
@@ -426,7 +440,16 @@ class SettingsPage(QWidget):
             self._app_preferences.get_auto_scale_default()
         )
         self._auto_scale_checkbox.blockSignals(False)
+        self._reload_theme_control()
+        apply_application_theme(self._app_preferences.get_theme())
+        self.theme_changed.emit(self._app_preferences.get_theme())
         self._reload_sync_controls()
+
+    def _on_theme_changed(self, _index: int) -> None:
+        name = str(self._theme_combo.currentData() or "dark")
+        self._app_preferences.set_theme(name)
+        apply_application_theme(name)
+        self.theme_changed.emit(name)
 
     def _on_sync_enabled_toggled(self, checked: bool) -> None:
         self._app_preferences.set_sync_enabled(checked)

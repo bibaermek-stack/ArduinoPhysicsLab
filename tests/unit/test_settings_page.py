@@ -100,12 +100,23 @@ def test_language_defaults_to_kazakh_only() -> None:
     assert "Қазақша" in labels
 
 
-def test_theme_defaults_to_light_only() -> None:
+def test_theme_combo_offers_light_and_dark() -> None:
     page = SettingsPage()
-    labels = [label.text() for label in page.findChildren(QLabel)]
+    labels = [page._theme_combo.itemText(i) for i in range(page._theme_combo.count())]
     assert "Ашық" in labels
-    # § "do NOT expose a non-working Dark option" — dark mode МҮЛДЕ ЖОҚ.
-    assert not any("Қараңғы" in text or "Dark" in text for text in labels)
+    assert "Қараңғы" in labels
+
+
+def test_changing_theme_persists(temp_preferences) -> None:
+    from ui.themes.theme_manager import apply_application_theme
+
+    preferences, path = temp_preferences
+    page = SettingsPage(app_preferences=preferences)
+    page._theme_combo.setCurrentIndex(page._theme_combo.findData("light"))
+
+    reloaded = AppPreferences(QSettings(path, QSettings.Format.IniFormat))
+    assert reloaded.get_theme() == "light"
+    apply_application_theme("dark")
 
 
 def test_auto_scale_checkbox_default_matches_live_graph_current_behavior() -> None:
@@ -142,12 +153,10 @@ def test_export_format_shows_only_csv() -> None:
 
 
 def test_no_fake_functional_combo_boxes_exposed() -> None:
-    """§ "unsupported language/theme options not exposed" — тіл/тема/
-    baud/экспорт барлығы АҚПАРАТТЫҚ QLabel, бірнеше опциясы бар жалған
-    QComboBox ЕШҚАШАН жасалмайды."""
+    """Тіл/baud/экспорт әлі ақпараттық. Тема ғана нақты QComboBox."""
     page = SettingsPage()
     combo_boxes = page.findChildren(QComboBox)
-    assert combo_boxes == []
+    assert combo_boxes == [page._theme_combo]
 
 
 def test_graph_window_setting_not_exposed() -> None:

@@ -56,7 +56,7 @@ from modules.module_registry import ModuleRegistry
 from ui.main_window import MainWindow
 from ui.pages.account_auth_page import AccountAuthPage
 from ui.pages.role_selection_page import RoleSelectionPage
-from ui.themes.theme_manager import ThemeManager
+from ui.themes.theme_manager import apply_application_theme
 from infrastructure.sync.account_api_client import AccountApiClient, AccountApiError
 
 
@@ -251,7 +251,7 @@ def run() -> int:
     QCoreApplication.setApplicationName("ArduinoPhysicsLab")
 
     app = QApplication(sys.argv)
-    app.setStyleSheet(ThemeManager().build_stylesheet())
+    apply_application_theme(AppPreferences().get_theme())
     # § "existing motion helper if already safe/available" — hover/
     # pressed/focus қозғалысы startup экранында да жұмыс істеуі үшін
     # (бұрын тек ``build_main_window()`` шақырылғанда, яғни рөл

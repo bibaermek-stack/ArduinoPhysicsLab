@@ -33,6 +33,7 @@ from PySide6.QtWidgets import (
 
 from core.resource_paths import resource_path
 from domain.entities.user_role import UserRole
+from ui.themes.theme_manager import current_theme
 from infrastructure.serial_comm.device_manager import DeviceManager
 from ui.navigation.navigation_config import NavigationItem, items_for_role
 
@@ -96,7 +97,7 @@ _SIDEBAR_ICON_PX = 12
 
 
 @lru_cache(maxsize=None)
-def _load_nav_icon(svg_filename: str) -> QIcon:
+def _load_nav_icon(svg_filename: str, theme: str = "dark") -> QIcon:
     """Вендорленген Fluent SVG-ден екі күйлі ``QIcon`` құрады: ``Off``
     (қалыпты, қараңғы) және ``On`` (таңдалған/checked, ақ). Нәтиже
     файл аты бойынша кэштеледі — БІРДЕЙ SVG бірнеше nav item-де (мыс.
@@ -105,7 +106,8 @@ def _load_nav_icon(svg_filename: str) -> QIcon:
     """
     svg_bytes = (_ICON_DIR / svg_filename).read_bytes()
     icon = QIcon()
-    normal_svg_bytes = svg_bytes.replace(_ICON_DARK_FILL, _ICON_NORMAL_FILL)
+    normal_fill = _ICON_DARK_FILL if theme == "light" else _ICON_NORMAL_FILL
+    normal_svg_bytes = svg_bytes.replace(_ICON_DARK_FILL, normal_fill)
     icon.addPixmap(_render_svg_pixmap(normal_svg_bytes), QIcon.Mode.Normal, QIcon.State.Off)
     white_svg_bytes = svg_bytes.replace(_ICON_DARK_FILL, _ICON_SELECTED_FILL)
     icon.addPixmap(_render_svg_pixmap(white_svg_bytes), QIcon.Mode.Normal, QIcon.State.On)
@@ -225,7 +227,7 @@ class Sidebar(QWidget):
 
         self._switch_student_button = QPushButton(_SWITCH_STUDENT_BUTTON_LABEL, self)
         self._switch_student_button.setObjectName("SidebarSwitchStudentButton")
-        self._switch_student_button.setIcon(_load_nav_icon(_SWITCH_STUDENT_ICON_FILE))
+        self._switch_student_button.setIcon(_load_nav_icon(_SWITCH_STUDENT_ICON_FILE, current_theme()))
         self._switch_student_button.setIconSize(QSize(_SIDEBAR_ICON_PX, _SIDEBAR_ICON_PX))
         self._switch_student_button.clicked.connect(
             lambda: _trace_logger.info("14. Sidebar: switch_student_button clicked")
@@ -234,7 +236,7 @@ class Sidebar(QWidget):
 
         self._switch_role_button = QPushButton(_SWITCH_ROLE_BUTTON_LABEL, self)
         self._switch_role_button.setObjectName("SidebarSwitchRoleButton")
-        self._switch_role_button.setIcon(_load_nav_icon(_SWITCH_ROLE_ICON_FILE))
+        self._switch_role_button.setIcon(_load_nav_icon(_SWITCH_ROLE_ICON_FILE, current_theme()))
         self._switch_role_button.setIconSize(QSize(_SIDEBAR_ICON_PX, _SIDEBAR_ICON_PX))
         self._switch_role_button.clicked.connect(
             lambda: _trace_logger.info("14. Sidebar: switch_role_button ('Режімді ауыстыру') clicked")
@@ -279,6 +281,14 @@ class Sidebar(QWidget):
 
     def role(self) -> UserRole:
         return self._role
+
+    def refresh_theme(self) -> None:
+        """Тема ауысқанда иконка түсін қайта жүктейді."""
+        _load_nav_icon.cache_clear()
+        self._rebuild_nav_buttons()
+        theme = current_theme()
+        self._switch_student_button.setIcon(_load_nav_icon(_SWITCH_STUDENT_ICON_FILE, theme))
+        self._switch_role_button.setIcon(_load_nav_icon(_SWITCH_ROLE_ICON_FILE, theme))
 
     def set_active_student_text(self, text: str | None) -> None:
         """Белсенді оқушы мәтінін орнатады (мыс. "Оқушы: Айдос С.\\nСынып:
@@ -346,7 +356,7 @@ class Sidebar(QWidget):
         button.setObjectName("SidebarNavButton")
         button.setCheckable(True)
         if nav_item.icon_svg:
-            button.setIcon(_load_nav_icon(nav_item.icon_svg))
+            button.setIcon(_load_nav_icon(nav_item.icon_svg, current_theme()))
             button.setIconSize(QSize(_SIDEBAR_ICON_PX, _SIDEBAR_ICON_PX))
         button.clicked.connect(
             lambda _checked=False, k=nav_item.key: _trace_logger.info(

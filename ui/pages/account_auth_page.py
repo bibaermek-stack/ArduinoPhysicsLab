@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (
 
 from infrastructure.storage.app_preferences import AppPreferences
 from infrastructure.sync.account_api_client import AccountApiClient, AccountApiError
-from ui.themes.theme_manager import COLOR_BACKGROUND, COLOR_ERROR
+from ui.themes.theme_manager import COLOR_ERROR, theme_color
 from ui.widgets.animated_atom_widget import paint_atom
 
 _WINDOW_TITLE = "Arduino Physics Lab"
@@ -97,7 +97,7 @@ class AccountAuthPage(QWidget):
     def paintEvent(self, event) -> None:  # noqa: N802
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
-        painter.fillRect(self.rect(), QColor(COLOR_BACKGROUND))
+        painter.fillRect(self.rect(), QColor(theme_color("COLOR_BACKGROUND")))
         side = min(self.width(), self.height()) * 0.62
         if side > 0:
             paint_atom(painter, QRectF(-side * 0.22, -side * 0.22, side, side), 0.0, opacity=0.06, animated=False)
