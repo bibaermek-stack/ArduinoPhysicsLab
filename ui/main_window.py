@@ -81,6 +81,8 @@ from ui.pages.experiment_list_page import ExperimentListPage
 from ui.pages.experiment_workspace_page import ExperimentWorkspacePage
 from ui.pages.help_page import HelpPage
 from ui.pages.home_page import HomePage
+from ui.pages.people_page import PeoplePage
+from ui.pages.profile_page import ProfilePage
 from ui.pages.placeholder_page import PlaceholderPage
 from ui.pages.question_bank_page import QuestionBankPage
 from ui.pages.results_page import ResultsPage
@@ -112,6 +114,8 @@ _SIDEBAR_ROUTES: dict[str, str] = {
     "question_bank": "question_bank",
     "settings": "settings",
     "help": "about",
+    "profile": "profile",
+    "people": "people",
 }
 
 # Phase 37A/39B/40: жаңа Мұғалім-тек placeholder route-тары — (route
@@ -552,6 +556,10 @@ class MainWindow(QMainWindow):
             active_teacher_repository=self.active_teacher_repository,
         )
 
+        self._profile_page = ProfilePage(preferences=self.app_preferences)
+        self._people_page = PeoplePage(preferences=self.app_preferences)
+        self._router.register("profile", self._profile_page)
+        self._router.register("people", self._people_page)
         self._router.register("home", self._home_page)
         self._router.register("devices", self._devices_page)
         self._router.register("experiment_list", self._experiment_list_page)

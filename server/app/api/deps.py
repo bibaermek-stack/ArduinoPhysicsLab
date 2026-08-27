@@ -20,9 +20,12 @@ from __future__ import annotations
 import os
 
 import jwt
-from fastapi import Header, HTTPException, status
+from fastapi import Depends, Header, HTTPException, status
+from sqlalchemy.orm import Session
 
-from server.app.services.auth_service import CurrentUser, decode_access_token
+from server.app.db.session import get_db
+from server.app.models.account_models import AccountRecord
+from server.app.services.auth_service import CurrentUser, decode_access_token, get_configured_jwt_secret
 
 _ENV_VAR_NAME = "APL_SYNC_API_KEY"
 _DEV_DEFAULT_API_KEY = "dev-local-only-key"
@@ -55,3 +58,28 @@ def get_current_user(authorization: str | None = Header(default=None)) -> Curren
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token") from None
     return CurrentUser(sync_id=sync_id, role=role)
+
+
+def get_current_account(
+    authorization: str | None = Header(default=None),
+    db: Session = Depends(get_db),
+) -> AccountRecord:
+    """Account-layer JWT (``typ=account`` / ``acc`` claim)."""
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing or malformed Authorization header"
+        )
+    token = authorization.removeprefix("Bearer ").strip()
+    try:
+        payload = jwt.decode(token, get_configured_jwt_secret(), algorithms=["HS256"])
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired") from None
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token") from None
+    account_id = payload.get("acc") or (payload.get("sub") if payload.get("typ") == "account" else None)
+    if not account_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Account token required")
+    account = db.get(AccountRecord, str(account_id))
+    if account is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Account not found")
+    return account

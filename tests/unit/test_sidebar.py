@@ -235,6 +235,8 @@ def test_student_sees_only_its_five_allowed_items() -> None:
         "labs",
         "my_results",
         "feedback_student",
+        "profile",
+        "people",
         "help",
     }
 
@@ -252,6 +254,8 @@ def test_teacher_sees_its_eleven_allowed_items() -> None:
         "analytics",
         "question_bank",
         "devices",
+        "profile",
+        "people",
         "settings",
         "help",
     }

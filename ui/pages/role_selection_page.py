@@ -170,10 +170,12 @@ class RoleSelectionPage(QWidget):
         active_student_repository: IActiveStudentRepository | None = None,
         teacher_repository: ITeacherRepository | None = None,
         active_teacher_repository: IActiveTeacherRepository | None = None,
+        cloud_account_mode: bool = False,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
         self.setWindowTitle(_WINDOW_TITLE)
+        self._cloud_account_mode = cloud_account_mode
         self._student_repository = student_repository or SqliteStudentRepository()
         self._active_student_repository = (
             active_student_repository or SqliteActiveStudentRepository()
@@ -316,13 +318,15 @@ class RoleSelectionPage(QWidget):
         return view
 
     def _on_student_mode_clicked(self) -> None:
+        if self._cloud_account_mode:
+            self.student_login_succeeded.emit()
+            return
         self.show_student_login()
 
     def _on_teacher_clicked(self) -> None:
-        # § Teacher Login Redesign — бұрынғы ``TeacherPinDialog().exec()``
-        # модалы ОРНЫНА, ДӘЛ Оқушы кіру бетімен БІРДЕЙ толық экрандық
-        # көрініске өтеді (§ "Replace the Teacher PIN modal/dialog
-        # completely with a full-page Teacher Login screen").
+        if self._cloud_account_mode:
+            self.role_selected.emit(UserRole.TEACHER)
+            return
         self.show_teacher_login()
 
     # ---- Ортақ кіру-карточка құрылысы --------------------------------------

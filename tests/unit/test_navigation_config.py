@@ -10,8 +10,10 @@ from ui.navigation.navigation_config import (
     items_for_role,
 )
 
-_STUDENT_KEYS = {"home", "labs", "my_results", "feedback_student", "help"}
+_STUDENT_KEYS = {"profile", "people", "home", "labs", "my_results", "feedback_student", "help"}
 _TEACHER_KEYS = {
+    "profile",
+    "people",
     "dashboard",
     "classes",
     "labs",
@@ -41,7 +43,7 @@ def test_teacher_subset_matches_spec() -> None:
 def test_shared_items_present_in_both_roles() -> None:
     student_keys = {item.key for item in items_for_role(UserRole.STUDENT)}
     teacher_keys = {item.key for item in items_for_role(UserRole.TEACHER)}
-    for shared_key in ("labs", "help"):
+    for shared_key in ("labs", "help", "profile", "people"):
         assert shared_key in student_keys
         assert shared_key in teacher_keys
 

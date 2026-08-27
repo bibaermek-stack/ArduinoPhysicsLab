@@ -54,8 +54,10 @@ from modules.heat.module import HeatModule
 from modules.light.module import LightModule
 from modules.module_registry import ModuleRegistry
 from ui.main_window import MainWindow
+from ui.pages.account_auth_page import AccountAuthPage
 from ui.pages.role_selection_page import RoleSelectionPage
 from ui.themes.theme_manager import ThemeManager
+from infrastructure.sync.account_api_client import AccountApiClient, AccountApiError
 
 
 def build_main_window(
@@ -283,23 +285,18 @@ def run() -> int:
     backfill_default_teacher(teacher_repository, classroom_repository)
     backfill_sync_ids(classroom_repository, student_repository, teacher_repository)
 
+    app_preferences = AppPreferences()
+    account_client = AccountApiClient(app_preferences)
     role_selection_page = RoleSelectionPage(
         student_repository=student_repository,
         active_student_repository=active_student_repository,
         teacher_repository=teacher_repository,
         active_teacher_repository=active_teacher_repository,
     )
-    # § "Launch at the same normal application window size used by
-    # MainWindow... restore the application's existing normal window
-    # sizing convention" — ``MainWindow.showMaximized()``-мен БІРДЕЙ
-    # (ескі ``resize(480, 360)`` ОРНЫНА), терезе әлі де resizable қалады.
-    role_selection_page.showMaximized()
-    _trace_logger.info("6. RoleSelectionPage opened, id=%s", id(role_selection_page))
-    # ``window`` тізім ішінде сақталады — Python closure-дың сыртқы
-    # айнымалыны ТЕК оқи алатынына (жаңа мән тағайындай алмайтынына)
-    # байланысты жеңіл айналып өту тәсілі, әрі GC-дан қорғайды
-    # (MainWindow-ды жасаушы жалғыз сілтеме осы closure).
+    account_auth_page = AccountAuthPage(preferences=app_preferences)
+    _trace_logger.info("6. AccountAuthPage opened")
     main_window_holder: list[MainWindow] = []
+    cloud_role_page_holder: list[RoleSelectionPage] = []
 
     def _open_main_window(role: UserRole) -> None:
         _trace_logger.info("10. _open_main_window() entered, role=%s", role)
@@ -338,11 +335,69 @@ def run() -> int:
             window.trigger_manual_sync()
 
         role_selection_page.close()
+        account_auth_page.close()
+        for page in cloud_role_page_holder:
+            page.close()
 
+    def _show_cloud_role_picker() -> None:
+        picker = RoleSelectionPage(
+            student_repository=student_repository,
+            active_student_repository=active_student_repository,
+            teacher_repository=teacher_repository,
+            active_teacher_repository=active_teacher_repository,
+            cloud_account_mode=True,
+        )
+        cloud_role_page_holder.append(picker)
+
+        def _picked_teacher(_role: UserRole) -> None:
+            try:
+                payload = account_client.select_role("teacher")
+                account_client.store_session(payload, email="")
+            except AccountApiError:
+                pass
+            picker.close()
+            _open_main_window(UserRole.TEACHER)
+
+        def _picked_student() -> None:
+            try:
+                payload = account_client.select_role("student")
+                account_client.store_session(payload, email="")
+            except AccountApiError:
+                pass
+            picker.close()
+            _open_main_window(UserRole.STUDENT)
+
+        picker.role_selected.connect(_picked_teacher)
+        picker.student_login_succeeded.connect(_picked_student)
+        picker.showMaximized()
+        account_auth_page.hide()
+
+    def _on_authenticated(payload: object) -> None:
+        data = payload if isinstance(payload, dict) else {}
+        needs_role = bool(data.get("needs_role") or not data.get("role"))
+        if needs_role:
+            _show_cloud_role_picker()
+            return
+        role = UserRole.TEACHER if data.get("role") == "teacher" else UserRole.STUDENT
+        account_auth_page.close()
+        _open_main_window(role)
+
+    def _start_offline() -> None:
+        account_auth_page.hide()
+        role_selection_page.showMaximized()
+
+    account_auth_page.authenticated.connect(_on_authenticated)
+    account_auth_page.skip_offline.connect(_start_offline)
     role_selection_page.role_selected.connect(_open_main_window)
     role_selection_page.student_login_succeeded.connect(
         lambda: _open_main_window(UserRole.STUDENT)
     )
-    role_selection_page.show()
+
+    cached_role = app_preferences.get_account_role()
+    cached_token = app_preferences.get_account_token()
+    if cached_token and cached_role in ("teacher", "student"):
+        _open_main_window(UserRole.TEACHER if cached_role == "teacher" else UserRole.STUDENT)
+    else:
+        account_auth_page.showMaximized()
 
     return app.exec()

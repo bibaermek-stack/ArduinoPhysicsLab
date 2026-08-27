@@ -69,6 +69,8 @@ NAVIGATION_ITEMS: tuple[NavigationItem, ...] = (
     NavigationItem("analytics", "Аналитика", "📉", _TEACHER, "ic_fluent_chart_multiple_24_regular.svg"),
     NavigationItem("question_bank", "Сұрақтар банкі", "📚", _TEACHER, "ic_fluent_book_24_regular.svg"),
     NavigationItem("devices", "Құрылғылар", "🔌", _TEACHER, "ic_fluent_plug_connected_24_regular.svg"),
+    NavigationItem("profile", "Профиль", "👤", _BOTH, "ic_fluent_person_24_filled.svg"),
+    NavigationItem("people", "Адамдар", "🔎", _BOTH, "ic_fluent_people_swap_24_regular.svg"),
     NavigationItem("settings", "Баптаулар", "⚙", _TEACHER, "ic_fluent_settings_24_regular.svg"),
     NavigationItem("help", "Анықтама", "❓", _BOTH, "ic_fluent_question_circle_24_regular.svg"),
 )

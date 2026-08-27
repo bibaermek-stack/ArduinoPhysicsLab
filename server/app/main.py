@@ -21,7 +21,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from starlette.middleware.gzip import GZipMiddleware
 
-from server.app.api import auth, health, sync
+from server.app.api import accounts, auth, health, people, sync
+from server.app.models import account_models as _account_models  # noqa: F401
 from server.app.api.deps import _DEV_DEFAULT_API_KEY, get_configured_api_key
 from server.app.services.auth_service import _DEV_DEFAULT_SECRET, get_configured_jwt_secret
 
@@ -74,4 +75,7 @@ app.add_middleware(GZipMiddleware, minimum_size=1024)
 
 app.include_router(health.router, prefix="/api/v1")
 app.include_router(auth.router, prefix="/api/v1")
+app.include_router(accounts.router, prefix="/api/v1")
+app.include_router(accounts.me_router, prefix="/api/v1")
+app.include_router(people.router, prefix="/api/v1")
 app.include_router(sync.router, prefix="/api/v1")

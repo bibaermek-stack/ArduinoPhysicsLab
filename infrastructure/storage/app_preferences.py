@@ -89,6 +89,13 @@ _DEFAULT_SYNC_API_BASE_URL = "http://127.0.0.1:8000"
 _DEFAULT_SYNC_ENABLED = False
 _DEFAULT_SYNC_REQUEST_TIMEOUT = 5.0
 
+_KEY_ACCOUNT_TOKEN = "account/access_token"
+_KEY_ACCOUNT_ID = "account/id"
+_KEY_ACCOUNT_EMAIL = "account/email"
+_KEY_ACCOUNT_NAME = "account/display_name"
+_KEY_ACCOUNT_ROLE = "account/role"
+_KEY_ACCOUNT_PUBLIC_ID = "account/public_id"
+
 
 class AppPreferences:
     """``QSettings``-ті ораған, типтелген getter/setter интерфейсі —
@@ -246,3 +253,40 @@ class AppPreferences:
         self._settings.remove(_KEY_SYNC_AUTH_TOKEN_EXPIRES_AT)
         self._settings.remove(_KEY_SYNC_AUTH_TOKEN_ROLE)
         self._settings.remove(_KEY_SYNC_AUTH_TOKEN_SYNC_ID)
+
+    def get_account_token(self) -> str:
+        return str(self._settings.value(_KEY_ACCOUNT_TOKEN, "") or "")
+
+    def get_account_role(self) -> str:
+        return str(self._settings.value(_KEY_ACCOUNT_ROLE, "") or "")
+
+    def get_account_public_id(self) -> str:
+        return str(self._settings.value(_KEY_ACCOUNT_PUBLIC_ID, "") or "")
+
+    def get_account_display_name(self) -> str:
+        return str(self._settings.value(_KEY_ACCOUNT_NAME, "") or "")
+
+    def set_account_session(
+        self,
+        *,
+        token: str,
+        account_id: str,
+        email: str,
+        display_name: str,
+        role: str,
+        public_id: str,
+    ) -> None:
+        self._settings.setValue(_KEY_ACCOUNT_TOKEN, token)
+        self._settings.setValue(_KEY_ACCOUNT_ID, account_id)
+        self._settings.setValue(_KEY_ACCOUNT_EMAIL, email)
+        self._settings.setValue(_KEY_ACCOUNT_NAME, display_name)
+        self._settings.setValue(_KEY_ACCOUNT_ROLE, role)
+        self._settings.setValue(_KEY_ACCOUNT_PUBLIC_ID, public_id)
+
+    def clear_account_session(self) -> None:
+        self._settings.remove(_KEY_ACCOUNT_TOKEN)
+        self._settings.remove(_KEY_ACCOUNT_ID)
+        self._settings.remove(_KEY_ACCOUNT_EMAIL)
+        self._settings.remove(_KEY_ACCOUNT_NAME)
+        self._settings.remove(_KEY_ACCOUNT_ROLE)
+        self._settings.remove(_KEY_ACCOUNT_PUBLIC_ID)
