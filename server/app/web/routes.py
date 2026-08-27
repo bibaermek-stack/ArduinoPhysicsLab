@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
-from fastapi.responses import HTMLResponse, RedirectResponse, Response
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from starlette.status import HTTP_303_SEE_OTHER
@@ -34,8 +35,26 @@ import jwt
 
 COOKIE = "apl_web_token"
 _WEB_DIR = Path(__file__).resolve().parent
+_DEFAULT_WINDOWS_ZIP_URL = (
+    "https://github.com/bibaermek-stack/ArduinoPhysicsLab/releases/latest/download/ArduinoPhysicsLab.zip"
+)
 templates = Jinja2Templates(directory=str(_WEB_DIR / "templates"))
 router = APIRouter()
+
+
+def _windows_zip_url() -> str:
+    return os.environ.get("APL_WINDOWS_DOWNLOAD_URL", _DEFAULT_WINDOWS_ZIP_URL).strip() or _DEFAULT_WINDOWS_ZIP_URL
+
+
+def _local_windows_zip() -> Path | None:
+    candidates = (
+        _WEB_DIR / "downloads" / "ArduinoPhysicsLab.zip",
+        Path(__file__).resolve().parents[3] / "release" / "ArduinoPhysicsLab.zip",
+    )
+    for path in candidates:
+        if path.is_file() and path.stat().st_size > 1024:
+            return path
+    return None
 
 
 def _cookie_secure() -> bool:
@@ -155,6 +174,26 @@ def google_setup(request: Request) -> HTMLResponse:
         "google_setup.html",
         {"redirect_uri": uri, "origin": uri.rsplit("/api/", 1)[0], "account": None},
     )
+
+
+@router.get("/download", response_class=HTMLResponse)
+def download_page(request: Request, account: AccountRecord | None = Depends(get_web_account)) -> HTMLResponse:
+    return templates.TemplateResponse(request, "download.html", {"account": account})
+
+
+@router.get("/download/windows")
+def download_windows() -> Response:
+    local = _local_windows_zip()
+    if local is not None:
+        return FileResponse(
+            local,
+            media_type="application/zip",
+            filename="ArduinoPhysicsLab.zip",
+        )
+    url = _windows_zip_url()
+    if url:
+        return RedirectResponse(url, status_code=HTTP_303_SEE_OTHER)
+    raise HTTPException(status_code=404, detail="Windows пакеті әлі жүктелмеген")
 
 
 @router.get("/logout")

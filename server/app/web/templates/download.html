@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Жүктеу · Arduino Physics Lab{% endblock %}
+{% block body %}
+<section class="hero">
+  <h1>Windows қолданбасын жүктеу</h1>
+  <p>Зертхананы компьютерде ашыңыз. Arduino датчиктері USB арқылы қосылады, ал аккаунт пен деректер осы сайтпен синхрондалады.</p>
+  <div class="actions">
+    <a class="btn btn-lab" href="/download/windows">ArduinoPhysicsLab.zip жүктеу</a>
+    <a class="btn btn-ghost" href="/register">Алдымен тіркелу</a>
+  </div>
+</section>
+<section class="card" style="padding:28px;margin-top:20px">
+  <h2>Қалай ашу керек</h2>
+  <ol class="steps">
+    <li>Zip файлын жүктеп, қалтаны толық шығарыңыз.</li>
+    <li><b>ArduinoPhysicsLab.exe</b> және <b>_internal</b> қалтасы бірге тұруы керек.</li>
+    <li>Exe файлын ашыңыз, сайттағы email немесе Google-мен кіріңіз.</li>
+    <li>Интернет болса, мұғалім мен оқушы деректері онлайн серверге жазылады.</li>
+  </ol>
+  <p class="hint">Windows Defender алғашқы ретте ескерту көрсетуі мүмкін — «Қосымша ақпарат» → «Бәрібір орындау».</p>
+</section>
+{% endblock %}
