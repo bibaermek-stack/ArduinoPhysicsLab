@@ -4,13 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Arduino Physics Lab{% endblock %}</title>
-  <link rel="stylesheet" href="/static/app.css?v=2">
+  <link rel="stylesheet" href="/static/app.css?v=3">
 </head>
 <body>
+  <a class="skip" href="#main">Негізгі мазмұнға өту</a>
   <div class="orbit a"></div>
   <div class="orbit b"></div>
   <div class="wrap">
-    <nav class="nav">
+    <nav class="nav" aria-label="Негізгі">
       <a class="brand" href="/"><span class="mark">APL</span> Arduino Physics Lab</a>
       <div class="nav-links">
         {% if account %}
@@ -22,19 +23,21 @@
         {% else %}
           <a href="/download" class="{{ 'is-active' if request.url.path.startswith('/download') else '' }}">Жүктеу</a>
           <a href="/login" class="{{ 'is-active' if request.url.path == '/login' else '' }}">Кіру</a>
-          <a href="/register" class="{{ 'is-active' if request.url.path == '/register' else '' }}">Тіркелу</a>
+          <a class="nav-cta" href="/register">Тіркелу</a>
         {% endif %}
       </div>
     </nav>
-    {% block body %}{% endblock %}
-    <p class="footer">
+    <main id="main" class="page">
+      {% block body %}{% endblock %}
+    </main>
+    <footer class="footer">
       <span>Мектеп физикасына арналған цифрлық зертхана</span>
       <span>
         <a href="/download">Windows қолданбасы</a>
         ·
         <a href="/login">Кіру</a>
       </span>
-    </p>
+    </footer>
   </div>
 </body>
 </html>

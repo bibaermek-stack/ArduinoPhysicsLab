@@ -6,10 +6,10 @@
   <h1>Кіру</h1>
   <p>Сайттағы және Windows қолданбасындағы бір аккаунт.</p>
   {% if error %}<p class="error">{{ error }}</p>{% endif %}
-  <label>Email</label>
-  <input type="email" name="email" required autocomplete="username">
-  <label>Құпия сөз</label>
-  <input type="password" name="password" required autocomplete="current-password">
+  <label for="login-email">Email</label>
+  <input id="login-email" type="email" name="email" required autocomplete="username">
+  <label for="login-password">Құпия сөз</label>
+  <input id="login-password" type="password" name="password" required autocomplete="current-password">
   <div class="actions">
     <button class="btn btn-lab" type="submit">Кіру</button>
     <a class="btn btn-google" href="/google"><span class="gmark"></span> Google</a>

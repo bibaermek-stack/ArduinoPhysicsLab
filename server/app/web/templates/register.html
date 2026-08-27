@@ -6,12 +6,12 @@
   <h1>Тіркелу</h1>
   <p>Кейін мұғалім немесе оқушы рөлін таңдайсыз.</p>
   {% if error %}<p class="error">{{ error }}</p>{% endif %}
-  <label>Аты-жөні</label>
-  <input type="text" name="display_name" required autocomplete="name">
-  <label>Email</label>
-  <input type="email" name="email" required autocomplete="email">
-  <label>Құпия сөз (кемінде 6 таңба)</label>
-  <input type="password" name="password" minlength="6" required autocomplete="new-password">
+  <label for="reg-name">Аты-жөні</label>
+  <input id="reg-name" type="text" name="display_name" required autocomplete="name">
+  <label for="reg-email">Email</label>
+  <input id="reg-email" type="email" name="email" required autocomplete="email">
+  <label for="reg-password">Құпия сөз (кемінде 6 таңба)</label>
+  <input id="reg-password" type="password" name="password" minlength="6" required autocomplete="new-password">
   <div class="actions">
     <button class="btn btn-lab" type="submit">Тіркелу</button>
     <a class="btn btn-google" href="/google"><span class="gmark"></span> Google</a>
