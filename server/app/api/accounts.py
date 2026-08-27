@@ -100,24 +100,19 @@ def select_account_role(
     return _token_response(account)
 
 
+_DEFAULT_PUBLIC_BASE = "https://arduinophysicslab-production.up.railway.app"
+
+
 def _public_base_url() -> str:
+    return os.environ.get("APL_PUBLIC_BASE_URL", _DEFAULT_PUBLIC_BASE).rstrip("/")
+
+
+def _google_redirect_uri(_request: Request | None = None) -> str:
+    """Google Console-дағы URI-мен БІРДЕЙ болуы керек — request host-қа тәуелді емес."""
     return os.environ.get(
-        "APL_PUBLIC_BASE_URL",
-        "https://arduinophysicslab-production.up.railway.app",
-    ).rstrip("/")
-
-
-def _request_origin(request: Request) -> str:
-    forwarded_host = (request.headers.get("x-forwarded-host") or "").split(",")[0].strip()
-    forwarded_proto = (request.headers.get("x-forwarded-proto") or "").split(",")[0].strip()
-    if forwarded_host:
-        proto = forwarded_proto or "https"
-        return f"{proto}://{forwarded_host}".rstrip("/")
-    return str(request.base_url).rstrip("/")
-
-
-def _google_redirect_uri(request: Request) -> str:
-    return f"{_request_origin(request)}/api/v1/auth/google/callback"
+        "APL_GOOGLE_REDIRECT_URI",
+        f"{_public_base_url()}/api/v1/auth/google/callback",
+    ).strip()
 
 
 @router.get("/google/start")

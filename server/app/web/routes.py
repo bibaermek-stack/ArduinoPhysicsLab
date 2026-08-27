@@ -136,6 +136,18 @@ def google_web() -> RedirectResponse:
     return RedirectResponse("/api/v1/auth/google/start", status_code=HTTP_303_SEE_OTHER)
 
 
+@router.get("/google-setup", response_class=HTMLResponse)
+def google_setup(request: Request) -> HTMLResponse:
+    from server.app.api.accounts import _google_redirect_uri
+
+    uri = _google_redirect_uri()
+    return templates.TemplateResponse(
+        request,
+        "google_setup.html",
+        {"redirect_uri": uri, "origin": uri.rsplit("/api/", 1)[0], "account": None},
+    )
+
+
 @router.get("/logout")
 def logout() -> RedirectResponse:
     response = RedirectResponse("/", status_code=HTTP_303_SEE_OTHER)

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Google баптау{% endblock %}
+{% block body %}
+<section class="card" style="padding:28px">
+  <h1>Google Console-ға қойылатын URI</h1>
+  <p>OAuth клиент түрі: <b>Web application</b> (Desktop емес).</p>
+  <p><b>Authorized redirect URIs</b> — дәл осы жол:</p>
+  <p class="idpill">{{ redirect_uri }}</p>
+  <p><b>Authorized JavaScript origins</b>:</p>
+  <p class="idpill">{{ origin }}</p>
+  <p>Сақтаған соң 2–5 минут күтіп, <a href="/login">кіру</a> бетінен Google-ды қайта басыңыз.</p>
+</section>
+{% endblock %}
