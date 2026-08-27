@@ -38,6 +38,7 @@ from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QMessageBox,
     QPushButton,
     QVBoxLayout,
@@ -310,6 +311,42 @@ class SettingsPage(QWidget):
     def _build_sync_panel(self) -> QFrame:
         panel, layout = self._build_panel_frame("БҰЛТТЫҚ СИНХРОНДАУ")
 
+        self._sync_enabled_checkbox = QCheckBox("Онлайн синхрондауды қосу", panel)
+        self._sync_enabled_checkbox.setChecked(self._app_preferences.get_sync_enabled())
+        self._sync_enabled_checkbox.setToolTip(
+            "Қосылса, қолданба ортақ сервермен дерек алмасады. Интернет жоқ кезде жергілікті жұмыс істей береді."
+        )
+        self._sync_enabled_checkbox.toggled.connect(self._on_sync_enabled_toggled)
+        _make_background_transparent(self._sync_enabled_checkbox)
+        layout.addWidget(self._sync_enabled_checkbox)
+
+        url_label = QLabel("Сервер мекенжайы", panel)
+        _make_background_transparent(url_label)
+        layout.addWidget(url_label)
+
+        self._sync_url_edit = QLineEdit(panel)
+        self._sync_url_edit.setText(self._app_preferences.get_sync_api_base_url())
+        self._sync_url_edit.setPlaceholderText("https://your-server.example")
+        self._sync_url_edit.setClearButtonEnabled(True)
+        self._sync_url_edit.editingFinished.connect(self._on_sync_url_editing_finished)
+        layout.addWidget(self._sync_url_edit)
+
+        self._sync_url_error_label = QLabel("", panel)
+        self._sync_url_error_label.setProperty("role", "secondary")
+        self._sync_url_error_label.setWordWrap(True)
+        _make_background_transparent(self._sync_url_error_label)
+        layout.addWidget(self._sync_url_error_label)
+
+        hint_label = QLabel(
+            "Осы мекенжайдағы ортақ сервер арқылы мұғалім мен оқушы деректері "
+            "үндестіріледі. Интернет болмаса қолданба жергілікті жұмыс істей береді.",
+            panel,
+        )
+        hint_label.setProperty("role", "secondary")
+        hint_label.setWordWrap(True)
+        _make_background_transparent(hint_label)
+        layout.addWidget(hint_label)
+
         self._sync_status_label = QLabel(panel)
         self._sync_status_label.setProperty("role", "secondary")
         self._sync_status_label.setWordWrap(True)
@@ -356,6 +393,16 @@ class SettingsPage(QWidget):
             self._app_preferences.get_auto_scale_default()
         )
         self._auto_scale_checkbox.blockSignals(False)
+        self._reload_sync_controls()
+
+    def _reload_sync_controls(self) -> None:
+        self._sync_enabled_checkbox.blockSignals(True)
+        self._sync_enabled_checkbox.setChecked(self._app_preferences.get_sync_enabled())
+        self._sync_enabled_checkbox.blockSignals(False)
+        self._sync_url_edit.blockSignals(True)
+        self._sync_url_edit.setText(self._app_preferences.get_sync_api_base_url())
+        self._sync_url_edit.blockSignals(False)
+        self._sync_url_error_label.setText("")
 
     # ---- Пайдаланушы әрекеттері -----------------------------------------
 
@@ -378,3 +425,19 @@ class SettingsPage(QWidget):
             self._app_preferences.get_auto_scale_default()
         )
         self._auto_scale_checkbox.blockSignals(False)
+        self._reload_sync_controls()
+
+    def _on_sync_enabled_toggled(self, checked: bool) -> None:
+        self._app_preferences.set_sync_enabled(checked)
+
+    def _on_sync_url_editing_finished(self) -> None:
+        text = self._sync_url_edit.text().strip()
+        try:
+            self._app_preferences.set_sync_api_base_url(text)
+            self._sync_url_error_label.setText("")
+            self._sync_url_edit.setText(self._app_preferences.get_sync_api_base_url())
+        except ValueError:
+            self._sync_url_error_label.setText(
+                "URL http:// немесе https:// схемасымен басталуы керек"
+            )
+            self._sync_url_edit.setText(self._app_preferences.get_sync_api_base_url())

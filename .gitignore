@@ -37,6 +37,7 @@ test_logs/
 *.pem
 *.key
 *credentials*.json
+/deployment.json
 
 # --- Local runtime databases (none are checked in as fixtures today —
 #     audited before adding this rule) ---

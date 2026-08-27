@@ -80,6 +80,11 @@ class _FakeApiClient:
     def __init__(self, health_sequence: list[bool] | None = None) -> None:
         self._health_sequence = health_sequence or [True]
         self.check_health_call_count = 0
+        self.configured_base_url: str | None = None
+
+    def configure(self, *, base_url=None, api_key=None, request_timeout=None) -> None:
+        if base_url is not None:
+            self.configured_base_url = base_url
 
     def check_health(self) -> bool:
         index = min(self.check_health_call_count, len(self._health_sequence) - 1)
@@ -201,6 +206,16 @@ def test_sync_disabled_is_a_pure_noop(temp_preferences) -> None:
     worker.run_sync_now()
 
     assert engine.call_count == 0
+
+
+def test_run_sync_now_applies_updated_server_url(temp_preferences) -> None:
+    temp_preferences.set_sync_api_base_url("https://lab.example.kz")
+    api_client = _FakeApiClient()
+    worker = _build_worker(temp_preferences, engine=_FakeEngine(), api_client=api_client)
+
+    worker.run_sync_now()
+
+    assert api_client.configured_base_url == "https://lab.example.kz"
 
 
 def test_run_sync_now_without_engine_is_a_safe_noop(temp_preferences) -> None:

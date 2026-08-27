@@ -22,6 +22,8 @@ from datetime import datetime
 
 from PySide6.QtCore import QSettings
 
+from core.deployment_config import load_deployment_config
+
 _KEY_AUTO_SCALE_DEFAULT = "measurement/auto_scale_default"
 
 # § ``ui/widgets/live_graph.py``-дегі ``self._auto_scale_checkbox.
@@ -116,12 +118,16 @@ class AppPreferences:
         сыныптар, нәтижелер) ЕШБІР қатысы жоқ (§ "must NOT delete
         students/classrooms/experiments/results/measurement data")."""
         self._settings.remove(_KEY_AUTO_SCALE_DEFAULT)
+        self._settings.remove(_KEY_SYNC_API_BASE_URL)
+        self._settings.remove(_KEY_SYNC_ENABLED)
 
     # ---- Cloud Sync §25 "Configuration" ----------------------------------
 
     def get_sync_api_base_url(self) -> str:
-        value = self._settings.value(_KEY_SYNC_API_BASE_URL, _DEFAULT_SYNC_API_BASE_URL)
-        return str(value)
+        if self._settings.contains(_KEY_SYNC_API_BASE_URL):
+            return str(self._settings.value(_KEY_SYNC_API_BASE_URL))
+        deployed = load_deployment_config().sync_api_base_url
+        return deployed or _DEFAULT_SYNC_API_BASE_URL
 
     def set_sync_api_base_url(self, value: str) -> None:
         """§ Phase 9 (Production Deployment) Part K "HTTPS / Network
@@ -141,10 +147,15 @@ class AppPreferences:
         self._settings.setValue(_KEY_SYNC_API_BASE_URL, normalized)
 
     def get_sync_enabled(self) -> bool:
-        value = self._settings.value(_KEY_SYNC_ENABLED, _DEFAULT_SYNC_ENABLED)
-        if isinstance(value, bool):
-            return value
-        return str(value).strip().lower() in ("true", "1")
+        if self._settings.contains(_KEY_SYNC_ENABLED):
+            value = self._settings.value(_KEY_SYNC_ENABLED)
+            if isinstance(value, bool):
+                return value
+            return str(value).strip().lower() in ("true", "1")
+        deployed = load_deployment_config().sync_enabled
+        if deployed is not None:
+            return deployed
+        return _DEFAULT_SYNC_ENABLED
 
     def set_sync_enabled(self, value: bool) -> None:
         self._settings.setValue(_KEY_SYNC_ENABLED, bool(value))

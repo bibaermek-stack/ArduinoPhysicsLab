@@ -243,6 +243,7 @@ class SyncWorker(QObject):
         ``_connectivity_monitor``-ға ЖЕТКІЗІЛЕДІ)."""
         if self._engine is None or self._is_syncing or self._api_client is None:
             return
+        self._apply_live_sync_config()
         is_online = self._api_client.check_health()
         self._update_connectivity_state(is_online, trigger_sync_on_restore=True)
 
@@ -282,6 +283,7 @@ class SyncWorker(QObject):
         § модуль докстрингі)."""
         if self._engine is None:
             return
+        self._apply_live_sync_config()
         if self._preferences is not None and not self._preferences.get_sync_enabled():
             return
         if self._is_syncing:
@@ -327,7 +329,20 @@ class SyncWorker(QObject):
             if self._preferences is not None and not self._preferences.get_sync_enabled():
                 break
 
-    @Slot()
+    def _apply_live_sync_config(self) -> None:
+        """Баптауларда өзгерген URL/кілтті келесі циклге дереу қолданады.
+        Тест дублерлерінде ``configure`` болмаса ештеңе жасамайды."""
+        if self._api_client is None or self._preferences is None:
+            return
+        configure = getattr(self._api_client, "configure", None)
+        if configure is None:
+            return
+        configure(
+            base_url=self._preferences.get_sync_api_base_url(),
+            api_key=get_configured_sync_api_key(),
+            request_timeout=self._preferences.get_sync_request_timeout(),
+        )
+
     def shutdown(self) -> None:
         """Екі таймерді де тоқтатады. sqlite3 байланыстары процесс
         аяқталғанда ОС арқылы жабылады (§ басқа sqlite репозиторийлерде

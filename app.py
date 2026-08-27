@@ -330,9 +330,9 @@ def run() -> int:
         # after-UI": терезе көрсетілгеннен КЕЙІН ғана сұралады (§ "must
         # never block application startup") ЖӘНЕ жабылу алдында graceful
         # тоқтатылады (§ ``SerialThreadController``-мен БІРДЕЙ ``stop()``
-        # конвенциясы). ``AppPreferences.get_sync_enabled()`` әдепкі
-        # ``False`` болғандықтан, бұл нақты HTTP сұрауын тудырмайды —
-        # синхрондау Баптаулар бетінде АРНАЙЫ қосылғанша ешнәрсе жасамайды.
+        # конвенциясы). ``AppPreferences.get_sync_enabled()`` кодтағы
+        # әдепкісі ``False``, БІРАҚ таратылатын ``deployment.json`` оны
+        # қосуы мүмкін — сонда бірінші іске қосылымда HTTP сұрауы кетеді.
         if window.sync_thread_controller is not None:
             app.aboutToQuit.connect(window.sync_thread_controller.stop)
             window.trigger_manual_sync()

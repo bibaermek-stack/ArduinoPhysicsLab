@@ -11,9 +11,17 @@ from __future__ import annotations
 
 import os
 
+from core.deployment_config import load_deployment_config
+
 _ENV_VAR_NAME = "APL_SYNC_API_KEY"
 _DEV_DEFAULT_API_KEY = "dev-local-only-key"
 
 
 def get_configured_sync_api_key() -> str:
-    return os.environ.get(_ENV_VAR_NAME) or _DEV_DEFAULT_API_KEY
+    env_value = os.environ.get(_ENV_VAR_NAME, "").strip()
+    if env_value:
+        return env_value
+    deployed = load_deployment_config().sync_api_key
+    if deployed:
+        return deployed
+    return _DEV_DEFAULT_API_KEY

@@ -52,6 +52,22 @@ class HttpSyncApiClient(ISyncApiClient):
         # шақыруларына ``Authorization: Bearer`` ретінде тіркеледі.
         self._auth_token: str | None = None
 
+    def configure(
+        self,
+        *,
+        base_url: str | None = None,
+        api_key: str | None = None,
+        request_timeout: float | None = None,
+    ) -> None:
+        """Баптаулар бетінде URL/кілт өзгергенде клиентті қайта құрмай
+        жаңартады — келесі health/sync циклі жаңа серверге барады."""
+        if base_url is not None:
+            self._base_url = base_url.rstrip("/")
+        if api_key is not None:
+            self._api_key = api_key
+        if request_timeout is not None:
+            self._request_timeout = request_timeout
+
     def _http(self) -> httpx.Client:
         return self._client if self._client is not None else httpx
 

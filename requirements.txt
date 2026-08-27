@@ -3,3 +3,4 @@ pyqtgraph
 numpy
 openpyxl
 reportlab
+httpx

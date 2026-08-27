@@ -17,8 +17,9 @@
 # қатысы жоқ, сондықтан bundle-ге ЕНГІЗІЛМЕЙДІ (§ "keep the packaged
 # app lean").
 
-import sys
 from pathlib import Path
+
+from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 
 block_cipher = None
 
@@ -27,7 +28,9 @@ _PROJECT_ROOT = Path(SPECPATH).resolve().parent
 _DATAS = [
     (str(_PROJECT_ROOT / "Design" / "02_FluentIcons" / "svg"), "Design/02_FluentIcons/svg"),
     (str(_PROJECT_ROOT / "ui" / "resources" / "images"), "ui/resources/images"),
+    (str(_PROJECT_ROOT / "deployment.example.json"), "."),
 ]
+_DATAS += collect_data_files("certifi")
 
 # § "runtime does not depend on Python being installed system-wide" —
 # ``PySide6.QtSerialPort`` (Arduino/COM порт байланысы) мен
@@ -39,7 +42,15 @@ _HIDDEN_IMPORTS = [
     "pyqtgraph",
     "pyqtgraph.graphicsItems",
     "pyqtgraph.exporters",
+    "httpx",
+    "httpcore",
+    "certifi",
+    "h11",
+    "anyio",
+    "idna",
+    "core.deployment_config",
 ]
+_HIDDEN_IMPORTS += collect_submodules("httpx")
 
 a = Analysis(
     [str(_PROJECT_ROOT / "main.py")],
@@ -50,7 +61,20 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    excludes=[
+        "pytest",
+        "py",
+        "matplotlib",
+        "scipy",
+        "numba",
+        "llvmlite",
+        "IPython",
+        "tkinter",
+        "notebook",
+        "sphinx",
+        "tests",
+        "server.tests",
+    ],
     noarchive=False,
     cipher=block_cipher,
 )

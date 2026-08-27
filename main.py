@@ -18,6 +18,24 @@ from pathlib import Path
 from core.logging_setup import configure_rotating_logger, get_log_directory
 from core.version import __version__
 
+
+def _configure_frozen_ssl() -> None:
+    """PyInstaller bundle ішінде httpx HTTPS сертификаттарын табуы үшін."""
+    if not getattr(sys, "frozen", False):
+        return
+    try:
+        import certifi
+
+        cert_path = certifi.where()
+        if Path(cert_path).is_file():
+            os.environ.setdefault("SSL_CERT_FILE", cert_path)
+            os.environ.setdefault("REQUESTS_CA_BUNDLE", cert_path)
+    except Exception:
+        return
+
+
+_configure_frozen_ssl()
+
 # Барлық модуль осы ДӘЛ СОЛ логгер атын қолданады ("apl.trace") — жалғыз
 # rotating file handler осында, бір рет, қосылады.
 trace_logger = configure_rotating_logger("apl.trace")

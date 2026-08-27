@@ -6,7 +6,7 @@ import tempfile
 
 import pytest
 from PySide6.QtCore import QSettings
-from PySide6.QtWidgets import QApplication, QCheckBox, QComboBox, QFrame, QLabel, QPushButton
+from PySide6.QtWidgets import QApplication, QCheckBox, QComboBox, QFrame, QLabel, QLineEdit, QPushButton
 
 from infrastructure.storage.app_preferences import AppPreferences
 from infrastructure.storage.database import get_default_database_path
@@ -308,6 +308,46 @@ def test_settings_page_root_has_no_instance_level_stylesheet() -> None:
 def test_buttons_have_no_instance_level_stylesheet() -> None:
     page = SettingsPage()
     assert page._reset_button.styleSheet() == ""
+
+
+def test_sync_enabled_checkbox_and_url_field_are_present() -> None:
+    page = SettingsPage()
+    assert page._sync_enabled_checkbox.text() == "Онлайн синхрондауды қосу"
+    assert isinstance(page._sync_url_edit, QLineEdit)
+
+
+def test_toggling_sync_enabled_persists_immediately(temp_preferences) -> None:
+    preferences, path = temp_preferences
+    page = SettingsPage(app_preferences=preferences)
+
+    page._sync_enabled_checkbox.setChecked(True)
+
+    reloaded = AppPreferences(QSettings(path, QSettings.Format.IniFormat))
+    assert reloaded.get_sync_enabled() is True
+
+
+def test_saving_valid_sync_url_persists(temp_preferences) -> None:
+    preferences, path = temp_preferences
+    page = SettingsPage(app_preferences=preferences)
+    page._sync_url_edit.setText("https://lab.example.kz")
+    page._on_sync_url_editing_finished()
+
+    reloaded = AppPreferences(QSettings(path, QSettings.Format.IniFormat))
+    assert reloaded.get_sync_api_base_url() == "https://lab.example.kz"
+    assert page._sync_url_error_label.text() == ""
+
+
+def test_invalid_sync_url_does_not_persist(temp_preferences) -> None:
+    preferences, path = temp_preferences
+    preferences.set_sync_api_base_url("https://lab.example.kz")
+    page = SettingsPage(app_preferences=preferences)
+    page._sync_url_edit.setText("not-a-url")
+    page._on_sync_url_editing_finished()
+
+    reloaded = AppPreferences(QSettings(path, QSettings.Format.IniFormat))
+    assert reloaded.get_sync_api_base_url() == "https://lab.example.kz"
+    assert "http://" in page._sync_url_error_label.text()
+    assert page._sync_url_edit.text() == "https://lab.example.kz"
 
 
 def test_checkbox_uses_leaf_widget_transparency_pattern() -> None:

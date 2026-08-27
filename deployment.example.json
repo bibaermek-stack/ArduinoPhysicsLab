@@ -1,0 +1,6 @@
+{
+  "_comment": "Тарату алдында sync_api_base_url-ды өзіңіздің онлайн sync серверіңізге ауыстырыңыз. Мысал: https://your-app.onrender.com",
+  "sync_api_base_url": "https://CHANGE-ME.example",
+  "sync_enabled": true,
+  "sync_api_key": "dev-local-only-key"
+}
