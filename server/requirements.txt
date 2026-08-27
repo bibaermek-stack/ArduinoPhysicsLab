@@ -6,6 +6,8 @@ fastapi
 uvicorn[standard]
 sqlalchemy
 pydantic
+jinja2
+python-multipart
 
 # § Phase 3 (Production Authentication + Authorization): short-lived
 # per-user JWT access tokens (HS256 only — no asymmetric keys needed),

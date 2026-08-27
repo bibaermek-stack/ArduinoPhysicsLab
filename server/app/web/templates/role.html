@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Рөл · Arduino Physics Lab{% endblock %}
+{% block body %}
+<form class="auth" method="post" action="/role">
+  <h1>Кімсіз?</h1>
+  <p>Бір рет таңдалады. Кейін өз ID-ңыз беріледі.</p>
+  {% if error %}<p class="error">{{ error }}</p>{% endif %}
+  <button class="btn btn-lab" type="submit" name="role" value="teacher">Мен мұғаліммін</button>
+  <div style="height:12px"></div>
+  <button class="btn btn-ghost" type="submit" name="role" value="student">Мен оқушымын</button>
+</form>
+{% endblock %}

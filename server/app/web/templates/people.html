@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Адамдар · Arduino Physics Lab{% endblock %}
+{% block body %}
+<section class="card" style="padding:28px">
+  <h1>Адамдар</h1>
+  {% if error %}<p class="error">{{ error }}</p>{% endif %}
+  {% if ok %}<p class="ok">Өтініш жіберілді</p>{% endif %}
+  <form method="get" action="/people" class="actions">
+    <input name="q" value="{{ q }}" placeholder="ID немесе аты, мысалы T-7K2M9Q">
+    <button class="btn btn-lab" type="submit">Іздеу</button>
+  </form>
+  {% for person in results %}
+    <div class="person">
+      <div>
+        <b>{{ person.display_name }}</b>
+        <div><span class="idpill">{{ person.public_id }}</span> · {{ "Мұғалім" if person.role == "teacher" else "Оқушы" }}</div>
+      </div>
+      <form method="post" action="/people/request">
+        <input type="hidden" name="to_public_id" value="{{ person.public_id }}">
+        {% if account.role != person.role %}
+          <button class="btn btn-lab" name="kind" value="teacher_student">Өтініш</button>
+        {% elif account.role == "student" %}
+          <button class="btn btn-ghost" name="kind" value="friend">Дос</button>
+        {% endif %}
+      </form>
+    </div>
+  {% endfor %}
+
+  <h2>Өтініштер</h2>
+  {% for row, from_acc, to_acc in requests %}
+    <div class="person">
+      <div>
+        <b>{{ from_acc.display_name }}</b> → {{ to_acc.display_name }}
+        <div>{{ "дос" if row.kind == "friend" else "мұғалім/оқушы" }} · {{ row.status }}</div>
+      </div>
+      {% if row.to_account_id == account.id and row.status == "pending" %}
+        <div class="actions">
+          <form method="post" action="/people/accept"><input type="hidden" name="request_id" value="{{ row.id }}"><button class="btn btn-lab">Қабылдау</button></form>
+          <form method="post" action="/people/decline"><input type="hidden" name="request_id" value="{{ row.id }}"><button class="btn btn-danger">Жоқ</button></form>
+        </div>
+      {% endif %}
+    </div>
+  {% endfor %}
+</section>
+{% endblock %}

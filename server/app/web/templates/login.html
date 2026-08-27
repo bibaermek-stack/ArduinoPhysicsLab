@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Кіру · Arduino Physics Lab{% endblock %}
+{% block body %}
+<form class="auth" method="post" action="/login">
+  <h1>Кіру</h1>
+  {% if error %}<p class="error">{{ error }}</p>{% endif %}
+  <label>Email</label>
+  <input type="email" name="email" required>
+  <label>Құпия сөз</label>
+  <input type="password" name="password" required>
+  <div class="actions">
+    <button class="btn btn-lab" type="submit">Кіру</button>
+    <a class="btn btn-google" href="/google">Google</a>
+  </div>
+  <p><a href="/register">Аккаунт жоқ па? Тіркелу</a></p>
+</form>
+{% endblock %}

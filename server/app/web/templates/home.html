@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block body %}
+<section class="hero">
+  <h1>Цифрлық физика зертханасы енді желіде</h1>
+  <p>Email немесе Google арқылы кіріңіз, мұғалім не оқушы болыңыз, өз ID-ңызбен табысыңыз және зертханалық деректерді ортақтасыңыз.</p>
+  <div class="actions">
+    {% if account %}
+      <a class="btn btn-lab" href="/app">Кабинетке өту</a>
+    {% else %}
+      <a class="btn btn-lab" href="/register">Тіркелу</a>
+      <a class="btn btn-ghost" href="/login">Кіру</a>
+      <a class="btn btn-google" href="/google">Google арқылы кіру</a>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

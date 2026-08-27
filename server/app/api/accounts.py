@@ -173,7 +173,18 @@ def google_callback(
         return RedirectResponse(
             f"http://127.0.0.1:{desktop_port}/?token={token}&needs_role={'1' if account.role is None else '0'}"
         )
-    return RedirectResponse(f"{_public_base_url()}/docs")
+    target = "/role" if account.role is None else "/app"
+    response = RedirectResponse(target)
+    response.set_cookie(
+        "apl_web_token",
+        token,
+        httponly=True,
+        samesite="lax",
+        secure=_public_base_url().startswith("https"),
+        max_age=60 * 60,
+        path="/",
+    )
+    return response
 
 
 @me_router.get("", response_model=AccountProfileResponse, dependencies=[Depends(require_api_key)])

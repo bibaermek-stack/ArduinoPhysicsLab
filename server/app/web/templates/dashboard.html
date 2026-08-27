@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Кабинет · Arduino Physics Lab{% endblock %}
+{% block body %}
+<div class="grid">
+  <section class="card" style="padding:28px">
+    <h1>Сәлем, {{ account.display_name }}</h1>
+    <p>Рөл: {% if account.role == 'teacher' %}мұғалім{% else %}оқушы{% endif %}</p>
+    <p>Сіздің ID: <span class="idpill">{{ account.public_id }}</span></p>
+    <p>Осы кодты достарыңызға немесе мұғаліміңізге жіберіңіз.</p>
+    <div class="actions">
+      <a class="btn btn-lab" href="/people">Адам іздеу</a>
+      <a class="btn btn-ghost" href="/profile">Профиль</a>
+    </div>
+  </section>
+  <aside>
+    <div class="stat"><span>Кіріс өтініш</span><b>{{ incoming_count }}</b></div>
+    <div class="stat" style="margin-top:12px"><span>Windows қолданбасы</span><b>.exe</b><p>Зертхананы компьютерде ашып, осы аккаунтпен синхрондаңыз.</p></div>
+  </aside>
+</div>
+{% endblock %}

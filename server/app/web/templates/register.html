@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Тіркелу · Arduino Physics Lab{% endblock %}
+{% block body %}
+<form class="auth" method="post" action="/register">
+  <h1>Тіркелу</h1>
+  {% if error %}<p class="error">{{ error }}</p>{% endif %}
+  <label>Аты-жөні</label>
+  <input type="text" name="display_name" required>
+  <label>Email</label>
+  <input type="email" name="email" required>
+  <label>Құпия сөз (кемінде 6 таңба)</label>
+  <input type="password" name="password" minlength="6" required>
+  <div class="actions">
+    <button class="btn btn-lab" type="submit">Тіркелу</button>
+    <a class="btn btn-google" href="/google">Google</a>
+  </div>
+</form>
+{% endblock %}

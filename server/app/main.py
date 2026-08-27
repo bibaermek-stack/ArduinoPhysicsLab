@@ -18,10 +18,14 @@ from __future__ import annotations
 import logging
 from contextlib import asynccontextmanager
 
+from pathlib import Path
+
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from starlette.middleware.gzip import GZipMiddleware
 
 from server.app.api import accounts, auth, health, people, sync
+from server.app.web.routes import router as web_router
 from server.app.models import account_models as _account_models  # noqa: F401
 from server.app.api.deps import _DEV_DEFAULT_API_KEY, get_configured_api_key
 from server.app.services.auth_service import _DEV_DEFAULT_SECRET, get_configured_jwt_secret
@@ -73,9 +77,13 @@ app = FastAPI(title="Arduino Physics Lab Sync API", version="1", lifespan=_lifes
 # қазір негізгі кедергі ЕМЕС).
 app.add_middleware(GZipMiddleware, minimum_size=1024)
 
+app.include_router(web_router)
 app.include_router(health.router, prefix="/api/v1")
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(accounts.router, prefix="/api/v1")
 app.include_router(accounts.me_router, prefix="/api/v1")
 app.include_router(people.router, prefix="/api/v1")
 app.include_router(sync.router, prefix="/api/v1")
+
+_static_dir = Path(__file__).resolve().parent / "web" / "static"
+app.mount("/static", StaticFiles(directory=str(_static_dir)), name="static")

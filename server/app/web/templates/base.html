@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Arduino Physics Lab{% endblock %}</title>
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+  <div class="orbit a"></div>
+  <div class="orbit b"></div>
+  <div class="wrap">
+    <nav class="nav">
+      <a class="brand" href="/"><span class="mark">APL</span> Arduino Physics Lab</a>
+      <div>
+        {% if account %}
+          <a href="/app">Кабинет</a>
+          <a href="/people">Адамдар</a>
+          <a href="/profile">Профиль</a>
+          <a href="/logout">Шығу</a>
+        {% else %}
+          <a href="/login">Кіру</a>
+          <a href="/register">Тіркелу</a>
+        {% endif %}
+      </div>
+    </nav>
+    {% block body %}{% endblock %}
+    <p class="footer">Мектеп физикасына арналған цифрлық зертхана · FastAPI · Railway</p>
+  </div>
+</body>
+</html>
