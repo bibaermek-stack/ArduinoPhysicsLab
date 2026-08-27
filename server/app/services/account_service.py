@@ -168,6 +168,8 @@ def select_role(db: Session, account: AccountRecord, role: str) -> AccountRecord
                 updated_at=now,
             )
         )
+        # Postgres FK: sync_teacher_classrooms.teacher_sync_id → sync_teachers
+        db.flush()
         db.add(
             TeacherClassroomLinkRecord(
                 teacher_sync_id=sync_id,

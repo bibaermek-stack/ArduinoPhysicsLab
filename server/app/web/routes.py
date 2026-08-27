@@ -194,6 +194,12 @@ def role_submit(
     except AccountError as exc:
         db.rollback()
         return RedirectResponse(f"/role?error={exc}", status_code=HTTP_303_SEE_OTHER)
+    except Exception:
+        db.rollback()
+        return RedirectResponse(
+            "/role?error=Рөлді сақтау сәтсіз. Қайта көріңіз",
+            status_code=HTTP_303_SEE_OTHER,
+        )
     token, _ = create_account_token(account)
     response = RedirectResponse("/app", status_code=HTTP_303_SEE_OTHER)
     _set_session(response, token, secure=request.url.scheme == "https")
