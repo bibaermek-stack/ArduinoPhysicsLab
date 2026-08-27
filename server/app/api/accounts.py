@@ -37,7 +37,7 @@ from server.app.services.account_service import (
 router = APIRouter(prefix="/auth", tags=["accounts"])
 me_router = APIRouter(prefix="/me", tags=["accounts"])
 
-_google_states: dict[str, int] = {}
+_google_states: dict[str, dict] = {}
 
 
 def _token_response(account: AccountRecord) -> AccountTokenResponse:
@@ -107,17 +107,31 @@ def _public_base_url() -> str:
     ).rstrip("/")
 
 
+def _request_origin(request: Request) -> str:
+    forwarded_host = (request.headers.get("x-forwarded-host") or "").split(",")[0].strip()
+    forwarded_proto = (request.headers.get("x-forwarded-proto") or "").split(",")[0].strip()
+    if forwarded_host:
+        proto = forwarded_proto or "https"
+        return f"{proto}://{forwarded_host}".rstrip("/")
+    return str(request.base_url).rstrip("/")
+
+
+def _google_redirect_uri(request: Request) -> str:
+    return f"{_request_origin(request)}/api/v1/auth/google/callback"
+
+
 @router.get("/google/start")
-def google_start(desktop_port: int = Query(default=0)) -> RedirectResponse:
+def google_start(request: Request, desktop_port: int = Query(default=0)) -> RedirectResponse:
     client_id, client_secret = get_google_oauth_config()
     if not client_id or not client_secret:
         raise HTTPException(status_code=503, detail="Google кіру бапталмаған")
     state = secrets.token_urlsafe(16)
-    _google_states[state] = desktop_port
+    redirect_uri = _google_redirect_uri(request)
+    _google_states[state] = {"desktop_port": desktop_port, "redirect_uri": redirect_uri}
     params = urlencode(
         {
             "client_id": client_id,
-            "redirect_uri": f"{_public_base_url()}/api/v1/auth/google/callback",
+            "redirect_uri": redirect_uri,
             "response_type": "code",
             "scope": "openid email profile",
             "state": state,
@@ -130,6 +144,7 @@ def google_start(desktop_port: int = Query(default=0)) -> RedirectResponse:
 
 @router.get("/google/callback")
 def google_callback(
+    request: Request,
     db: Session = Depends(get_db),
     code: str = "",
     state: str = "",
@@ -137,14 +152,18 @@ def google_callback(
     client_id, client_secret = get_google_oauth_config()
     if not client_id or not client_secret:
         raise HTTPException(status_code=503, detail="Google кіру бапталмаған")
-    desktop_port = _google_states.pop(state, 0)
+    stored = _google_states.pop(state, {})
+    if isinstance(stored, int):
+        stored = {"desktop_port": stored, "redirect_uri": _google_redirect_uri(request)}
+    desktop_port = int(stored.get("desktop_port") or 0)
+    redirect_uri = str(stored.get("redirect_uri") or _google_redirect_uri(request))
     token_response = httpx.post(
         "https://oauth2.googleapis.com/token",
         data={
             "code": code,
             "client_id": client_id,
             "client_secret": client_secret,
-            "redirect_uri": f"{_public_base_url()}/api/v1/auth/google/callback",
+            "redirect_uri": redirect_uri,
             "grant_type": "authorization_code",
         },
         timeout=15.0,
