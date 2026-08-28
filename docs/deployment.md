@@ -90,8 +90,8 @@ script, or directly in the registry
 
 | Variable | Purpose | Required in production |
 |---|---|---|
-| `APL_JWT_SECRET` | JWT signing secret | Yes — server logs a `WARNING` at startup if unset (dev placeholder in use) |
-| `APL_SYNC_API_KEY` | Shared `X-API-Key` gate | Yes — same warning behavior |
+| `APL_JWT_SECRET` | JWT signing secret | **Yes on Railway/production** — process refuses to start if the public dev placeholder is still in use |
+| `APL_SYNC_API_KEY` | Shared `X-API-Key` gate | **Yes on Railway/production** — same hard failure |
 | `DATABASE_URL` | SQLAlchemy connection string | No — defaults to a local SQLite file if unset |
 
 None of these are read by the desktop client — it has no server-side

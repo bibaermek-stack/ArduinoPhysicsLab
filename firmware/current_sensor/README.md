@@ -69,6 +69,12 @@ reference құрылғысымен нақты hardware-де тексерілге
 3. **"Adafruit SSD1306"** — Library Manager-де `Adafruit SSD1306` іздеп орнатыңыз
    (орнату кезінде "Adafruit BusIO" тәуелділігін де қосу ұсынылады — automatically ұсынылады).
 
+## 3b. Тақтайда тексеру
+
+PROGMEM/`F()` және OLED 4 Hz жаңарту SRAM үшін. Нақты тақтайда OLED,
+`HELLO?`, `SET_EXP=`, 10 Hz ағынды
+[`docs/hardware_test_guide.md`](../../docs/hardware_test_guide.md) §3b бойынша өтіңіз.
+
 ## 4. Serial баптаулары
 
 - **Baud rate:** 115200

@@ -1,64 +1,76 @@
-"""login_rate_limiter — teacher/student login endpoint-теріне PIN/access-code
-брутфорс шабуылынан қорғаныс (§ security audit "Login endpoints have no
-rate-limiting").
+"""login_rate_limiter — teacher/student login брутфорс қорғанысы.
 
-Дизайн: identity (``"teacher:<sync_id>"``/``"student:<sync_id>"``) бойынша
-ТЕК СӘТСІЗ әрекеттер саналады (§ дұрыс PIN-мен қайталап кіру ешқашан
-блокталмауы тиіс). ``_MAX_ATTEMPTS``-тен асқанда identity ``_LOCKOUT_SECONDS``
-уақытына құлыпталады, сәтті логин есептегішті дереу тазалайды.
-
-Жады-ішінде (in-memory), процесс деңгейінде — бір ``uvicorn`` процесіне
-жеткілікті (§ ``docs/deployment.md`` — ``--workers`` МҮЛДЕ көрсетілмеген,
-бір процесс деп құжатталған). Көп-процесс/көп-instance деплойда бөлек
-ортақ store (Redis және т.б.) қажет болар еді — бұл ЖОБАНЫҢ қазіргі
-ауқымынан тыс (§ "avoid premature infra complexity", ``sync_backoff.py``-
-дегі "fixed schedule, deliberately simple" конвенциясымен БІРДЕЙ рух).
+5 сәтсіз әрекет → 5 минут құлып. Күй PostgreSQL/SQLite-те сақталады,
+сондықтан бірнеше сервер инстансы құлыпты бөліседі.
 """
 
 from __future__ import annotations
 
-import time
-from collections import defaultdict
+from datetime import datetime, timedelta, timezone
+
+from sqlalchemy.orm import Session
+
+from server.app.models.sync_models import LoginLockoutRecord
 
 _MAX_ATTEMPTS = 5
-_LOCKOUT_SECONDS = 300.0  # 5 минут
-
-_failed_attempts: dict[str, list[float]] = defaultdict(list)
-_locked_until: dict[str, float] = {}
+_LOCKOUT_SECONDS = 300.0
 
 
-def is_locked(identity: str) -> bool:
-    """``identity`` ағымда құлыпталған болса ``True`` қайтарады."""
-    locked_until = _locked_until.get(identity)
-    if locked_until is None:
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _aware(value: datetime | None) -> datetime | None:
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value
+
+
+def is_locked(db: Session, identity: str) -> bool:
+    row = db.get(LoginLockoutRecord, identity)
+    if row is None or row.locked_until is None:
         return False
-    if time.monotonic() >= locked_until:
-        # Құлып мерзімі өткен — тазалау (§ "unlock automatically", ешбір
-        # admin әрекеті қажет емес).
-        _locked_until.pop(identity, None)
-        _failed_attempts.pop(identity, None)
+    locked_until = _aware(row.locked_until)
+    if locked_until is not None and locked_until <= _utcnow():
+        db.delete(row)
+        db.flush()
         return False
     return True
 
 
-def record_failure(identity: str) -> None:
-    """Сәтсіз әрекетті тіркейді, ``_MAX_ATTEMPTS``-тен асса құлыптайды."""
-    now = time.monotonic()
-    attempts = _failed_attempts[identity]
-    cutoff = now - _LOCKOUT_SECONDS
-    attempts[:] = [t for t in attempts if t > cutoff]
-    attempts.append(now)
-    if len(attempts) >= _MAX_ATTEMPTS:
-        _locked_until[identity] = now + _LOCKOUT_SECONDS
+def record_failure(db: Session, identity: str) -> None:
+    now = _utcnow()
+    row = db.get(LoginLockoutRecord, identity)
+    if row is None:
+        row = LoginLockoutRecord(
+            identity=identity,
+            failed_count=0,
+            first_failed_at=now,
+            locked_until=None,
+        )
+        db.add(row)
+    window_start = now - timedelta(seconds=_LOCKOUT_SECONDS)
+    first_failed = _aware(row.first_failed_at) or now
+    locked_until = _aware(row.locked_until)
+    if first_failed < window_start and (locked_until is None or locked_until <= now):
+        row.failed_count = 0
+        row.first_failed_at = now
+        row.locked_until = None
+    row.failed_count += 1
+    if row.failed_count >= _MAX_ATTEMPTS:
+        row.locked_until = now + timedelta(seconds=_LOCKOUT_SECONDS)
+    db.flush()
 
 
-def record_success(identity: str) -> None:
-    """Сәтті логин — сол identity үшін сәтсіз әрекет тарихын тазалайды."""
-    _failed_attempts.pop(identity, None)
-    _locked_until.pop(identity, None)
+def record_success(db: Session, identity: str) -> None:
+    row = db.get(LoginLockoutRecord, identity)
+    if row is not None:
+        db.delete(row)
+        db.flush()
 
 
 def reset_all() -> None:
-    """Тек тесттер үшін — модуль-деңгейлік күйді толық тазалайды."""
-    _failed_attempts.clear()
-    _locked_until.clear()
+    """Тесттерде дерекқор әр жолы жаңа — қосымша тазалау қажет емес."""
+    return

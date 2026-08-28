@@ -35,3 +35,9 @@ const uint8_t SAMPLE_COUNT = 20;
 `.ino` файлының басындағы `#define DEBUG_SERIAL 0` мәнін `1`-ге
 өзгертсеңіз, `Voltage(V): ...` жолы Serial Monitor-ға қосымша шығады.
 **Production/PC интеграциясында 0 күйінде қалдырыңыз.**
+
+## Тақтайда тексеру
+
+PROGMEM/`F()` қойылған. OLED 4 Hz, Serial өлшеу ~10 Hz. Нақты Nano/Uno-да
+OLED, `HELLO?`, `SET_EXP=`, 10 Hz ағынды
+[`docs/hardware_test_guide.md`](../../docs/hardware_test_guide.md) §3b бойынша өтіңіз.

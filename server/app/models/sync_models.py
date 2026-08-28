@@ -206,6 +206,28 @@ class TeacherClassroomLinkRecord(Base):
     server_revision: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
 
 
+class LoginLockoutRecord(Base):
+    """Көп-инстанс PIN/код брутфорс құлпы — DB-де ортақ."""
+
+    __tablename__ = "login_lockouts"
+
+    identity: Mapped[str] = mapped_column(String(80), primary_key=True)
+    failed_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    first_failed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utcnow)
+    locked_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class MeasurementBatchDeletionRecord(Base):
+    """Өлшем batch-ін cloud-тан алып тастау (tombstone). Жазбаның өзі
+    идемпотентті қалады; pull осы кестедегі id-ді өткізіп жібереді."""
+
+    __tablename__ = "sync_measurement_batch_deletions"
+
+    sync_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    deleted_by: Mapped[str] = mapped_column(String(36), nullable=False)
+    deleted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=_utcnow)
+
+
 class MeasurementBatchRecord(Base):
     """§ Phase 4 (Raw Arduino Measurement Cloud Sync). ``sync_sessions``
     сияқты ЖЕКЕ, тұрақты ``sync_id`` (клиенттің ``batch_sync_id``,

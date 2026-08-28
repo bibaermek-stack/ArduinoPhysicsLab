@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session
 from server.app.models.sync_models import (
     ClassroomRecord,
     FeedbackResultRecord,
+    MeasurementBatchDeletionRecord,
     MeasurementBatchRecord,
     MeasurementRecord,
     SessionRecord,
@@ -348,11 +349,32 @@ def pull_measurement_batches(
 ) -> list[MeasurementBatchRecord]:
     """§18 "Pull Sync": ``updated_at`` cursor ретінде қауіпсіз — batch
     мазмұны ӨЗГЕРМЕЙТІНДІКТЕН (§ ``upsert_measurement_batch()``
-    докстрингі), ``updated_at`` ЖАЛҒЫЗ РЕТ, құрылған сәтте орнатылады."""
-    query = db.query(MeasurementBatchRecord)
+    докстрингі), ``updated_at`` ЖАЛҒЫЗ РЕТ, құрылған сәтте орнатылады.
+    Tombstone болған batch pull-ге кірмейді.
+    """
+    query = (
+        db.query(MeasurementBatchRecord)
+        .outerjoin(
+            MeasurementBatchDeletionRecord,
+            MeasurementBatchRecord.sync_id == MeasurementBatchDeletionRecord.sync_id,
+        )
+        .filter(MeasurementBatchDeletionRecord.sync_id.is_(None))
+    )
     if updated_since is not None:
         query = query.filter(MeasurementBatchRecord.updated_at > updated_since)
     return query.order_by(MeasurementBatchRecord.updated_at).limit(limit).all()
+
+
+def delete_measurement_batch(db: Session, sync_id: str, deleted_by: str) -> MeasurementBatchRecord | None:
+    record = db.get(MeasurementBatchRecord, sync_id)
+    if record is None:
+        return None
+    if db.get(MeasurementBatchDeletionRecord, sync_id) is None:
+        db.add(
+            MeasurementBatchDeletionRecord(sync_id=sync_id, deleted_by=deleted_by)
+        )
+        db.flush()
+    return record
 
 
 def upsert_teacher_note(db: Session, payload: TeacherNotePayload) -> TeacherNoteRecord:

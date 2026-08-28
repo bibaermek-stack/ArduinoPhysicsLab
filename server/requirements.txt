@@ -2,20 +2,20 @@
 # Desktop client dependencies stay in the project-root requirements.txt
 # (§8 "Keep backend code separate from desktop client code").
 
-fastapi
-uvicorn[standard]
-sqlalchemy
-pydantic
-jinja2
+fastapi==0.141.1
+uvicorn[standard]==0.52.4
+sqlalchemy==2.0.52
+pydantic==2.13.4
+jinja2==3.1.6
 python-multipart
-httpx
+httpx==0.28.1
 
 # § Phase 3 (Production Authentication + Authorization): short-lived
 # per-user JWT access tokens (HS256 only — no asymmetric keys needed),
 # replacing the shared X-API-Key as the per-user auth layer. PyJWT
 # chosen over python-jose/authlib for the smallest dependency surface
 # sufficient for symmetric-key signing/verification.
-PyJWT
+PyJWT==2.13.0
 
 # Postgres driver is included so Railway/Nixpacks deploys keep working
 # the moment DATABASE_URL is attached. Local SQLite still works if the

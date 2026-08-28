@@ -28,14 +28,15 @@ _RATE_LIMIT_DETAIL = "Тым көп сәтсіз кіру әрекеті. Бір
 @router.post("/teacher-login", response_model=TokenResponse)
 def teacher_login(request: TeacherLoginRequest, db: Session = Depends(get_db)) -> TokenResponse:
     identity = f"teacher:{request.sync_id}"
-    if login_rate_limiter.is_locked(identity):
+    if login_rate_limiter.is_locked(db, identity):
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=_RATE_LIMIT_DETAIL)
     try:
         record = auth_service.authenticate_teacher(db, request)
     except AuthenticationError as error:
-        login_rate_limiter.record_failure(identity)
+        login_rate_limiter.record_failure(db, identity)
+        db.commit()
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(error)) from None
-    login_rate_limiter.record_success(identity)
+    login_rate_limiter.record_success(db, identity)
     db.commit()
     token, expires_at = auth_service.create_access_token(record.sync_id, auth_service.ROLE_TEACHER)
     return TokenResponse(
@@ -47,14 +48,15 @@ def teacher_login(request: TeacherLoginRequest, db: Session = Depends(get_db)) -
 @router.post("/student-login", response_model=TokenResponse)
 def student_login(request: StudentLoginRequest, db: Session = Depends(get_db)) -> TokenResponse:
     identity = f"student:{request.sync_id}"
-    if login_rate_limiter.is_locked(identity):
+    if login_rate_limiter.is_locked(db, identity):
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=_RATE_LIMIT_DETAIL)
     try:
         record = auth_service.authenticate_student(db, request)
     except AuthenticationError as error:
-        login_rate_limiter.record_failure(identity)
+        login_rate_limiter.record_failure(db, identity)
+        db.commit()
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(error)) from None
-    login_rate_limiter.record_success(identity)
+    login_rate_limiter.record_success(db, identity)
     db.commit()
     token, expires_at = auth_service.create_access_token(record.sync_id, auth_service.ROLE_STUDENT)
     return TokenResponse(

@@ -259,3 +259,19 @@ def test_unauthenticated_push_requires_bearer_token(with_session_link, auth_head
         "/api/v1/sync/measurement-batches", json=[_batch_payload()], headers=auth_headers
     )
     assert response.status_code == 401
+
+
+def test_owner_can_delete_measurement_batch_and_pull_hides_it(
+    with_session_link, student_auth_headers
+) -> None:
+    with_session_link.post(
+        "/api/v1/sync/measurement-batches", json=[_batch_payload()], headers=student_auth_headers
+    )
+    deleted = with_session_link.delete(
+        "/api/v1/sync/measurement-batches/batch1", headers=student_auth_headers
+    )
+    assert deleted.status_code == 200
+    pulled = with_session_link.get(
+        "/api/v1/sync/measurement-batches", headers=student_auth_headers
+    )
+    assert pulled.json()["items"] == []

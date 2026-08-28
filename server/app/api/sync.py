@@ -54,7 +54,7 @@ from sqlalchemy.orm import Session
 
 from server.app.api.deps import get_current_user, require_api_key
 from server.app.db.session import get_db
-from server.app.models.sync_models import StudentRecord, TeacherClassroomLinkRecord
+from server.app.models.sync_models import MeasurementBatchRecord, StudentRecord, TeacherClassroomLinkRecord
 from server.app.schemas.sync import (
     ClassroomOut,
     ClassroomPayload,
@@ -512,6 +512,26 @@ def pull_measurement_batches(
     ]
     items = [_measurement_batch_item(record) for record in records]
     return PullResponse(server_time=_now(), items=items)
+
+
+@router.delete("/measurement-batches/{sync_id}")
+def delete_measurement_batch(
+    sync_id: str,
+    db: Session = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+) -> dict[str, str]:
+    record = db.get(MeasurementBatchRecord, sync_id)
+    if record is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Measurement batch not found")
+    if not authorization.current_user_can_access_session(db, current_user, record.session_sync_id):
+        raise _forbidden(f"Not authorized for session '{record.session_sync_id}'")
+    if current_user.is_student and not authorization.student_owns_session(
+        db, current_user.sync_id, record.session_sync_id
+    ):
+        raise _forbidden("Only the owning student may delete this batch")
+    sync_service.delete_measurement_batch(db, sync_id, current_user.sync_id)
+    db.commit()
+    return {"status": "deleted", "sync_id": sync_id}
 
 
 # ---- Teacher assessment (teacher half) --------------------------------------

@@ -167,6 +167,8 @@ bool oledReady = false;
 uint8_t sampleIndex = 0;
 float sampleSum = 0.0;
 unsigned long lastSampleMillis = 0;
+unsigned long lastOledMillis = 0;
+const unsigned long OLED_INTERVAL_MS = 250; // 4 Hz — I2C OLED 10 Hz Serial-ды бөгемесін
 
 // ---- Serial жол буфері (line-based, \n/\r\n) ---------------------------
 // SRAM түзетуі: 64→40 байтқа қысқартылды — ең ұзын нақты қолданылатын
@@ -287,6 +289,7 @@ void trimInPlace(char *s) {
 
 void setup() {
   Serial.begin(115200);
+  delay(30); // USB-serial чиптің ашылуынан кейін тұрақтандыру
   Wire.begin();
 
   sensorReady = ina226.init();
@@ -470,6 +473,11 @@ void updateDisplay(float voltage) {
   if (!oledReady) {
     return; // OLED жоқ/табылмаған — measurement/protocol-ға әсер етпейді
   }
+  unsigned long now = millis();
+  if (now - lastOledMillis < OLED_INTERVAL_MS) {
+    return;
+  }
+  lastOledMillis = now;
 
   display.clearDisplay();
   display.setTextSize(1);

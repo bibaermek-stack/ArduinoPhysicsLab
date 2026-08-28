@@ -16,6 +16,7 @@ architecture.md).
 from __future__ import annotations
 
 import logging
+import os
 from contextlib import asynccontextmanager
 
 from pathlib import Path
@@ -27,27 +28,47 @@ from starlette.middleware.gzip import GZipMiddleware
 from server.app.api import accounts, auth, health, people, sync
 from server.app.web.routes import router as web_router
 from server.app.models import account_models as _account_models  # noqa: F401
+from server.app.models import sync_models as _sync_models  # noqa: F401
 from server.app.api.deps import _DEV_DEFAULT_API_KEY, get_configured_api_key
 from server.app.services.auth_service import _DEV_DEFAULT_SECRET, get_configured_jwt_secret
 
 _logger = logging.getLogger(__name__)
 
 
+def _is_production_runtime() -> bool:
+    """Railway / APL_ENV=production — dev-кілтпен іске қосуға болмайды."""
+    apl_env = (os.environ.get("APL_ENV") or "").strip().lower()
+    railway_env = (os.environ.get("RAILWAY_ENVIRONMENT") or "").strip().lower()
+    if apl_env in {"production", "prod"}:
+        return True
+    if railway_env in {"production", "prod"}:
+        return True
+    if os.environ.get("RAILWAY_ENVIRONMENT_ID"):
+        return True
+    return False
+
+
 def _warn_if_using_dev_default_secrets() -> None:
-    """§ Phase 9 (Production Deployment) Part J "Server production
-    configuration" — ``APL_JWT_SECRET``/``APL_SYNC_API_KEY`` орта
-    айнымалылары ОРНАТЫЛМАСА, сервер бұрыннан белгілі, ашық (§ бұл
-    файл GitHub-та жария) dev-әдепкі мәндермен ҮНСІЗ жұмыс істей береді
-    — оператор оны байқамай production-ға шығаруы мүмкін. Бұл функция
-    сервердің іске қосылуын БЛОКТАМАЙДЫ (§ "not a hard failure"), тек
-    логқа анық ескерту жазады."""
-    if get_configured_jwt_secret() == _DEV_DEFAULT_SECRET:
+    """Dev-кілт жергілікті іске қосуда WARNING; production-да RuntimeError."""
+    jwt_is_dev = get_configured_jwt_secret() == _DEV_DEFAULT_SECRET
+    key_is_dev = get_configured_api_key() == _DEV_DEFAULT_API_KEY
+    if _is_production_runtime() and (jwt_is_dev or key_is_dev):
+        missing = []
+        if jwt_is_dev:
+            missing.append("APL_JWT_SECRET")
+        if key_is_dev:
+            missing.append("APL_SYNC_API_KEY")
+        raise RuntimeError(
+            "Production-да " + " және ".join(missing) + " міндетті. "
+            "Dev-әдепкі кілтпен sync API ашық қалмайды."
+        )
+    if jwt_is_dev:
         _logger.warning(
             "APL_JWT_SECRET орнатылмаған — сервер dev-әдепкі (production үшін "
             "ЖАРАМСЫЗ) JWT құпиясымен жұмыс істеп тұр. Production-да міндетті "
             "түрде орта айнымалысын орнатыңыз."
         )
-    if get_configured_api_key() == _DEV_DEFAULT_API_KEY:
+    if key_is_dev:
         _logger.warning(
             "APL_SYNC_API_KEY орнатылмаған — сервер dev-әдепкі (production үшін "
             "ЖАРАМСЫЗ) API кілтімен жұмыс істеп тұр. Production-да міндетті "

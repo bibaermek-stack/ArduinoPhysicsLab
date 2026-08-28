@@ -1928,11 +1928,14 @@ rules, and offline-first guarantees documented above are all
 unchanged. Full details live in `docs/deployment.md`; the two changes
 with any bearing on this document:
 
-- **Server startup now warns (not blocks) if `APL_JWT_SECRET`/
-  `APL_SYNC_API_KEY` are left on their dev-placeholder defaults**
-  (`server/app/main.py`, via a `lifespan` handler) — closes a real gap
-  where a production deployment could silently run with known,
-  publicly-visible credentials.
+- **Server startup refuses to boot on Railway/production if
+  `APL_JWT_SECRET` / `APL_SYNC_API_KEY` are still the public
+  dev placeholders.** Local runs still warn and continue.
+- **Teacher/student login lockout is stored in `login_lockouts`** so
+  multiple app instances share the 5-failure / 5-minute lock.
+- **Students (and teachers with session access) can
+  `DELETE /api/v1/sync/measurement-batches/{sync_id}`.** Pull omits
+  tombstoned batches.
 - **The desktop client's `sync/api_base_url` setting now rejects any
   value that isn't `http://`/`https://`** (`AppPreferences.set_sync_api_base_url()`)
   — a defensive validation, not a new capability; the client already

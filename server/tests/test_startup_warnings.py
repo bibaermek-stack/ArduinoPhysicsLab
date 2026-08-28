@@ -17,6 +17,9 @@ from server.app.main import _warn_if_using_dev_default_secrets
 def _isolated_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("APL_JWT_SECRET", raising=False)
     monkeypatch.delenv("APL_SYNC_API_KEY", raising=False)
+    monkeypatch.delenv("RAILWAY_ENVIRONMENT", raising=False)
+    monkeypatch.delenv("RAILWAY_ENVIRONMENT_ID", raising=False)
+    monkeypatch.delenv("APL_ENV", raising=False)
 
 
 def test_warns_when_both_env_vars_unset(caplog: pytest.LogCaptureFixture) -> None:
@@ -52,6 +55,25 @@ def test_warns_only_for_the_unset_one(
     messages = [record.message for record in caplog.records]
     assert not any("APL_JWT_SECRET" in message for message in messages)
     assert any("APL_SYNC_API_KEY" in message for message in messages)
+
+
+def test_production_runtime_refuses_dev_secrets(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("RAILWAY_ENVIRONMENT", "production")
+    with pytest.raises(RuntimeError, match="APL_JWT_SECRET"):
+        _warn_if_using_dev_default_secrets()
+
+
+def test_production_runtime_accepts_real_secrets(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    monkeypatch.setenv("RAILWAY_ENVIRONMENT", "production")
+    monkeypatch.setenv("APL_JWT_SECRET", "a-real-production-secret-value-1234567890")
+    monkeypatch.setenv("APL_SYNC_API_KEY", "a-real-production-api-key")
+    with caplog.at_level(logging.WARNING, logger="server.app.main"):
+        _warn_if_using_dev_default_secrets()
+    assert caplog.records == []
 
 
 def test_warning_never_includes_the_actual_secret_value(
