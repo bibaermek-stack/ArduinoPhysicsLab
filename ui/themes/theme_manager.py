@@ -318,6 +318,22 @@ def apply_application_theme(name: str | None = None) -> None:
                     widget.refresh_theme_icons()
         except Exception:
             pass
+        try:
+            from ui.widgets.measurement_workspace import MeasurementWorkspace
+
+            for widget in app.allWidgets():
+                if isinstance(widget, MeasurementWorkspace):
+                    widget.refresh_theme_icons()
+        except Exception:
+            pass
+        try:
+            from ui.pages.help_page import HelpPage
+
+            for widget in app.allWidgets():
+                if isinstance(widget, HelpPage):
+                    widget.refresh_theme_icons()
+        except Exception:
+            pass
 
 # Laboratory Catalog — секция identity accent түстері (HomePage карточкалары,
 # STEM модульдер). heat/electricity/electromagnetism/light — Phase 32-ден

@@ -12,7 +12,11 @@ hardcoded емес — тек ``set_channel_statistics()``-ке берілген
 
 from __future__ import annotations
 
-from PySide6.QtCore import Signal
+from functools import lru_cache
+
+from PySide6.QtCore import QByteArray, QSize, Qt, Signal
+from PySide6.QtGui import QIcon, QPainter, QPixmap
+from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import (
     QButtonGroup,
     QFrame,
@@ -25,8 +29,37 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from core.resource_paths import resource_path
 from domain.entities.sensor_channel import SensorChannel
 from domain.services.graph_analysis import RegionStatistics, RegressionResult
+from ui.themes.theme_manager import current_theme
+
+# Design/02_FluentIcons/svg/ — ``ui/widgets/live_graph.py``-дегі
+# ``_load_toolbar_icon()``-мен БІРДЕЙ конвенция (§ жеке көшірме — тікелей
+# импорттау ``live_graph.py`` осы модульді өзі импорттайтындықтан
+# циклдік импортқа әкелер еді).
+_EXPORT_ICON_DIR = resource_path("Design", "02_FluentIcons", "svg")
+_EXPORT_ICON_PX = 12
+_EXPORT_ICON_RENDER_PX = 64
+_EXPORT_ICON_FILL_DARK = b'fill="#212121"'
+_EXPORT_ICON_FILE = "ic_fluent_arrow_export_24_regular.svg"
+
+
+@lru_cache(maxsize=None)
+def _load_export_icon(theme: str = "dark") -> QIcon:
+    svg_bytes = (_EXPORT_ICON_DIR / _EXPORT_ICON_FILE).read_bytes()
+    fill = b'fill="#212121"' if theme == "light" else b'fill="#DCE4EE"'
+    svg_bytes = svg_bytes.replace(_EXPORT_ICON_FILL_DARK, fill)
+    renderer = QSvgRenderer(QByteArray(svg_bytes))
+    pixmap = QPixmap(_EXPORT_ICON_RENDER_PX, _EXPORT_ICON_RENDER_PX)
+    pixmap.fill(Qt.GlobalColor.transparent)
+    painter = QPainter(pixmap)
+    renderer.render(painter)
+    painter.end()
+    pixmap.setDevicePixelRatio(_EXPORT_ICON_RENDER_PX / _EXPORT_ICON_PX)
+    icon = QIcon()
+    icon.addPixmap(pixmap, QIcon.Mode.Normal, QIcon.State.Off)
+    return icon
 
 _TITLE_TEXT = "Таңдалған аралық"
 _REGRESSION_TITLE_TEXT = "Регрессия"
@@ -69,7 +102,10 @@ class GraphAnalysisPanel(QFrame):
         self._region_summary_label = QLabel(self)
         self._region_summary_label.setWordWrap(True)
 
-        self._export_button = QPushButton("📤", self)
+        self._export_button = QPushButton("", self)
+        self._export_button.setIcon(_load_export_icon(current_theme()))
+        self._export_button.setIconSize(QSize(_EXPORT_ICON_PX, _EXPORT_ICON_PX))
+        self._export_button.setProperty("variant", "icon")
         self._export_button.setToolTip("Талдау қорытындысын сақтау (CSV)")
         self._export_button.clicked.connect(self.export_requested)
 
@@ -151,6 +187,14 @@ class GraphAnalysisPanel(QFrame):
         layout.addWidget(self._derived_section)
 
     # ---- Public API -----------------------------------------------------
+
+    def refresh_theme_icon(self) -> None:
+        """Тема ауысқанда экспорт батырмасының иконка fill-ін жаңартады
+        (``LiveGraphWidget.refresh_theme_icons()`` шақырады — бұл панель
+        онда енгізілген дана ретінде тіршілік етеді).
+        """
+        _load_export_icon.cache_clear()
+        self._export_button.setIcon(_load_export_icon(current_theme()))
 
     def set_region_summary(self, t1: float, t2: float, n_label: str, decimals: int = 2) -> None:
         """Аралық басы/соңы/ұзақтығын көрсетеді. ``n_label`` шақырушыда

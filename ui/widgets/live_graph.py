@@ -624,6 +624,7 @@ class LiveGraphWidget(QWidget):
         )
         for button, filename in icons:
             button.setIcon(_load_toolbar_icon(filename, theme))
+        self._analysis_panel.refresh_theme_icon()
 
     def apply_theme(self) -> None:
         """Қолданыстағы PlotWidget фон/ось түстерін ағымдағы темаға сай жаңартады."""

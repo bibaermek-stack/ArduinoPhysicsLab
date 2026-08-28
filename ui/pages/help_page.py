@@ -10,7 +10,11 @@ placeholder-стильді ``AboutPage`` осы нақты, толық бетт�
 
 from __future__ import annotations
 
-from PySide6.QtCore import Qt
+from functools import lru_cache
+
+from PySide6.QtCore import QByteArray, QSize, Qt
+from PySide6.QtGui import QIcon, QPainter, QPixmap
+from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
@@ -21,8 +25,34 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from core.resource_paths import resource_path
 from core.version import __version__
-from ui.themes.theme_manager import COLOR_ACCENT, COLOR_ACCENT_TEXT
+from ui.themes.theme_manager import COLOR_ACCENT, COLOR_ACCENT_TEXT, current_theme
+
+# Design/02_FluentIcons/svg/ — ``ui/widgets/sidebar.py``/``ui/widgets/
+# live_graph.py``-дегі SVG-тінттеу конвенциясының ЖЕКЕ көшірмесі (§ бұл
+# бет графикпен/sidebar-мен ЕШБІР байланысы жоқ, жеке контекст).
+_SECTION_ICON_DIR = resource_path("Design", "02_FluentIcons", "svg")
+_SECTION_ICON_PX = 16
+_SECTION_ICON_RENDER_PX = 64
+_SECTION_ICON_FILL_DARK = b'fill="#212121"'
+
+
+@lru_cache(maxsize=None)
+def _load_section_icon(svg_filename: str, theme: str = "dark") -> QIcon:
+    svg_bytes = (_SECTION_ICON_DIR / svg_filename).read_bytes()
+    fill = b'fill="#212121"' if theme == "light" else b'fill="#DCE4EE"'
+    svg_bytes = svg_bytes.replace(_SECTION_ICON_FILL_DARK, fill)
+    renderer = QSvgRenderer(QByteArray(svg_bytes))
+    pixmap = QPixmap(_SECTION_ICON_RENDER_PX, _SECTION_ICON_RENDER_PX)
+    pixmap.fill(Qt.GlobalColor.transparent)
+    painter = QPainter(pixmap)
+    renderer.render(painter)
+    painter.end()
+    pixmap.setDevicePixelRatio(_SECTION_ICON_RENDER_PX / _SECTION_ICON_PX)
+    icon = QIcon()
+    icon.addPixmap(pixmap, QIcon.Mode.Normal, QIcon.State.Off)
+    return icon
 
 # § "chevron/arrow indicator on the right" — ``QPushButton.
 # setLayoutDirection(RightToLeft)`` + ``text-align:left`` QSS комбинациясы
@@ -72,19 +102,19 @@ _ABOUT_INFO_ROWS: tuple[tuple[str, str], ...] = (
 )
 
 # § "same icons already used by the sidebar where practical" —
-# ``ui/navigation/navigation_config.py``-дегі ``NavigationItem`` эмоджи
-# fallback-ымен БІРДЕЙ мәндер (жобаның бұрыннан бар кіші lookup
-# кестесін файлдар арасында қасақана дублирлеу конвенциясы, § background_
-# category.py докстрингі).
+# ``ui/navigation/navigation_config.py``-дегі ``NavigationItem.icon_svg``-
+# бен БІРДЕЙ вендорленген Fluent SVG файлдары (жобаның бұрыннан бар кіші
+# lookup кестесін файлдар арасында қасақана дублирлеу конвенциясы, §
+# background_category.py докстрингі). Ескі emoji fallback ЕНДІ қолданылмайды.
 _MAIN_SECTIONS: tuple[tuple[str, str, str], ...] = (
-    ("📊", "Бақылау тақтасы", "жалпы жағдайды бақылау"),
-    ("👥", "Сыныптар мен оқушылар", "сыныптар мен оқушыларды басқару"),
-    ("🧪", "Зертханалық жұмыстар", "эксперименттерді жүргізу"),
-    ("📈", "Нәтижелер", "орындалған жұмыстардың нәтижелері"),
-    ("📋", "Деректер журналы", "өлшеу деректерін қарау"),
-    ("💬", "Кері байланысты тексеру", "оқушы жауаптарын тексеру"),
-    ("📉", "Аналитика", "оқу нәтижелерін талдау"),
-    ("🔌", "Құрылғылар", "сенсорлар мен COM порттарды басқару"),
+    ("ic_fluent_home_24_regular.svg", "Бақылау тақтасы", "жалпы жағдайды бақылау"),
+    ("ic_fluent_person_24_regular.svg", "Сыныптар мен оқушылар", "сыныптар мен оқушыларды басқару"),
+    ("ic_fluent_beaker_24_regular.svg", "Зертханалық жұмыстар", "эксперименттерді жүргізу"),
+    ("ic_fluent_clipboard_data_bar_24_regular.svg", "Нәтижелер", "орындалған жұмыстардың нәтижелері"),
+    ("ic_fluent_notebook_24_regular.svg", "Деректер журналы", "өлшеу деректерін қарау"),
+    ("ic_fluent_comment_24_regular.svg", "Кері байланысты тексеру", "оқушы жауаптарын тексеру"),
+    ("ic_fluent_chart_multiple_24_regular.svg", "Аналитика", "оқу нәтижелерін талдау"),
+    ("ic_fluent_plug_connected_24_regular.svg", "Құрылғылар", "сенсорлар мен COM порттарды басқару"),
 )
 
 _WORKFLOW_STEPS: tuple[tuple[str, str, str], ...] = (
@@ -143,7 +173,17 @@ class HelpPage(QWidget):
         super().__init__(parent)
         self._faq_buttons: list[QPushButton] = []
         self._faq_answers: list[QLabel] = []
+        self._section_icon_labels: list[tuple[QLabel, str]] = []
         self._build_ui()
+
+    def refresh_theme_icons(self) -> None:
+        """Тема ауысқанда «Негізгі бөлімдер» иконкаларының fill-ін жаңартады."""
+        _load_section_icon.cache_clear()
+        theme = current_theme()
+        for icon_label, svg_filename in self._section_icon_labels:
+            icon_label.setPixmap(
+                _load_section_icon(svg_filename, theme).pixmap(QSize(_SECTION_ICON_PX, _SECTION_ICON_PX))
+            )
 
     # ---- UI құрылысы -----------------------------------------------------
 
@@ -383,15 +423,31 @@ class HelpPage(QWidget):
     def _build_sections_panel(self) -> QFrame:
         panel, layout = self._build_panel_frame("Негізгі бөлімдер")
 
-        for icon, title, description in _MAIN_SECTIONS:
-            layout.addWidget(self._build_section_row(panel, icon, title, description))
+        for svg_filename, title, description in _MAIN_SECTIONS:
+            layout.addWidget(self._build_section_row(panel, svg_filename, title, description))
 
         return panel
 
-    def _build_section_row(self, panel: QFrame, icon: str, title: str, description: str) -> QLabel:
-        text = f"{icon} <b>{title}</b> — {description}"
-        row_label = QLabel(text, panel)
-        row_label.setProperty("role", "secondary")
-        row_label.setWordWrap(True)
-        _make_background_transparent(row_label)
-        return row_label
+    def _build_section_row(self, panel: QFrame, svg_filename: str, title: str, description: str) -> QWidget:
+        icon_label = QLabel(panel)
+        icon_label.setPixmap(
+            _load_section_icon(svg_filename, current_theme()).pixmap(QSize(_SECTION_ICON_PX, _SECTION_ICON_PX))
+        )
+        _make_background_transparent(icon_label)
+        self._section_icon_labels.append((icon_label, svg_filename))
+
+        text_label = QLabel(f"<b>{title}</b> — {description}", panel)
+        text_label.setProperty("role", "secondary")
+        text_label.setWordWrap(True)
+        _make_background_transparent(text_label)
+
+        row = QWidget(panel)
+        _make_background_transparent(row)
+        row_layout = QHBoxLayout(row)
+        row_layout.setContentsMargins(0, 0, 0, 0)
+        row_layout.setSpacing(8)
+        row_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        icon_label.setAlignment(Qt.AlignmentFlag.AlignTop)
+        row_layout.addWidget(icon_label)
+        row_layout.addWidget(text_label, 1)
+        return row

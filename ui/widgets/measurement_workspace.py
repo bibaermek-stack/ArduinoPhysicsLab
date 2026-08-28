@@ -9,7 +9,7 @@ V1.0 workspace виджеті.
 кестесі) екеуі де енгізілген.
 """
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
@@ -28,10 +28,17 @@ from domain.entities.connected_device import ConnectedDevice
 from domain.entities.experiment_definition import ExperimentDefinition
 from domain.entities.measurement import Measurement
 from domain.entities.sensor_channel import SensorChannel
-from ui.widgets.live_graph import LiveGraphWidget
+from ui.themes.theme_manager import current_theme
+from ui.widgets.live_graph import _TOOLBAR_ICON_PX, _load_toolbar_icon, LiveGraphWidget
 from ui.widgets.measurement_card import MeasurementCard
 from ui.widgets.measurement_table import MeasurementTableWidget
 from ui.widgets.motion import flash_value_update
+
+# ``LiveGraphWidget``-тегі toolbar иконка жүктегішінің қайта пайдаланылуы
+# (§ ``MeasurementWorkspace`` бұрыннан осы модульден ``LiveGraphWidget``-ті
+# импорттайды — циклдік импорт қаупі жоқ, ``live_graph.py``
+# ``measurement_workspace.py``-ды ЕШҚАШАН импорттамайды).
+_ACTION_ICON_PX = _TOOLBAR_ICON_PX
 
 _SENSOR_TYPE_NAMES_KK: dict[str, str] = {
     "VOLTAGE": "Кернеу датчигі",
@@ -570,24 +577,44 @@ class MeasurementWorkspace(QWidget):
         card = MeasurementCard(title, self)
         return card, card.value_label
 
+    def refresh_theme_icons(self) -> None:
+        """Тема ауысқанда Бастау/Тоқтату/Тазалау/Экспорт/Құрылғыны қосу
+        батырмаларының иконка fill-ін жаңартады.
+        """
+        theme = current_theme()
+        _load_toolbar_icon.cache_clear()
+        for button, filename in self._action_buttons_with_icons:
+            icon = _load_toolbar_icon(filename, theme)
+            button.setIcon(icon)
+            button.setIconSize(QSize(_ACTION_ICON_PX, _ACTION_ICON_PX))
+
     def _build_controls_section(self) -> QHBoxLayout:
         row = QHBoxLayout()
 
-        self._start_button = QPushButton("▶ Бастау", self)
+        self._start_button = QPushButton("Бастау", self)
         self._start_button.setObjectName("PrimaryButton")
-        self._stop_button = QPushButton("■ Тоқтату", self)
-        self._clear_button = QPushButton("🗑 Тазалау", self)
+        self._stop_button = QPushButton("Тоқтату", self)
+        self._clear_button = QPushButton("Тазалау", self)
         self._optional_toggle_button = QPushButton("", self)
         self._optional_toggle_button.setVisible(False)
-        self._export_button = QPushButton("📤 Экспорт", self)
+        self._export_button = QPushButton("Экспорт", self)
         # Phase 37A: Оқушы режимінде, тек әлі дайын болмаған кезде ғана
         # көрінетін жеңілдетілген "Құрылғыны қосу" әрекеті
         # (``set_connect_action_visible()``/``_update_connect_action_
         # visibility()`` арқылы басқарылады — рөл ЖӘНЕ readiness екеуіне
         # тәуелді). Әдепкі бойынша ЖАСЫРЫН, сондықтан бұрыннан бар барлық
         # тест ӨЗГЕРІССІЗ өтеді.
-        self._connect_device_button = QPushButton("🔌 Құрылғыны қосу", self)
+        self._connect_device_button = QPushButton("Құрылғыны қосу", self)
         self._connect_device_button.setVisible(False)
+
+        self._action_buttons_with_icons = (
+            (self._start_button, "ic_fluent_play_24_regular.svg"),
+            (self._stop_button, "ic_fluent_stop_24_regular.svg"),
+            (self._clear_button, "ic_fluent_delete_24_regular.svg"),
+            (self._export_button, "ic_fluent_arrow_export_24_regular.svg"),
+            (self._connect_device_button, "ic_fluent_plug_connected_24_regular.svg"),
+        )
+        self.refresh_theme_icons()
 
         self._start_button.clicked.connect(self.start_requested)
         self._stop_button.clicked.connect(self.stop_requested)

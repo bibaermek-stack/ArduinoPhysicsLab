@@ -76,6 +76,11 @@ _THEME_BUTTON_LABEL = {
 _ICON_DIR = resource_path("Design", "02_FluentIcons", "svg")
 _SWITCH_STUDENT_ICON_FILE = "ic_fluent_person_24_regular.svg"
 _SWITCH_ROLE_ICON_FILE = "ic_fluent_people_swap_24_regular.svg"
+# Phase 8 gap-closure зерттеуінде "device_summary_label" үшін ЖЕКЕ,
+# балама иконка бекітілген (USB Plug) — "Құрылғылар" nav item-і мен
+# "Құрылғыны қосу" батырмасы қолданатын Plug Connected-пен БІРДЕЙ
+# сайдбарда қатар көрінгенде қайталанбас үшін.
+_DEVICE_SUMMARY_ICON_FILE = "ic_fluent_usb_plug_24_regular.svg"
 # SVG path fill-і түпнұсқада қатты кодталған "#212121" (currentColor
 # ЕМЕС) — таңдалған (accent көк фон, ақ мәтін) SidebarNavButton-да
 # қараңғы иконка ақ мәтінмен сәйкессіз көрінер еді. Осыны түзету үшін
@@ -195,9 +200,23 @@ class Sidebar(QWidget):
 
         self._rebuild_nav_buttons()
 
-        self._device_summary_label = QLabel(self)
-        self._device_summary_label.setObjectName("SidebarDeviceSummary")
-        self._device_summary_label.setWordWrap(True)
+        self._device_summary_icon_label = QLabel(self)
+        self._device_summary_icon_label.setObjectName("SidebarDeviceSummaryIcon")
+        self._device_summary_icon_label.setPixmap(
+            _load_nav_icon(_DEVICE_SUMMARY_ICON_FILE, current_theme()).pixmap(
+                QSize(_SIDEBAR_ICON_PX, _SIDEBAR_ICON_PX)
+            )
+        )
+        self._device_summary_text_label = QLabel(self)
+        self._device_summary_text_label.setObjectName("SidebarDeviceSummary")
+        self._device_summary_text_label.setWordWrap(True)
+        self._device_summary_row = QWidget(self)
+        self._device_summary_row.setObjectName("SidebarDeviceSummaryRow")
+        device_summary_layout = QHBoxLayout(self._device_summary_row)
+        device_summary_layout.setContentsMargins(0, 0, 0, 0)
+        device_summary_layout.setSpacing(6)
+        device_summary_layout.addWidget(self._device_summary_icon_label)
+        device_summary_layout.addWidget(self._device_summary_text_label, 1)
 
         separator = QFrame(self)
         separator.setFrameShape(QFrame.Shape.HLine)
@@ -264,7 +283,7 @@ class Sidebar(QWidget):
         layout.addLayout(top_row)
         layout.addWidget(nav_scroll_area, 1)
         layout.addWidget(separator)
-        layout.addWidget(self._device_summary_label)
+        layout.addWidget(self._device_summary_row)
         layout.addWidget(role_separator)
         layout.addWidget(self._role_indicator_label)
         layout.addWidget(self._active_teacher_label)
@@ -302,6 +321,9 @@ class Sidebar(QWidget):
         theme = current_theme()
         self._switch_student_button.setIcon(_load_nav_icon(_SWITCH_STUDENT_ICON_FILE, theme))
         self._switch_role_button.setIcon(_load_nav_icon(_SWITCH_ROLE_ICON_FILE, theme))
+        self._device_summary_icon_label.setPixmap(
+            _load_nav_icon(_DEVICE_SUMMARY_ICON_FILE, theme).pixmap(QSize(_SIDEBAR_ICON_PX, _SIDEBAR_ICON_PX))
+        )
         self._sync_theme_button()
 
     def _on_theme_button_clicked(self) -> None:
@@ -417,7 +439,7 @@ class Sidebar(QWidget):
         self._brand_label.setText(_BRAND_COLLAPSED_TEXT if self._collapsed else _BRAND_EXPANDED_TEXT)
         for nav_item in self._nav_items:
             self.buttons[nav_item.key].setText(self._button_text(nav_item))
-        self._device_summary_label.setVisible(not self._collapsed)
+        self._device_summary_row.setVisible(not self._collapsed)
         self._role_indicator_label.setVisible(not self._collapsed)
         # Екі батырманың да иконкасы (People Swap / Person) collapsed/
         # expanded екеуінде setIcon() арқылы тұрақты көрінеді — тек мәтін
@@ -448,4 +470,4 @@ class Sidebar(QWidget):
         count = 0
         if self._device_manager is not None:
             count = len(self._device_manager.get_connected_devices())
-        self._device_summary_label.setText(f"🔌 Қосылған құрылғылар: {count}")
+        self._device_summary_text_label.setText(f"Қосылған құрылғылар: {count}")

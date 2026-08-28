@@ -200,7 +200,8 @@ def test_selecting_settings_unchecks_dashboard() -> None:
 def test_works_without_device_manager() -> None:
     sidebar = Sidebar(device_manager=None)
 
-    assert sidebar._device_summary_label.text() == "🔌 Қосылған құрылғылар: 0"
+    assert sidebar._device_summary_text_label.text() == "Қосылған құрылғылар: 0"
+    assert not sidebar._device_summary_icon_label.pixmap().isNull()
 
 
 def test_device_summary_updates_on_device_identified() -> None:
@@ -209,7 +210,7 @@ def test_device_summary_updates_on_device_identified() -> None:
 
     fake_manager.add_device(_make_device())
 
-    assert "1" in sidebar._device_summary_label.text()
+    assert "1" in sidebar._device_summary_text_label.text()
 
 
 def test_device_summary_updates_on_port_disconnected() -> None:
@@ -219,7 +220,7 @@ def test_device_summary_updates_on_port_disconnected() -> None:
 
     fake_manager.remove_last("COM6")
 
-    assert "0" in sidebar._device_summary_label.text()
+    assert "0" in sidebar._device_summary_text_label.text()
 
 
 # =====================================================================
