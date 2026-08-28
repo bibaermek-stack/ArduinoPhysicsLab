@@ -1,19 +1,32 @@
 {% extends "base.html" %}
-{% block title %}Кіру · Arduino Physics Lab{% endblock %}
+{% block title %}Kіру · Arduino Physics Lab{% endblock %}
 {% block body %}
-<form class="auth" method="post" action="/login">
-  <span class="kicker">Аккаунт</span>
-  <h1>Кіру</h1>
-  <p>Сайттағы және Windows қолданбасындағы бір аккаунт.</p>
-  {% if error %}<p class="error">{{ error }}</p>{% endif %}
-  <label for="login-email">Email</label>
-  <input id="login-email" type="email" name="email" required autocomplete="username">
-  <label for="login-password">Құпия сөз</label>
-  <input id="login-password" type="password" name="password" required autocomplete="current-password">
-  <div class="actions">
-    <button class="btn btn-lab" type="submit">Кіру</button>
-    <a class="btn btn-google" href="/google"><span class="gmark"></span> Google</a>
-  </div>
-  <p class="hint"><a href="/register">Аккаунт жоқ па? Тіркелу</a></p>
-</form>
+<section class="auth-shell">
+  <aside class="auth-panel" aria-hidden="true">
+    <span class="kicker">Live стенд</span>
+    <h2>Arduino USB Serial</h2>
+    <p>Сайт аккаунты мен Windows қолданбасы бір ID-мен жұмыс істейді.</p>
+    <div class="lab-readout static">
+      <span>Live · COM3</span>
+      U = <b>5.02 V</b><br>
+      I = <b>0.21 A</b><br>
+      P = <b>1.05 W</b>
+    </div>
+  </aside>
+  <form class="auth" method="post" action="/login">
+    <span class="kicker">Аккаунт</span>
+    <h1>Кіру</h1>
+    <p>Сайттағы және Windows қолданбасындағы бір аккаунт.</p>
+    {% if error %}<p class="error">{{ error }}</p>{% endif %}
+    <label for="login-email">Email</label>
+    <input id="login-email" type="email" name="email" required autocomplete="username">
+    <label for="login-password">Құпия сөз</label>
+    <input id="login-password" type="password" name="password" required autocomplete="current-password">
+    <div class="actions">
+      <button class="btn btn-lab" type="submit">Кіру</button>
+      <a class="btn btn-google" href="/google"><span class="gmark"></span> Google</a>
+    </div>
+    <p class="hint"><a href="/register">Аккаунт жоқ па? Тіркелу</a></p>
+  </form>
+</section>
 {% endblock %}
