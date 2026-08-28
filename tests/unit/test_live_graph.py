@@ -1484,6 +1484,8 @@ def test_export_analysis_writes_csv_with_region_data(tmp_path) -> None:
     graph._recompute_region_analysis()
 
     output_path = tmp_path / "region_analysis.csv"
+    statuses: list[str] = []
+    graph.capture_status.connect(statuses.append)
     with patch(
         "ui.widgets.live_graph.QFileDialog.getSaveFileName",
         return_value=(str(output_path), "CSV файлдары (*.csv)"),
@@ -1494,6 +1496,7 @@ def test_export_analysis_writes_csv_with_region_data(tmp_path) -> None:
     content = output_path.read_text(encoding="utf-8")
     assert VOLTAGE.display_name in content
     assert "3" in content  # N=3
+    assert statuses[-1] == "Талдау қорытындысы сақталды."
 
 
 def test_clear_data_preserves_region_enabled_state_and_refreshes_stats() -> None:
@@ -2045,6 +2048,24 @@ def test_copy_summary_empty_when_no_fit_or_region() -> None:
 # =====================================================================
 # Phase 34: image export (PNG/SVG)
 # =====================================================================
+
+
+def test_image_export_failure_emits_status_with_reason() -> None:
+    graph = LiveGraphWidget()
+    graph.configure_channels((VOLTAGE,), x_channel=None, y_channels=("voltage",))
+    graph.append_measurement(_make_measurement(values={"voltage": 1.0}))
+    statuses: list[str] = []
+    graph.capture_status.connect(statuses.append)
+
+    with patch(
+        "ui.widgets.live_graph.QFileDialog.getSaveFileName",
+        return_value=("C:/no_such_dir/graph.png", "PNG суреттер (*.png)"),
+    ), patch.object(graph, "_export_plot_as_png", side_effect=OSError("Permission denied")):
+        graph._on_image_export_clicked()
+
+    assert statuses
+    assert "Суретті сақтау сәтсіз аяқталды" in statuses[-1]
+    assert "Permission denied" in statuses[-1]
 
 
 def test_image_export_noop_without_file_path() -> None:

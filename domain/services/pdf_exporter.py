@@ -19,9 +19,11 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas as pdfcanvas
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
+from core.exceptions import ExportError
 from domain.entities.experiment_session import ExperimentSession
 from domain.entities.measurement import Measurement
 from domain.interfaces.i_exporter import IExporter
+from domain.services.export_io import write_export
 
 _TITLE_TEXT = "Arduino Physics Lab"
 _SUBTITLE_TEXT = "Өлшеу нәтижелері"
@@ -193,23 +195,25 @@ class PDFExporter(IExporter):
         """``session``-ды ``output_path`` файлына PDF есебі ретінде
         жазады.
 
-        Session бос болса немесе жүйеде Unicode қаріп табылмаса, файл
-        жасалмайды және ``False`` қайтарылады. Кез келген қате
-        ұсталады, ешбір exception сыртқа шықпайды.
+        Session бос болса, файл жасалмайды және ``False`` қайтарылады.
+        Unicode қаріп табылмаса немесе жазу сәтсіз болса ``ExportError``.
         """
         if not session.measurements:
             return False
 
         fonts = _register_unicode_fonts()
         if fonts is None:
-            return False
+            raise ExportError(
+                "PDF үшін Unicode қаріп табылмады (Arial, Tahoma, DejaVu немесе Noto). "
+                "Жүйе қаріптерін тексеріңіз."
+            )
         regular_font, bold_font = fonts
 
-        try:
-            path = Path(output_path)
-            if path.suffix.lower() != ".pdf":
-                path = path.with_suffix(".pdf")
+        path = Path(output_path)
+        if path.suffix.lower() != ".pdf":
+            path = path.with_suffix(".pdf")
 
+        def _write() -> None:
             styles = self._build_styles(regular_font, bold_font)
             flowables = [
                 Paragraph(_TITLE_TEXT, styles["title"]),
@@ -235,9 +239,8 @@ class PDFExporter(IExporter):
                 title=_TITLE_TEXT,
             )
             document.build(flowables, canvasmaker=_NumberedCanvas)
-            return True
-        except Exception:  # қорғаныс: болжанбаған қате де сыртқа шықпайды
-            return False
+
+        return write_export(path, _write)
 
     # ---- Paragraph/Table құрастыру -------------------------------------
 

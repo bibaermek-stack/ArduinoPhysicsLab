@@ -145,6 +145,8 @@ _STATUS_VALUE_NEAR_ZERO = "Мән нөлге тым жақын — нүкте с
 _STATUS_DUPLICATE = "Бұл нүкте алдыңғы сақталған нүктеге тым жақын — қосылмады."
 _STATUS_IMAGE_EXPORT_FAILED = "Суретті сақтау сәтсіз аяқталды. Файл жолын/дискіні тексеріңіз."
 _STATUS_IMAGE_EXPORT_SAVED = "Сурет сақталды."
+_STATUS_ANALYSIS_EXPORT_SAVED = "Талдау қорытындысы сақталды."
+_STATUS_ANALYSIS_EXPORT_FAILED = "Талдау қорытындысын сақтау сәтсіз аяқталды."
 
 # Phase 32.1: hardware-тәуелсіз workspace — графикте әлі бірде-бір нүкте
 # жоқ кезде (0/N немесе ішінара N/M құрылғы), осьтер/тор/toolbar толық
@@ -1726,7 +1728,13 @@ class LiveGraphWidget(QWidget):
         )
         if not file_path:
             return
-        RegionAnalysisExporter().export(self._last_region_summary, file_path)
+        try:
+            if RegionAnalysisExporter().export(self._last_region_summary, file_path):
+                self.capture_status.emit(_STATUS_ANALYSIS_EXPORT_SAVED)
+            else:
+                self.capture_status.emit(_STATUS_ANALYSIS_EXPORT_FAILED)
+        except Exception as exc:
+            self.capture_status.emit(f"{_STATUS_ANALYSIS_EXPORT_FAILED} ({exc})")
 
     # ---- Phase 34 §9: snapshot (PNG/SVG) экспорты --------------------------
 
@@ -1759,8 +1767,8 @@ class LiveGraphWidget(QWidget):
                 exporter.export(file_path)
             else:
                 self._export_plot_as_png(file_path)
-        except Exception:  # қорғаныс: диск/формат қатесі UI-ды құлатпайды
-            self.capture_status.emit(_STATUS_IMAGE_EXPORT_FAILED)
+        except Exception as exc:  # қорғаныс: диск/формат қатесі UI-ды құлатпайды
+            self.capture_status.emit(f"{_STATUS_IMAGE_EXPORT_FAILED} ({exc})")
         else:
             self.capture_status.emit(_STATUS_IMAGE_EXPORT_SAVED)
         finally:

@@ -26,6 +26,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from core.exceptions import ExportError
 from domain.entities.active_student_context import ActiveStudentContext
 from domain.entities.connected_device import ConnectedDevice
 from domain.entities.experiment_assessment import ExperimentAssessmentDefinition
@@ -1506,5 +1507,7 @@ class ExperimentWorkspacePage(QWidget):
                 self._measurement_workspace.show_status(success_text)
             else:
                 self._measurement_workspace.show_status(failure_text)
+        except ExportError as exc:
+            self._measurement_workspace.show_status(str(exc))
         except Exception as exc:  # қорғаныс: болжанбаған қате де UI-ды құлатпайды
             self._measurement_workspace.show_status(f"Экспорт қатесі: {exc}")

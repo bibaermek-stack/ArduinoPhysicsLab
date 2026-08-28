@@ -70,6 +70,16 @@ def test_list_for_student_orders_by_created_at() -> None:
     assert [n.id for n in notes] == ["earlier", "later"]
 
 
+def test_list_for_student_same_created_at_uses_rowid() -> None:
+    repo = SqliteTeacherNoteRepository()
+    repo.create(_make_note("n1", created_at=_NOW), UserRole.TEACHER)
+    repo.create(_make_note("n2", created_at=_NOW), UserRole.TEACHER)
+
+    notes = repo.list_for_student("s1")
+
+    assert [n.id for n in notes] == ["n1", "n2"]
+
+
 def test_mark_read_requires_student_role() -> None:
     repo = SqliteTeacherNoteRepository()
     repo.create(_make_note(), UserRole.TEACHER)

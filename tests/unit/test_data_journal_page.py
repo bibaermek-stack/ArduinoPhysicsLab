@@ -259,6 +259,42 @@ def test_csv_export_cancel_does_not_call_exporter(monkeypatch: pytest.MonkeyPatc
     assert fake_exporter.export_calls == []
 
 
+def test_csv_export_success_shows_status(monkeypatch: pytest.MonkeyPatch) -> None:
+    repository = SqliteSessionRepository()
+    repository.save_session(_make_session("s1"), _make_experiment_metadata())
+    fake_exporter = FakeExporter()
+    page = DataJournalPage(session_repository=repository, csv_exporter=fake_exporter)
+    page.on_enter()
+    _open_button(page, 0).click()
+    monkeypatch.setattr(
+        QFileDialog, "getSaveFileName", lambda *args, **kwargs: ("C:/fake/out.csv", "")
+    )
+
+    page._detail_export_button.click()
+
+    assert page._detail_status_label.text() == "CSV сәтті сақталды"
+
+
+def test_csv_export_failure_shows_reason(monkeypatch: pytest.MonkeyPatch) -> None:
+    class FailingExporter:
+        def export(self, session: ExperimentSession, output_path: str) -> bool:
+            raise OSError("Permission denied")
+
+    repository = SqliteSessionRepository()
+    repository.save_session(_make_session("s1"), _make_experiment_metadata())
+    page = DataJournalPage(session_repository=repository, csv_exporter=FailingExporter())
+    page.on_enter()
+    _open_button(page, 0).click()
+    monkeypatch.setattr(
+        QFileDialog, "getSaveFileName", lambda *args, **kwargs: ("C:/fake/out.csv", "")
+    )
+
+    page._detail_export_button.click()
+
+    assert "Экспорт қатесі" in page._detail_status_label.text()
+    assert "Permission denied" in page._detail_status_label.text()
+
+
 # ---- Filter -----------------------------------------------------------------
 
 

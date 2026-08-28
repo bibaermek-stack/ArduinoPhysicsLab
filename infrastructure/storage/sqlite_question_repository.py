@@ -98,7 +98,7 @@ class SqliteQuestionRepository(IQuestionRepository):
         query = f"SELECT {_SELECT_COLUMNS} FROM questions"
         if not include_archived:
             query += " WHERE is_active = 1"
-        query += " ORDER BY experiment_id, level, created_at"
+        query += " ORDER BY experiment_id, level, created_at, rowid"
         rows = self._connection.execute(query).fetchall()
         return tuple(self._row_to_record(row) for row in rows)
 
@@ -108,7 +108,7 @@ class SqliteQuestionRepository(IQuestionRepository):
         query = f"SELECT {_SELECT_COLUMNS} FROM questions WHERE experiment_id = ?"
         if not include_archived:
             query += " AND is_active = 1"
-        query += " ORDER BY level, created_at"
+        query += " ORDER BY level, created_at, rowid"
         rows = self._connection.execute(query, (experiment_id,)).fetchall()
         return tuple(self._row_to_record(row) for row in rows)
 

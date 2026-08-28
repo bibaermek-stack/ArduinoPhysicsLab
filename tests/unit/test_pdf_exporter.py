@@ -15,6 +15,7 @@ from pypdf import PdfReader
 import domain.services.pdf_exporter as pdf_exporter_module
 from domain.entities.experiment_session import ExperimentSession
 from domain.entities.measurement import Measurement
+from core.exceptions import ExportError
 from domain.services.pdf_exporter import PDFExporter
 
 
@@ -74,14 +75,13 @@ def test_pdf_extension_is_added_automatically(tmp_path: Path) -> None:
     assert (tmp_path / "report.pdf").exists()
 
 
-def test_invalid_path_returns_false(tmp_path: Path) -> None:
+def test_invalid_path_raises_export_error(tmp_path: Path) -> None:
     session = _make_session()
     session.add_measurement(_make_measurement(values={"voltage": 5.0}))
     invalid_path = tmp_path / "no_such_directory" / "report.pdf"
 
-    result = PDFExporter().export(session, str(invalid_path))
-
-    assert result is False
+    with pytest.raises(ExportError, match="Файлды жазу мүмкін болмады"):
+        PDFExporter().export(session, str(invalid_path))
 
 
 def test_one_measurement_is_included(tmp_path: Path) -> None:
@@ -251,7 +251,7 @@ def test_kazakh_unicode_text_is_present(tmp_path: Path) -> None:
     assert "Өлшеулер кестесі" in text
 
 
-def test_missing_font_returns_false(
+def test_missing_font_raises_export_error(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setattr(pdf_exporter_module, "_find_unicode_font", lambda: None)
@@ -259,9 +259,8 @@ def test_missing_font_returns_false(
     session.add_measurement(_make_measurement(values={"voltage": 5.0}))
     output_path = tmp_path / "report.pdf"
 
-    result = PDFExporter().export(session, str(output_path))
-
-    assert result is False
+    with pytest.raises(ExportError, match="Unicode қаріп табылмады"):
+        PDFExporter().export(session, str(output_path))
     assert not output_path.exists()
 
 

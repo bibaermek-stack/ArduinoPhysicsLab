@@ -7,7 +7,7 @@ import sys
 from datetime import datetime, timedelta, timezone
 
 import pytest
-from PySide6.QtWidgets import QApplication, QPushButton
+from PySide6.QtWidgets import QApplication, QFileDialog, QPushButton
 
 from domain.entities.classroom import Classroom
 from domain.entities.experiment_definition import ExperimentDefinition
@@ -609,6 +609,24 @@ def test_topic_level_color_dict_has_no_arbitrary_hex() -> None:
     assert set(_TOPIC_LEVEL_COLOR.keys()) == {
         TopicPerformanceLevel.WEAK, TopicPerformanceLevel.STRONG, TopicPerformanceLevel.NEUTRAL,
     }
+
+
+def test_student_csv_export_failure_shows_reason(monkeypatch: pytest.MonkeyPatch) -> None:
+    class FailingExporter:
+        def export(self, rows, path) -> bool:
+            raise OSError("disk full")
+
+    page, _c, _s, _p, _f, _sess = _make_page()
+    page._csv_exporter = FailingExporter()
+    page._student_rows = (object(),)  # type: ignore[assignment]
+    monkeypatch.setattr(
+        QFileDialog, "getSaveFileName", lambda *args, **kwargs: ("C:/analytics.csv", "")
+    )
+
+    page._on_export_csv_clicked()
+
+    assert "Экспорт қатесі" in page._student_export_status.text()
+    assert "disk full" in page._student_export_status.text()
 
 
 def test_other_routes_unchanged_placeholder_still_has_back_button() -> None:

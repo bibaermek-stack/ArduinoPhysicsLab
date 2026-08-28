@@ -66,7 +66,7 @@ class SqliteTeacherNoteRepository(ITeacherNoteRepository):
             """
             SELECT id, teacher_id, student_id, classroom_id, experiment_id,
                    session_id, message, created_at, read_at, sync_state
-            FROM teacher_notes WHERE student_id = ? ORDER BY created_at
+            FROM teacher_notes WHERE student_id = ? ORDER BY created_at, rowid
             """,
             (student_id,),
         ).fetchall()

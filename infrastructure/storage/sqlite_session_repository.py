@@ -143,7 +143,7 @@ class SqliteSessionRepository(ISessionRepository):
         if experiment_id is not None:
             query += " WHERE experiment_id = ?"
             params.append(experiment_id)
-        query += " ORDER BY started_at DESC"
+        query += " ORDER BY started_at DESC, rowid DESC"
         if limit is not None:
             query += " LIMIT ?"
             params.append(limit)

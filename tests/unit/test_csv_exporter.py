@@ -4,6 +4,9 @@ import csv
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+import pytest
+
+from core.exceptions import ExportError
 from domain.entities.experiment_session import ExperimentSession
 from domain.entities.measurement import Measurement
 from domain.services.csv_exporter import CSVExporter
@@ -197,11 +200,10 @@ def test_row_numbering_starts_at_one_and_increments(tmp_path: Path) -> None:
     assert [row[0] for row in rows[1:]] == ["1", "2", "3"]
 
 
-def test_invalid_output_path_returns_false_without_crashing(tmp_path: Path) -> None:
+def test_invalid_output_path_raises_export_error(tmp_path: Path) -> None:
     session = _make_session()
     session.add_measurement(_make_measurement(values={"voltage": 5.0}))
     invalid_path = tmp_path / "no_such_directory" / "export.csv"
 
-    result = CSVExporter().export(session, str(invalid_path))
-
-    assert result is False
+    with pytest.raises(ExportError, match="Файлды жазу мүмкін болмады"):
+        CSVExporter().export(session, str(invalid_path))

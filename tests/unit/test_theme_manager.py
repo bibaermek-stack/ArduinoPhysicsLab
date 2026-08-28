@@ -14,6 +14,7 @@ from ui.themes.theme_manager import (
     set_theme,
     theme_color,
 )
+from ui.themes.theme_palettes import PALETTES
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -28,6 +29,13 @@ def qt_application() -> QApplication:
 def restore_dark_theme() -> None:
     yield
     apply_application_theme(THEME_DARK)
+
+
+def test_palettes_module_matches_theme_manager_keys() -> None:
+    assert THEME_DARK in PALETTES
+    assert THEME_LIGHT in PALETTES
+    assert PALETTES[THEME_LIGHT]["COLOR_BACKGROUND"] == "#EEF1F6"
+    assert PALETTES[THEME_DARK]["COLOR_BACKGROUND"] == "#1C1C1E"
 
 
 def test_light_palette_uses_light_background() -> None:

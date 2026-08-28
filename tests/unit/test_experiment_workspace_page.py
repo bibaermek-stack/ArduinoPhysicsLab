@@ -14,6 +14,7 @@ import pytest
 from PySide6.QtCore import QObject, QSettings, Signal
 from PySide6.QtWidgets import QApplication, QFileDialog, QSizePolicy
 
+from core.exceptions import ExportError
 from domain.entities.active_student_context import ActiveStudentContext
 from domain.entities.connected_device import ConnectedDevice
 from domain.entities.experiment_assessment import (
@@ -581,6 +582,41 @@ def test_csv_export_exception_does_not_crash(monkeypatch: pytest.MonkeyPatch) ->
     page._measurement_workspace._csv_export_action.trigger()
 
     assert "Экспорт қатесі" in page._measurement_workspace._status_message_label.text()
+
+
+def test_csv_export_export_error_shows_reason(monkeypatch: pytest.MonkeyPatch) -> None:
+    class FailingCSVExporter:
+        def export(self, session: ExperimentSession, output_path: str) -> bool:
+            raise ExportError("Файлды жазу мүмкін болмады: C:/locked.csv (Permission denied)")
+
+    page, fake_controller = _make_page(csv_exporter=FailingCSVExporter())
+    page._device_panel.device_selected.emit(_make_device())
+    fake_controller.session.add_measurement(_make_measurement())
+    monkeypatch.setattr(
+        QFileDialog, "getSaveFileName", lambda *args, **kwargs: ("C:/locked.csv", "")
+    )
+
+    page._measurement_workspace._csv_export_action.trigger()
+
+    assert page._measurement_workspace._status_message_label.text() == (
+        "Файлды жазу мүмкін болмады: C:/locked.csv (Permission denied)"
+    )
+
+
+def test_csv_export_false_shows_generic_failure(monkeypatch: pytest.MonkeyPatch) -> None:
+    fake_exporter = FakeCSVExporter(result=False)
+    page, fake_controller = _make_page(csv_exporter=fake_exporter)
+    page._device_panel.device_selected.emit(_make_device())
+    fake_controller.session.add_measurement(_make_measurement())
+    monkeypatch.setattr(
+        QFileDialog, "getSaveFileName", lambda *args, **kwargs: ("C:/fake/export.csv", "")
+    )
+
+    page._measurement_workspace._csv_export_action.trigger()
+
+    assert page._measurement_workspace._status_message_label.text() == (
+        "CSV экспорты сәтсіз аяқталды"
+    )
 
 
 def test_excel_export_action_calls_excel_exporter(monkeypatch: pytest.MonkeyPatch) -> None:

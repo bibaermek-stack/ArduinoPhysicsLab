@@ -15,6 +15,7 @@ from openpyxl.worksheet.worksheet import Worksheet
 
 from domain.entities.experiment_session import ExperimentSession
 from domain.interfaces.i_exporter import IExporter
+from domain.services.export_io import write_export
 
 _MEASUREMENTS_SHEET_NAME = "Measurements"
 _INFO_SHEET_NAME = "Experiment Info"
@@ -44,24 +45,22 @@ class ExcelExporter(IExporter):
 
         Session бос болса, файл жасалмайды және ``False`` қайтарылады.
         Кеңейтім ``.xlsx`` болмаса, автоматты түрде қосылады/ауыстырылады.
-        Кез келген қате (parent directory жоқ, рұқсат жоқ, т.б.) ұсталады,
-        ешбір exception сыртқа шықпайды.
+        Жазу қатесі (parent directory жоқ, рұқсат жоқ) ``ExportError``.
         """
         if not session.measurements:
             return False
 
-        try:
-            path = Path(output_path)
-            if path.suffix.lower() != ".xlsx":
-                path = path.with_suffix(".xlsx")
+        path = Path(output_path)
+        if path.suffix.lower() != ".xlsx":
+            path = path.with_suffix(".xlsx")
 
+        def _write() -> None:
             workbook = Workbook()
             self._write_measurements_sheet(workbook.active, session)
             self._write_info_sheet(workbook.create_sheet(_INFO_SHEET_NAME), session)
             workbook.save(str(path))
-            return True
-        except Exception:  # қорғаныс: болжанбаған қате де сыртқа шықпайды
-            return False
+
+        return write_export(path, _write)
 
     def _write_measurements_sheet(self, sheet: Worksheet, session: ExperimentSession) -> None:
         sheet.title = _MEASUREMENTS_SHEET_NAME

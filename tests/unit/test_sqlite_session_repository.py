@@ -235,6 +235,19 @@ def test_sessions_sorted_newest_first(repository: SqliteSessionRepository) -> No
     assert [s.id for s in sessions] == ["newer", "older"]
 
 
+def test_sessions_with_identical_started_at_use_rowid_desc(
+    repository: SqliteSessionRepository,
+) -> None:
+    first = _make_session(session_id="first")
+    second = _make_session(session_id="second")
+    repository.save_session(first, _make_experiment_metadata())
+    repository.save_session(second, _make_experiment_metadata())
+
+    sessions = repository.get_sessions()
+
+    assert [s.id for s in sessions] == ["second", "first"]
+
+
 def test_experiment_id_filter_works(repository: SqliteSessionRepository) -> None:
     ohms = _make_session(session_id="ohms-1", experiment_id="ohms-law")
     current_voltage = _make_session(session_id="cv-1", experiment_id="current-voltage")

@@ -110,6 +110,14 @@ def test_current_work_power_still_requires_voltage_and_current_for_calculation()
 # ---- Multi-device: required_sensor_types + CURRENT_CHANNEL.required=True -
 
 
+def test_channel_constants_are_reexported_from_experiments_config() -> None:
+    from modules.electricity import channels
+    from modules.electricity.experiments_config import CURRENT_CHANNEL, VOLTAGE_CHANNEL
+
+    assert VOLTAGE_CHANNEL is channels.VOLTAGE_CHANNEL
+    assert CURRENT_CHANNEL is channels.CURRENT_CHANNEL
+
+
 def test_current_channel_is_required_again() -> None:
     # ChannelAggregator толық жиынтықты бергеннен кейін ғана DataValidator
     # шақырылады, сондықтан партиалды (voltage-only) пакет ешқашан

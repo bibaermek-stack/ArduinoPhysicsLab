@@ -12,6 +12,7 @@ from pathlib import Path
 
 from domain.entities.experiment_session import ExperimentSession
 from domain.interfaces.i_exporter import IExporter
+from domain.services.export_io import write_export
 
 _HEADER = ("No", "Time(s)", "Voltage(V)", "Current(A)", "Power(W)")
 _TIME_DECIMALS = 2
@@ -34,14 +35,12 @@ class CSVExporter(IExporter):
         түрінде жазады.
 
         Session бос болса, файл жасалмайды және ``False`` қайтарылады.
-        Жазу кезінде кез келген қате (``IOError``, ``PermissionError``,
-        т.б.) ұсталады, ешбір exception сыртқа шықпайды — сәтсіз
-        болғанда да ``False`` қайтарылады.
+        Жазу қатесі (жол жоқ, рұқсат жоқ) ``ExportError`` ретінде шығады.
         """
         if not session.measurements:
             return False
 
-        try:
+        def _write() -> None:
             with open(output_path, mode="w", encoding="utf-8", newline="") as csv_file:
                 writer = csv.writer(csv_file)
                 writer.writerow(_HEADER)
@@ -58,6 +57,5 @@ class CSVExporter(IExporter):
                         row.append("" if value is None else f"{value:.{decimals}f}")
 
                     writer.writerow(row)
-            return True
-        except Exception:  # қорғаныс: IOError/PermissionError/т.б. сыртқа шықпайды
-            return False
+
+        return write_export(output_path, _write)

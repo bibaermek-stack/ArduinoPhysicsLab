@@ -25,6 +25,19 @@ def test_enqueue_then_list_all_returns_entry() -> None:
     assert entries[0].next_retry_at is None
 
 
+def test_list_all_same_created_at_uses_rowid() -> None:
+    repo = SqliteSyncOutboxRepository()
+    repo.enqueue("classroom", "c1", OutboxOperation.UPSERT)
+    repo.enqueue("classroom", "c2", OutboxOperation.UPSERT)
+    tied = "2026-01-01T00:00:00+00:00"
+    repo._connection.execute("UPDATE sync_outbox SET created_at = ?", (tied,))
+    repo._connection.commit()
+
+    entries = repo.list_all()
+
+    assert [entry.entity_sync_id for entry in entries] == ["c1", "c2"]
+
+
 def test_enqueue_same_entity_coalesces_into_single_entry() -> None:
     """§7: 5 рет offline өзгеріс -> 1 ғана тиімді UPSERT."""
     repo = SqliteSyncOutboxRepository()

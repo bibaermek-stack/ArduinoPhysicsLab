@@ -23,12 +23,10 @@ architecture, кодтауға дейінгі растау), сондықтан 
 алады, партиалды пакетті ешқашан көрмейді.
 """
 
-from core.resource_paths import resource_path
 from domain.entities.experiment_assessment import (
     ExperimentAssessmentDefinition,
     MultipleChoiceQuestion,
     OpenResponseQuestion,
-    ReflectionQuestion,
 )
 from domain.entities.experiment_definition import (
     ExperimentDefinition,
@@ -36,109 +34,29 @@ from domain.entities.experiment_definition import (
     ExperimentGuide,
     ExperimentReport,
 )
-from domain.entities.sensor_channel import SensorChannel
 from domain.services.graph_analysis import DERIVED_ANALYSIS_POWER_ENERGY
-
-# Phase 36.1 / 36.1 follow-up: пайдаланушы дайындаған, Fritzing-тәрізді
-# қосылым суреттері — ЕШҚАШАН кодта қайта салынбайды, тек дайын файл
-# жолдары. ``__file__`` арқылы жоба түбіріне қатысты есептеледі (осы
-# файл ``modules/electricity/experiments_config.py``, сондықтан
-# ``parents[2]`` — жоба түбірі) — қатты кодталған Windows жолы жоқ,
-# пакеттелгенде де каталог құрылымы сақталса жұмыс істей береді.
-#
-# "Электр тізбегін құрастыру және ток күшін өлшеу" МЕН "Электр тогының
-# жұмысы мен қуатын анықтау" — дәл СОЛ бір файлды пайдаланады (нақты
-# бірдей физикалық құрылым: 2 сенсор + 1 резистор breadboard-та).
-# "Тізбек бөлігі үшін кернеудің ток күшіне тәуелділігін зерттеу" — ӨЗ
-# файлы (``ohms_law_wiring.png``), бірақ пайдаланушы растағандай, сурет
-# мазмұны әдейі СОЛ бір тізбекті бейнелейді (сол физикалық құрылым).
-# Тізбектей/параллель қосуды зерттеу — екеуі де ӨЗ, БАСҚА тізбек
-# топологиясын (бірнеше резистор) көрсететін суреттер.
-_ASSETS_DIR = resource_path("ui", "resources", "images")
-_CURRENT_VOLTAGE_WIRING_PATH = str(_ASSETS_DIR / "current_voltage_wiring.png")
-_OHMS_LAW_WIRING_PATH = str(_ASSETS_DIR / "ohms_law_wiring.png")
-_SERIES_CONNECTION_WIRING_PATH = str(_ASSETS_DIR / "series_connection_wiring.png")
-_PARALLEL_CONNECTION_WIRING_PATH = str(_ASSETS_DIR / "parallel_connection_wiring.png")
-_WIRING_DIAGRAM_CAPTION = (
-    "Суреттегі сымдарды көрсетілген ретпен жалғаңыз. Қызыл сым — оң полюс, "
-    "қара сым — теріс полюс."
+from modules.electricity.channels import (
+    CURRENT_CHANNEL,
+    POWER_CHANNEL,
+    RESISTANCE_CHANNEL,
+    TEMPERATURE_CHANNEL,
+    TIME_CHANNEL,
+    VOLTAGE_CHANNEL,
+    WORK_CHANNEL,
+)
+from modules.electricity.experiment_assets import (
+    BASIC_SAFETY as _BASIC_SAFETY,
+    CURRENT_VOLTAGE_WIRING_PATH as _CURRENT_VOLTAGE_WIRING_PATH,
+    OHMS_LAW_WIRING_PATH as _OHMS_LAW_WIRING_PATH,
+    PARALLEL_CONNECTION_WIRING_PATH as _PARALLEL_CONNECTION_WIRING_PATH,
+    REQUIRED_SENSOR_TYPES as _REQUIRED_SENSOR_TYPES,
+    SENSOR_EQUIPMENT as _SENSOR_EQUIPMENT,
+    SERIES_CONNECTION_WIRING_PATH as _SERIES_CONNECTION_WIRING_PATH,
+    WIRING_DIAGRAM_CAPTION as _WIRING_DIAGRAM_CAPTION,
+    reflection_questions as _reflection_questions,
 )
 
-# Phase 35: барлық электр тәжірибесі бірдей 2 физикалық сенсормен (Voltage
-# Sensor, Current Sensor — әрқайсысы жеке Arduino Nano/Uno + INA226 I2C
-# breakout, 0x40 мекенжай) жұмыс істейді (docs/hardware_test_guide.md §1) —
-# нұсқаулықтардағы жабдық тізімі осы НАҚТЫ конфигурацияға сай, ойдан
-# шығарылған сенсор/аспап ЖОҚ (мыс. Омметр әлі іске асырылмаған).
-_SENSOR_EQUIPMENT = (
-    "Кернеу датчигі (Arduino Nano/Uno + INA226 модулі)",
-    "Ток датчигі (Arduino Nano/Uno + INA226 модулі)",
-    "2× USB кабелі (әр Arduino — жеке компьютерге)",
-    "Дербес компьютер (Arduino Physics Lab бағдарламасы орнатылған)",
-    "Қосылым сымдары",
-)
-_BASIC_SAFETY = (
-    "Тізбекті жинамас бұрын барлық қосылымдарды мұқият тексеріңіз.",
-    "Датчиктердің рұқсат етілген шегінен (кернеу/ток) асырмаңыз.",
-    "Қосылған тізбекке ылғал қолмен тимеңіз.",
-    "Тәжірибе аяқталғаннан кейін қоректендіруді өшіріп, құрылғыларды ретімен ажыратыңыз.",
-)
-
-_REQUIRED_SENSOR_TYPES = ("VOLTAGE", "CURRENT")
-
-# ---- Phase 39A: үш деңгейлі кері байланыс/бағалау конфигурациясы ----------
-# 3-деңгей (Рефлексия) сұрақтары барлық 6 тәжірибеде МАҒЫНАЛЫҚ түрде БІРДЕЙ
-# (жалпы рефлексия — тәжірибенің физикалық мазмұнына тәуелсіз, спецификацияда
-# нақты осы 3 сұрақ мысал ретінде берілген), тек ID префиксі тәжірибе
-# бойынша ерекшеленеді (``ExperimentAssessmentDefinition.validate()``
-# ID қайталанбауын БІР тәжірибе ішінде тексереді, тәжірибелер арасында ЕМЕС).
-def _reflection_questions(id_prefix: str) -> tuple[ReflectionQuestion, ...]:
-    return (
-        ReflectionQuestion(id=f"{id_prefix}-l3-1", prompt="Бүгінгі тәжірибеде не үйрендіңіз?"),
-        ReflectionQuestion(id=f"{id_prefix}-l3-2", prompt="Қандай қиындық кездесті?"),
-        ReflectionQuestion(id=f"{id_prefix}-l3-3", prompt="Тәжірибенің қай бөлімі ең қызықты болды?"),
-    )
-
-VOLTAGE_CHANNEL = SensorChannel(
-    key="voltage", display_name="Кернеу", unit="V", minimum=0.0, maximum=30.0, decimals=3
-)
-CURRENT_CHANNEL = SensorChannel(
-    key="current", display_name="Ток", unit="A", minimum=0.0, maximum=5.0, decimals=3
-)
-RESISTANCE_CHANNEL = SensorChannel(
-    key="resistance",
-    display_name="Кедергі",
-    unit="Ω",
-    minimum=0.0,
-    decimals=2,
-    required=False,
-)
-POWER_CHANNEL = SensorChannel(
-    key="power", display_name="Қуат", unit="W", minimum=0.0, decimals=3, required=False
-)
-WORK_CHANNEL = SensorChannel(
-    key="work", display_name="Жұмыс", unit="J", minimum=0.0, decimals=3, required=False
-)
-# Пакеттегі "T=" өрісінен келеді (PacketParser._KEY_MAP: "T" -> "time").
-# required=False: T= жіберілмесе де DataValidator қатесі шықпайды — graph/table
-# өз ішінде elapsed-time fallback қолданады, тек current-work-power жұмысында
-# нақты уақыт readout ретінде көрсету үшін ғана required_channels-те тұр.
-TIME_CHANNEL = SensorChannel(
-    key="time", display_name="Уақыт", unit="s", minimum=0.0, decimals=2, required=False
-)
-# Phase 38B: "Металдар кедергісінің температураға тәуелділігі" (№8)
-# тәжірибесінің X арнасы. Нақты температура сенсоры firmware-і әлі жоқ
-# (domain/constants/sensor_types.py-дегі ENERGY/OHMMETER-мен БІРДЕЙ
-# "hardware adapter белсенді емес" статусы) — арна/кілт картасы
-# (PacketParser._KEY_MAP["TEMP"]) дайын тұр, тек нақты сенсор қосылмаған.
-TEMPERATURE_CHANNEL = SensorChannel(
-    key="temperature",
-    display_name="Температура",
-    unit="°C",
-    minimum=-40.0,
-    maximum=200.0,
-    decimals=1,
-)
-
+# Арна/схема/жабдық константалары ``channels.py`` мен ``experiment_assets.py``-де.
 # 8-сынып жаңа оқу бағдарламасы (curriculum rename): бұл тәжірибе ЕНДІ
 # №3 куррикулум атауын алады — бұрын осы атау/нөмір тек каталогтық
 # placeholder-де (CIRCUIT_CURRENT_MEASUREMENT_EXPERIMENT, is_implemented=

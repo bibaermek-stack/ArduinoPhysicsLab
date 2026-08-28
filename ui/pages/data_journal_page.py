@@ -681,8 +681,13 @@ class DataJournalPage(QWidget):
         self._detail_meta_label.setProperty("role", "secondary")
         self._detail_meta_label.setWordWrap(True)
 
+        self._detail_status_label = QLabel(view)
+        self._detail_status_label.setProperty("role", "secondary")
+        self._detail_status_label.setWordWrap(True)
+
         self._detail_table = MeasurementTableWidget(view)
         self._detail_graph = LiveGraphWidget(view)
+        self._detail_graph.capture_status.connect(self._detail_status_label.setText)
 
         # Phase 17: "1. Measurement table 2. Measurement graph" —
         # ``MeasurementWorkspace._build_placeholders_section()``-тегі
@@ -718,6 +723,7 @@ class DataJournalPage(QWidget):
         layout.addLayout(top_row)
         layout.addWidget(self._detail_title_label)
         layout.addWidget(self._detail_meta_label)
+        layout.addWidget(self._detail_status_label)
         layout.addWidget(scroll_area, 1)
         return view
 
@@ -753,6 +759,7 @@ class DataJournalPage(QWidget):
             if summary.experiment_display_number is not None
             else summary.experiment_title
         )
+        self._detail_status_label.setText("")
         self._detail_title_label.setText(title_text)
 
         started_local = summary.started_at.astimezone()
@@ -868,4 +875,10 @@ class DataJournalPage(QWidget):
         if not file_path:
             return
 
-        self._csv_exporter.export(session, file_path)
+        try:
+            if self._csv_exporter.export(session, file_path):
+                self._detail_status_label.setText("CSV сәтті сақталды")
+            else:
+                self._detail_status_label.setText("CSV экспорты сәтсіз аяқталды")
+        except Exception as exc:
+            self._detail_status_label.setText(f"Экспорт қатесі: {exc}")

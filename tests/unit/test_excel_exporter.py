@@ -5,6 +5,9 @@ from pathlib import Path
 
 from openpyxl import load_workbook
 
+import pytest
+
+from core.exceptions import ExportError
 from domain.entities.experiment_session import ExperimentSession
 from domain.entities.measurement import Measurement
 from domain.services.excel_exporter import ExcelExporter
@@ -205,14 +208,13 @@ def test_experiment_info_sheet_exists(tmp_path: Path) -> None:
     assert "Measurement count" in labels
 
 
-def test_invalid_path_returns_false(tmp_path: Path) -> None:
+def test_invalid_path_raises_export_error(tmp_path: Path) -> None:
     session = _make_session()
     session.add_measurement(_make_measurement(values={"voltage": 5.0}))
     invalid_path = tmp_path / "no_such_directory" / "export.xlsx"
 
-    result = ExcelExporter().export(session, str(invalid_path))
-
-    assert result is False
+    with pytest.raises(ExportError, match="Файлды жазу мүмкін болмады"):
+        ExcelExporter().export(session, str(invalid_path))
 
 
 def test_xlsx_extension_is_added_automatically(tmp_path: Path) -> None:

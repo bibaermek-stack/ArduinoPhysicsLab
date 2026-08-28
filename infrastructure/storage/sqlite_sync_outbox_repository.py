@@ -55,7 +55,7 @@ class SqliteSyncOutboxRepository(ISyncOutboxRepository):
             f"""
             SELECT {_SELECT_COLUMNS} FROM sync_outbox
             WHERE next_retry_at IS NULL OR next_retry_at <= ?
-            ORDER BY created_at
+            ORDER BY created_at, rowid
             LIMIT ?
             """,
             (now_iso, limit),
@@ -64,7 +64,7 @@ class SqliteSyncOutboxRepository(ISyncOutboxRepository):
 
     def list_all(self) -> tuple[OutboxEntry, ...]:
         rows = self._connection.execute(
-            f"SELECT {_SELECT_COLUMNS} FROM sync_outbox ORDER BY created_at"
+            f"SELECT {_SELECT_COLUMNS} FROM sync_outbox ORDER BY created_at, rowid"
         ).fetchall()
         return tuple(self._row_to_entry(row) for row in rows)
 

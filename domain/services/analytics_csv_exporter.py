@@ -2,9 +2,9 @@
 Progress): оқушылардың топтық үлгерім кестесін CSV файлына экспорттайтын
 domain сервисі.
 
-``csv_exporter.py``-мен ДӘЛ БІРДЕЙ пішін/қорғаныс конвенциясы (§ ``export()``
--> ``bool``, ешбір exception сыртқа шықпайды), БІРАҚ мүлде БӨЛЕК дерек
-көзі: raw ``Measurement`` тарихы ЕМЕС, ``domain/services/learning_
+``csv_exporter.py``-мен ДӘЛ БІРДЕЙ пішін (§ ``export()`` -> ``bool``,
+бос тізім ``False``, жазу қатесі ``ExportError``), БІРАҚ мүлде БӨЛЕК
+дерек көзі: raw ``Measurement`` тарихы ЕМЕС, ``domain/services/learning_
 analytics.py::compute_students_learning_progress()``-тен алынған
 жинақталған (aggregated) "гроссбух" (gradebook) жолдары.
 """
@@ -12,6 +12,7 @@ analytics.py::compute_students_learning_progress()``-тен алынған
 import csv
 
 from domain.entities.learning_analytics import StudentLearningProgress
+from domain.services.export_io import write_export
 
 _HEADER = (
     "Оқушы", "Сынып", "Орташа балл (0-10)", "Орындалу деңгейі (%)",
@@ -40,15 +41,12 @@ class AnalyticsCsvExporter:
         """``rows``-ты ``output_path`` файлына CSV түрінде жазады.
 
         Тізім бос болса, файл жасалмайды және ``False`` қайтарылады.
-        Жазу кезінде кез келген қате (``IOError``, ``PermissionError``,
-        т.б.) ұсталады, ешбір exception сыртқа шықпайды — сәтсіз
-        болғанда да ``False`` қайтарылады (§ ``csv_exporter.py``-мен
-        БІРДЕЙ қорғаныс).
+        Жазу қатесі ``ExportError`` ретінде шығады (§ ``csv_exporter.py``).
         """
         if not rows:
             return False
 
-        try:
+        def _write() -> None:
             with open(output_path, mode="w", encoding="utf-8", newline="") as csv_file:
                 writer = csv.writer(csv_file)
                 writer.writerow(_HEADER)
@@ -63,6 +61,5 @@ class AnalyticsCsvExporter:
                             _format_topic(row.strongest_topic),
                         ]
                     )
-            return True
-        except Exception:  # қорғаныс: IOError/PermissionError/т.б. сыртқа шықпайды
-            return False
+
+        return write_export(output_path, _write)

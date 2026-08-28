@@ -3,6 +3,9 @@
 import csv
 from pathlib import Path
 
+import pytest
+
+from core.exceptions import ExportError
 from domain.entities.learning_analytics import TopicPerformance, TopicPerformanceLevel
 from domain.services.analytics_csv_exporter import AnalyticsCsvExporter
 from domain.entities.learning_analytics import StudentLearningProgress
@@ -92,12 +95,11 @@ def test_multiple_rows_exported_in_order(tmp_path: Path) -> None:
     assert [row[0] for row in rows[1:]] == ["Оқушы Бірінші", "Оқушы Екінші"]
 
 
-def test_invalid_output_path_returns_false_without_crashing(tmp_path: Path) -> None:
+def test_invalid_output_path_raises_export_error(tmp_path: Path) -> None:
     invalid_path = tmp_path / "no_such_directory" / "export.csv"
 
-    result = AnalyticsCsvExporter().export((_row(),), str(invalid_path))
-
-    assert result is False
+    with pytest.raises(ExportError, match="Файлды жазу мүмкін болмады"):
+        AnalyticsCsvExporter().export((_row(),), str(invalid_path))
 
 
 def test_file_is_utf8_encoded_and_readable(tmp_path: Path) -> None:

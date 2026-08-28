@@ -507,6 +507,7 @@ class AnalyticsPage(QWidget):
         module_registry: ModuleRegistry,
         teacher_repository: ITeacherRepository | None = None,
         active_teacher_repository: IActiveTeacherRepository | None = None,
+        csv_exporter: AnalyticsCsvExporter | None = None,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -528,7 +529,7 @@ class AnalyticsPage(QWidget):
         self._all_progress: tuple[StudentExperimentProgress, ...] = ()
         self._student_rows: tuple[StudentLearningProgress, ...] = ()
         self._student_row_experiment_by_id: dict[str, str | None] = {}
-        self._csv_exporter = AnalyticsCsvExporter()
+        self._csv_exporter = csv_exporter or AnalyticsCsvExporter()
         self._value_labels: dict[str, QLabel] = {}
 
         title_label = QLabel(_PAGE_TITLE, self)
@@ -929,9 +930,14 @@ class AnalyticsPage(QWidget):
         export_button.clicked.connect(self._on_export_csv_clicked)
         self._student_export_button = export_button
 
+        self._student_export_status = QLabel("", panel)
+        self._student_export_status.setProperty("role", "secondary")
+        self._student_export_status.setWordWrap(True)
+
         header_row = QHBoxLayout()
         header_row.addWidget(title_label)
         header_row.addStretch(1)
+        header_row.addWidget(self._student_export_status)
         header_row.addWidget(export_button)
 
         layout = QVBoxLayout(panel)
@@ -1067,7 +1073,13 @@ class AnalyticsPage(QWidget):
         )
         if not file_path:
             return
-        self._csv_exporter.export(self._student_rows, file_path)
+        try:
+            if self._csv_exporter.export(self._student_rows, file_path):
+                self._student_export_status.setText("CSV сәтті сақталды")
+            else:
+                self._student_export_status.setText("CSV экспорты сәтсіз аяқталды")
+        except Exception as exc:
+            self._student_export_status.setText(f"Экспорт қатесі: {exc}")
 
     # ---- Дерек жаңарту -------------------------------------------------------
 

@@ -151,6 +151,22 @@ def test_latest_session_wins_when_multiple_links_exist() -> None:
     assert progress.latest_session_id == "sess-new"
 
 
+def test_get_progress_same_linked_at_uses_rowid_desc() -> None:
+    progress_repository, session_repository, _feedback = _make_repository()
+    progress_repository.link_session("sess-old", "s1", "c1", "ohms-law")
+    progress_repository.link_session("sess-new", "s1", "c1", "ohms-law")
+    progress_repository._connection.execute(
+        "UPDATE session_student_link SET linked_at = ?",
+        ("2026-01-01T00:00:00+00:00",),
+    )
+    progress_repository._connection.commit()
+    _save_measured_session(session_repository, "sess-new")
+
+    progress = progress_repository.get_progress("s1", "ohms-law")
+
+    assert progress.latest_session_id == "sess-new"
+
+
 def test_compute_dashboard_counts_reflects_real_data() -> None:
     progress_repository, session_repository, feedback_repository = _make_repository()
     classroom_repository = progress_repository._classroom_repository

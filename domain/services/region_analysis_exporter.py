@@ -14,6 +14,7 @@ from __future__ import annotations
 import csv
 from dataclasses import dataclass, field
 
+from domain.services.export_io import write_export
 from domain.services.graph_analysis import RegressionResult
 
 
@@ -64,7 +65,7 @@ class RegionAnalysisExporter:
     """
 
     def export(self, summary: RegionAnalysisSummary, output_path: str) -> bool:
-        try:
+        def _write() -> None:
             with open(output_path, mode="w", encoding="utf-8", newline="") as csv_file:
                 writer = csv.writer(csv_file)
                 writer.writerow(["t1 (s)", f"{summary.t1:.4f}"])
@@ -105,9 +106,8 @@ class RegionAnalysisExporter:
                     writer.writerow(["P_avg (W)", _format_value(summary.power_avg)])
                     writer.writerow(["P_max (W)", _format_value(summary.power_max)])
                     writer.writerow(["Energy (J)", _format_value(summary.energy)])
-            return True
-        except Exception:  # қорғаныс: IOError/PermissionError/т.б. сыртқа шықпайды
-            return False
+
+        return write_export(output_path, _write)
 
 
 def _format_signed(value: float) -> str:
