@@ -250,6 +250,7 @@ class MultiSensorExperimentCoordinator(QObject):
         if self._running or self._starting:
             return
 
+        self._calculation_engine.reset()
         self._starting = True
         self._ports_awaiting_ack = set(self._port_to_sensor_type.keys())
         self._start_timeout_timer.start()
@@ -313,6 +314,7 @@ class MultiSensorExperimentCoordinator(QObject):
         try:
             self._session.clear()
             self._aggregator.reset()
+            self._calculation_engine.reset()
             if not self._running and not self._starting:
                 self._running_started_monotonic = None
                 self._frozen_elapsed_seconds = None

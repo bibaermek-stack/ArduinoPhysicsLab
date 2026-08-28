@@ -18,6 +18,28 @@ class PacketParseResult:
     errors: tuple[str, ...]
 
 
+def compute_packet_checksum(payload: str) -> str:
+    """Пакет payload-ының XOR checksum-ын екітаңбалы үлкен әріпті hex түрінде қайтарады.
+
+    Payload — ``CHK`` өрісінсіз, әр өрісі ``strip()`` етілген жол
+    (үтірмен біріктірілген). V1.0-де ``CHK`` міндетті емес.
+    """
+    acc = 0
+    for byte in payload.encode("utf-8"):
+        acc ^= byte
+    return f"{acc:02X}"
+
+
+def _is_hex_byte(value: str) -> bool:
+    if not value or len(value) > 2:
+        return False
+    try:
+        parsed = int(value, 16)
+    except ValueError:
+        return False
+    return 0 <= parsed <= 255
+
+
 class PacketParser:
     """Arduino-дан Serial арқылы келген бір мәтіндік жолды
     ``EXP=E02,U=5.024,I=0.218,T=12.45`` пішіміне сай парсингтейтін сервис.
@@ -68,6 +90,8 @@ class PacketParser:
         experiment_id: str | None = None
         experiment_id_present = False
         seen_keys: set[str] = set()
+        payload_fields: list[str] = []
+        checksum_raw: str | None = None
 
         for raw_field in stripped_line.split(","):
             field = raw_field.strip()
@@ -91,6 +115,12 @@ class PacketParser:
                 errors.append(f"'{key}' кілті бірнеше рет қайталанды")
                 continue
             seen_keys.add(key)
+
+            if key == "CHK":
+                checksum_raw = raw_value
+                continue
+
+            payload_fields.append(f"{key}={raw_value}")
 
             if key == "EXP":
                 experiment_id_present = True
@@ -117,6 +147,14 @@ class PacketParser:
 
         if not experiment_id_present:
             errors.append("EXP кілті міндетті")
+
+        if checksum_raw is not None:
+            payload = ",".join(payload_fields)
+            expected = compute_packet_checksum(payload)
+            if not _is_hex_byte(checksum_raw):
+                errors.append("CHK мәні 1–2 таңбалы hex болуы керек")
+            elif checksum_raw.upper() != expected:
+                errors.append(f"CHK сәйкес келмейді (күтілген {expected})")
 
         return PacketParseResult(
             is_valid=not errors,

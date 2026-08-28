@@ -82,6 +82,8 @@ _NO_SCORE_TEXT = "—"
 _DEVICE_EMPTY_TITLE = "Құрылғы қосылмаған"
 _DEVICE_EMPTY_HINT = "Өлшеуді бастау үшін Arduino сенсорын USB арқылы қосыңыз."
 _DEVICE_READY_STATUS_TEXT = "Дайын"
+_OPEN_IMPLEMENTED_TEXT = "Ашу →"
+_OPEN_PLANNED_TEXT = "Жоспарланған"
 
 # home_page.py/experiment_list_page.py арасында бұрыннан бар дублирование
 # конвенциясы (device_card.py/device_panel.py-дегі _SENSOR_TYPE_NAMES_KK
@@ -461,7 +463,10 @@ class HomePage(QWidget):
         self._category_progress_bars[module.get_name()] = progress_bar
         self._set_category_progress(module, completed=0)
 
-        action_button = QPushButton("Ашу →", card)
+        has_implemented = any(experiment.is_implemented for experiment in module.get_experiments())
+        action_button = QPushButton(
+            _OPEN_IMPLEMENTED_TEXT if has_implemented else _OPEN_PLANNED_TEXT, card
+        )
         action_button.setObjectName("HomeModuleCardAction")
         action_button.clicked.connect(
             lambda _checked=False, m=module: self.module_selected.emit(m)

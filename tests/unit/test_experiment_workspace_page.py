@@ -1715,7 +1715,7 @@ def test_zero_device_navigation_never_requires_a_real_com_port() -> None:
     """
     experiments = list(ElectricityModule().get_experiments())
     implemented = [e for e in experiments if e.is_implemented]
-    assert len(implemented) == 6  # барлық 6 электр тәжірибесі (Phase 38B)
+    assert len(implemented) == 5  # температура firmware жоқ — №8 жоспарлы
 
     fake_coordinator = FakeCoordinator()
     page = ExperimentWorkspacePage(

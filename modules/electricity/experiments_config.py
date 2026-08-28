@@ -712,7 +712,7 @@ CURRENT_WORK_POWER_EXPERIMENT = ExperimentDefinition(
     derived_channels=(POWER_CHANNEL, WORK_CHANNEL),
     graph_x_channel=None,
     graph_y_channels=("power",),
-    formulas={"power": "P = U × I", "work": "A = P × t"},
+    formulas={"power": "P = U × I", "work": "A = ∫ P dt"},
     # voltage/current есептеу үшін (power=U×I) required_channels-те қалады,
     # бірақ workspace-те тек уақыт/қуат/жұмыс көрсетіледі (2-бөлім спецификациясы).
     display_channels=("time", "power", "work"),
@@ -731,7 +731,7 @@ CURRENT_WORK_POWER_EXPERIMENT = ExperimentDefinition(
             "аудан. Бағдарлама аймақ таңдау («↔») құралы арқылы дәл осы "
             "ауданды (жұмысты) және орташа/максимал қуатты автоматты есептейді."
         ),
-        formulas=("P = U × I", "A = P × t"),
+        formulas=("P = U × I", "A = ∫ P dt", "тұрақты P үшін A = P × t"),
         procedure=(
             "Кернеу және ток датчиктерін тиісті COM-порттарда «Анықтау» арқылы қосыңыз.",
             "Екі құрылғының да дайын («2 / 2 құрылғы») екенін тексеріңіз.",
@@ -844,6 +844,9 @@ METAL_RESISTANCE_TEMPERATURE_EXPERIMENT = ExperimentDefinition(
         "кедергісінің өзгерісін бақылау."
     ),
     display_number=8,
+    # TEMP= парсинг дайын, бірақ температура firmware жоқ — 3/3 дайын
+    # болмайды. Каталогта «Жоспарланған» болып қалады.
+    is_implemented=False,
     required_channels=(TEMPERATURE_CHANNEL, VOLTAGE_CHANNEL, CURRENT_CHANNEL),
     derived_channels=(RESISTANCE_CHANNEL,),
     display_channels=("temperature", "voltage", "current", "resistance"),

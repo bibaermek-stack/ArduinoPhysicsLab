@@ -726,7 +726,8 @@ def test_measurement_time_value_matches_elapsed_seconds(fake_clock: _FakeClock) 
     # Power/Work бұрынғы формуласымен (P=U*I, A=P*t) есептеледі, тек
     # elapsed-time дереккөзі ауысты — жаңа "time" оқылымымен ДӘЛ БІРДЕЙ.
     assert measurement.get_value("power") == pytest.approx(1.0)
-    assert measurement.get_value("work") == pytest.approx(1.0 * 2.5)
+    # Бірінші үлгіде ∫P dt аралығы жоқ — жұмыс 0. P×t_elapsed емес.
+    assert measurement.get_value("work") == pytest.approx(0.0)
 
 
 def test_stop_freezes_elapsed_seconds(fake_clock: _FakeClock) -> None:

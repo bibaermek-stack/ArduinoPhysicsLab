@@ -1,4 +1,6 @@
-"""CalculationEngine — R = U/I, P = U×I, A = P×t формулаларын тексеру."""
+"""CalculationEngine — R = U/I, P = U×I, A = ∫ P dt формулаларын тексеру."""
+
+import pytest
 
 from domain.entities.experiment_definition import ExperimentDefinition
 from domain.services.calculation_engine import CURRENT_EPSILON, CalculationEngine
@@ -48,41 +50,82 @@ def test_power_is_voltage_times_current() -> None:
     assert result.errors == ()
 
 
-def test_work_is_power_times_time() -> None:
+def test_work_first_sample_is_zero_until_an_interval_exists() -> None:
     result = CalculationEngine().calculate(
         {"power": 2.0, "time": 10.0}, _definition("work")
     )
 
-    assert result.values["work"] == 20.0
+    assert result.values["work"] == 0.0
+    assert result.errors == ()
 
 
-def test_work_falls_back_to_u_i_t_when_power_missing() -> None:
-    result = CalculationEngine().calculate(
-        {"voltage": 5.0, "current": 0.2, "time": 10.0}, _definition("work")
-    )
+def test_work_is_trapezoid_integral_of_power() -> None:
+    engine = CalculationEngine()
+    definition = _definition("work")
+    engine.calculate({"power": 0.0, "time": 0.0}, definition)
+    second = engine.calculate({"power": 2.0, "time": 2.0}, definition)
+    third = engine.calculate({"power": 2.0, "time": 4.0}, definition)
 
-    assert result.values["work"] == 10.0
+    assert second.values["work"] == pytest.approx(2.0)
+    assert third.values["work"] == pytest.approx(6.0)
+
+
+def test_constant_power_integral_equals_p_times_delta_t() -> None:
+    engine = CalculationEngine()
+    definition = _definition("work")
+    engine.calculate({"power": 2.0, "time": 1.0}, definition)
+    result = engine.calculate({"power": 2.0, "time": 5.0}, definition)
+
+    assert result.values["work"] == pytest.approx(8.0)
+
+
+def test_work_falls_back_to_u_i_for_instantaneous_power() -> None:
+    engine = CalculationEngine()
+    definition = _definition("work")
+    engine.calculate({"voltage": 5.0, "current": 0.2, "time": 0.0}, definition)
+    result = engine.calculate({"voltage": 5.0, "current": 0.2, "time": 10.0}, definition)
+
+    assert result.values["work"] == pytest.approx(10.0)
 
 
 def test_work_uses_elapsed_seconds_when_time_channel_missing() -> None:
-    result = CalculationEngine().calculate(
-        {"voltage": 5.0, "current": 0.2},
-        _definition("work"),
-        elapsed_seconds=4.0,
+    engine = CalculationEngine()
+    definition = _definition("work")
+    engine.calculate({"voltage": 5.0, "current": 0.2}, definition, elapsed_seconds=0.0)
+    result = engine.calculate(
+        {"voltage": 5.0, "current": 0.2}, definition, elapsed_seconds=4.0
     )
 
-    assert result.values["work"] == 4.0
+    assert result.values["work"] == pytest.approx(4.0)
 
 
-def test_current_work_power_experiment_computes_power_and_work() -> None:
-    result = CalculationEngine().calculate(
+def test_current_work_power_experiment_computes_power_and_integral_work() -> None:
+    engine = CalculationEngine()
+    first = engine.calculate(
+        {"voltage": 6.0, "current": 0.5, "time": 0.0},
+        CURRENT_WORK_POWER_EXPERIMENT,
+    )
+    second = engine.calculate(
         {"voltage": 6.0, "current": 0.5, "time": 8.0},
         CURRENT_WORK_POWER_EXPERIMENT,
     )
 
-    assert result.values["power"] == 3.0
-    assert result.values["work"] == 24.0
-    assert result.errors == ()
+    assert first.values["power"] == 3.0
+    assert first.values["work"] == 0.0
+    assert second.values["power"] == 3.0
+    assert second.values["work"] == pytest.approx(24.0)
+    assert second.errors == ()
+
+
+def test_work_reset_clears_accumulator() -> None:
+    engine = CalculationEngine()
+    definition = _definition("work")
+    engine.calculate({"power": 2.0, "time": 0.0}, definition)
+    engine.calculate({"power": 2.0, "time": 5.0}, definition)
+    engine.reset()
+    result = engine.calculate({"power": 9.0, "time": 1.0}, definition)
+
+    assert result.values["work"] == 0.0
 
 
 def test_near_zero_current_does_not_compute_resistance() -> None:

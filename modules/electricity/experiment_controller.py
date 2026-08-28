@@ -150,6 +150,7 @@ class ExperimentController(QObject):
         протокол артқа үйлесімді.
         """
         self._running = True
+        self._calculation_engine.reset()
         try:
             self._serial_controller.write_line(f"SET_EXP={self._definition.id}")
         except Exception as exc:  # қорғаныс: болжанбаған қате де сыртқа шықпайды
@@ -169,6 +170,7 @@ class ExperimentController(QObject):
         """Жиналған барлық өлшемдерді сессиядан тазалайды."""
         try:
             self._session.clear()
+            self._calculation_engine.reset()
         except Exception as exc:
             self.error_occurred.emit(f"clear_session() қатесі: {exc}")
 

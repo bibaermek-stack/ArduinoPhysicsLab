@@ -93,8 +93,7 @@ def test_section_registration_order_matches_spec_sections_one_to_four() -> None:
     ]
 
 
-def test_implemented_experiments_are_exactly_the_six_electricity_ones() -> None:
-    # Phase 38B: metal-resistance-temperature ЕНДІ толық іске асырылған.
+def test_implemented_experiments_are_the_five_electricity_labs_with_firmware() -> None:
     registry = _make_full_registry()
     implemented_ids = {
         experiment.id
@@ -108,7 +107,6 @@ def test_implemented_experiments_are_exactly_the_six_electricity_ones() -> None:
         "parallel-connection",
         "current-work-power",
         "ohms-law",
-        "metal-resistance-temperature",
     }
 
 

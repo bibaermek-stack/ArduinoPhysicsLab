@@ -27,6 +27,10 @@ class CalculationEngine:
     """definition.formulas ішінде көрсетілген derived channel кілттері
     бойынша алдын ала анықталған, қауіпсіз есептеу функцияларын шақыратын
     сервис. Формула мәтінін ешқашан орындамайды (eval қолданылмайды).
+
+    Жұмыс (``work``) лездік ``P × t`` емес — өлшем ағыны бойынша
+    трапеция ережесімен ``A = ∫ P(t) dt``. Жаңа сессия алдында
+    ``reset()`` шақырылуы тиіс.
     """
 
     def __init__(self) -> None:
@@ -35,6 +39,13 @@ class CalculationEngine:
             "power": self._calculate_power,
             "work": self._calculate_work,
         }
+        self.reset()
+
+    def reset(self) -> None:
+        """Жұмыс интегралының күйін жаңа өлшеу сессиясы үшін тазалайды."""
+        self._work_time: float | None = None
+        self._work_power: float | None = None
+        self._work_sum: float = 0.0
 
     def calculate(
         self,
@@ -110,13 +121,14 @@ class CalculationEngine:
             return None, "есептелген power ақырлы (finite) сан емес"
         return result, None
 
-    @staticmethod
     def _calculate_work(
-        values: dict[str, float], elapsed_seconds: float | None
+        self, values: dict[str, float], elapsed_seconds: float | None
     ) -> _CalculatorResult:
-        """A = P * t. values ішінде 'power' болмаса, A = U * I * t
-        формуласы қолданылады. Уақыт алдымен values['time']-тен, ол
-        болмаса elapsed_seconds параметрінен алынады.
+        """A = ∫ P(t) dt (трапеция ережесі). Тұрақты P кезінде бұл
+        ``P × Δt``-ға тең; лездік ``P × t_elapsed`` қолданылмайды —
+        қуат өзгерсе қате жинақталмас үшін. Бірінші үлгіде аралық жоқ,
+        сондықтан жұмыс 0. Уақыт ``values['time']`` немесе
+        ``elapsed_seconds``. ``power`` жоқ болса P = U × I.
         """
         time_value = values.get("time")
         if time_value is None:
@@ -134,7 +146,20 @@ class CalculationEngine:
                 return None, "work есептеу үшін power немесе (voltage, current) қажет"
             power = voltage * current
 
-        result = power * time_value
-        if not math.isfinite(result):
+        if not math.isfinite(power):
+            return None, "есептелген power ақырлы (finite) сан емес"
+
+        if self._work_time is None or self._work_power is None:
+            self._work_time = time_value
+            self._work_power = power
+            self._work_sum = 0.0
+            return 0.0, None
+
+        dt = time_value - self._work_time
+        if dt > 0:
+            self._work_sum += 0.5 * (self._work_power + power) * dt
+        self._work_time = time_value
+        self._work_power = power
+        if not math.isfinite(self._work_sum):
             return None, "есептелген work ақырлы (finite) сан емес"
-        return result, None
+        return self._work_sum, None

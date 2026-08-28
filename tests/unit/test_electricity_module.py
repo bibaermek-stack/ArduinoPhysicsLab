@@ -29,10 +29,8 @@ def test_electricity_module_returns_name() -> None:
 
 
 def test_electricity_module_returns_six_experiments() -> None:
-    # 8-сынып жаңа оқу бағдарламасы: барлық 6 тәжірибе (№3-8) ЕНДІ толық
-    # іске асырылған (Phase 38B: metal-resistance-temperature №8 да
-    # Voltage/Current сенсорларымен + жоспарланған Temperature сенсорымен
-    # толық жұмыс істейтін тәжірибеге айналды).
+    # Каталогта 6 электр тәжірибесі бар; температура firmware жоқ
+    # болғандықтан metal-resistance-temperature is_implemented=False.
     module = ElectricityModule()
 
     experiments = module.get_experiments()
@@ -51,7 +49,6 @@ def test_implemented_experiment_internal_ids_unchanged() -> None:
         "parallel-connection",
         "current-work-power",
         "ohms-law",
-        "metal-resistance-temperature",
     }
 
 
@@ -332,7 +329,7 @@ def test_current_voltage_has_guide() -> None:
 def test_current_work_power_has_guide() -> None:
     guide = CURRENT_WORK_POWER_EXPERIMENT.guide
     assert guide is not None
-    assert guide.formulas == ("P = U × I", "A = P × t")
+    assert guide.formulas == ("P = U × I", "A = ∫ P dt", "тұрақты P үшін A = P × t")
     assert guide.procedure
     assert guide.validate() == []
 
@@ -489,9 +486,8 @@ def test_temperature_channel_definition() -> None:
     assert TEMPERATURE_CHANNEL.required is True
 
 
-def test_metal_resistance_temperature_is_now_implemented() -> None:
-    assert METAL_RESISTANCE_TEMPERATURE_EXPERIMENT.is_implemented is True
-    assert METAL_RESISTANCE_TEMPERATURE_EXPERIMENT.validate_configuration() == []
+def test_metal_resistance_temperature_is_planned_until_firmware_exists() -> None:
+    assert METAL_RESISTANCE_TEMPERATURE_EXPERIMENT.is_implemented is False
 
 
 def test_metal_resistance_temperature_channels_and_formulas() -> None:

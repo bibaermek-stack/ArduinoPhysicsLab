@@ -1,6 +1,6 @@
 """packet_parser — docs/serial_protocol.md V1.0 пакет форматы."""
 
-from infrastructure.serial_comm.packet_parser import PacketParser
+from infrastructure.serial_comm.packet_parser import PacketParser, compute_packet_checksum
 
 
 def test_valid_voltage_current_time_packet() -> None:
@@ -112,6 +112,37 @@ def test_temp_key_maps_to_temperature_channel() -> None:
     assert result.values["voltage"] == 5.0
     assert result.values["current"] == 0.2
     assert result.warnings == ()
+
+
+def test_packet_without_checksum_remains_valid() -> None:
+    result = PacketParser().parse_line("EXP=E02,U=5.0,I=0.2")
+
+    assert result.is_valid is True
+    assert "chk" not in result.values
+
+
+def test_valid_checksum_is_accepted_and_not_stored_as_a_channel() -> None:
+    payload = "EXP=E02,U=5.0,I=0.2"
+    chk = compute_packet_checksum(payload)
+    result = PacketParser().parse_line(f"{payload},CHK={chk}")
+
+    assert result.is_valid is True
+    assert result.values == {"voltage": 5.0, "current": 0.2}
+    assert "chk" not in result.values
+
+
+def test_wrong_checksum_is_rejected() -> None:
+    result = PacketParser().parse_line("EXP=E02,U=5.0,I=0.2,CHK=00")
+
+    assert result.is_valid is False
+    assert any("CHK сәйкес келмейді" in error for error in result.errors)
+
+
+def test_non_hex_checksum_is_rejected() -> None:
+    result = PacketParser().parse_line("EXP=E02,U=5.0,CHK=ZZ")
+
+    assert result.is_valid is False
+    assert any("hex" in error for error in result.errors)
 
 
 def test_parse_line_never_raises() -> None:
