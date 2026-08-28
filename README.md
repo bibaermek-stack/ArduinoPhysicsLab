@@ -1,19 +1,63 @@
 # Arduino Physics Lab
 
-Arduino негізіндегі физикалық зертханалық стендтерден USB Serial (COM-порт)
-арқылы нақты уақыт режимінде өлшеу мәліметтерін қабылдауға, өңдеуге,
-визуализациялауға және сақтауға арналған Windows desktop қолданбасы.
+Windows desktop зертхана (PySide6) және бөлек FastAPI sync/сайт.
+Arduino USB Serial арқылы кернеу/ток өлшеу, график, SQLite, CSV/Excel/PDF
+экспорт, мұғалім/оқушы рөлдері, офлайн-first cloud sync.
 
-Қолданба Python және PySide6 негізінде жасалады және магистрлік
-диссертацияның негізгі бағдарламалық платформасы болып табылады.
+Нұсқа: **0.9.0**. Магистрлік диссертацияның бағдарламалық платформасы.
 
-## Модульдер
+## Не істейді (қазіргі код)
 
-- **Электр құбылыстары** — 5 жұмыс істейтін тәжірибе (кернеу/ток firmware).
-  «Металдар кедергісінің температураға тәуелділігі» каталогта бар, бірақ
-  температура firmware жоқ — UI-да «Жоспарланған».
-- Жылу / электромагнит / жарық — каталогта көрінеді, іске асырылмаған
-  (`is_implemented=False`, бастауға болмайды).
+| Бөлік | Күйі |
+|---|---|
+| Электр тәжірибелері (5) + кернеу/ток firmware | жұмыс істейді |
+| Температура тәжірибесі (метал кедергісі) | каталогта «Жоспарланған», firmware жоқ |
+| Жылу / электромагнит / жарық | каталогта бар, бастауға болмайды |
+| Мұғалім панелі, сыныптар, аналитика, сұрақтар банкі | desktop UI-да бар |
+| Жергілікті SQLite | бар (`JsonSessionRepository` қолданылмайды) |
+| Экспорт CSV / Excel / PDF | бар |
+| Sync outbox + `server/` FastAPI | бар |
+| Веб-сайт (кіру, Google, .exe жүктеу) | `server/app/web/` |
 
-Толығырақ архитектура үшін [docs/architecture.md](docs/architecture.md)
-файлын қараңыз.
+Толық карта: [docs/architecture.md](docs/architecture.md).
+
+## Репозиторий құрылымы
+
+```
+ui/               desktop интерфейс
+domain/           бизнес-логика
+infrastructure/   Serial, SQLite, HTTP sync
+modules/          heat, electricity, electromagnetism, light
+firmware/         voltage_sensor, current_sensor
+server/           FastAPI API + сайт (desktop-қа араласпайды)
+docs/             архитектура, sync, деплой, хаттама
+```
+
+## Іске қосу
+
+Desktop (Python ортасында):
+
+```text
+pip install -r requirements.txt
+python main.py
+```
+
+Windows .exe: `build/build.ps1` → `release/ArduinoPhysicsLab.exe`.
+
+Сервер:
+
+```text
+pip install -r server/requirements.txt
+python -m server.run
+```
+
+Production-да `APL_JWT_SECRET` және `APL_SYNC_API_KEY` міндетті
+([docs/deployment.md](docs/deployment.md)).
+
+## Құжаттар
+
+- [docs/architecture.md](docs/architecture.md) — қабаттар, сақтау, модульдер
+- [docs/serial_protocol.md](docs/serial_protocol.md) — Arduino ↔ PC хаттамасы
+- [docs/sync_architecture.md](docs/sync_architecture.md) — outbox / API
+- [docs/hardware_test_guide.md](docs/hardware_test_guide.md) — тақтай сынағы
+- [LICENSE](LICENSE) — MIT

@@ -1,52 +1,112 @@
-# Arduino Physics Lab — Архитектура (V1.0)
+# Arduino Physics Lab — архитектура (кодқа сай)
 
-## Жалпы көзқарас
+Нұсқа: desktop `0.9.0` (`core/version.py`). Бұл файл **жұмыс істеп тұрған
+репозиторий құрылымын** сипаттайды. Ескі жоспардағы JSON-сақтау,
+`modules/thermal|magnetic|optics` жолдары және «тек CSV/Excel» мұнда
+жоқ.
 
-Жоба үш қабатты жеңілдетілген архитектурамен құрылады:
+Толық sync/деплой/хаттама: [sync_architecture.md](sync_architecture.md),
+[deployment.md](deployment.md), [serial_protocol.md](serial_protocol.md).
+
+## Екі бөлек өнім
 
 ```
-ui/              — PySide6 беттер мен виджеттер (view)
-domain/          — таза бизнес-логика: entity, интерфейс, сервистер
-infrastructure/  — Serial байланыс, экспорт, файлдық сақтау
+Windows .exe (PySide6)                    FastAPI (server/)
+  жергілікті SQLite                         Postgres немесе SQLite
+  Arduino USB Serial                        JWT + X-API-Key
+  sync outbox  ──────── HTTP ────────────►  /api/v1/sync/*
+                                            / (Jinja сайт: кіру, жүктеу)
 ```
 
-Бөлек Application қабаты және DI container қолданылмайды — объектілер
-`app.py`/`main_window.py` ішінде қолмен байланыстырылады (manual wiring).
-Модульаралық/ағынаралық байланыс тікелей Qt `signals/slots` арқылы
-жүзеге асады (жеке EventBus жоқ).
+- Desktop `server/` кодын іске қоспайды (`app.py` тек клиент).
+- Сервер `server.run` / Railway арқылы бөлек процесс.
 
-## Негізгі принциптер
+## Қабаттар (desktop)
 
-- **Модульдік:** әр физикалық сала (`modules/electricity`, болашақта
-  `modules/thermal`, `modules/magnetic`, `modules/optics`) — жеке модуль.
-  Модульдер `modules/module_registry.py` ішінде қолмен тіркеледі
-  (автоматты plugin discovery жоқ).
-- **Ортақ жұмыс беті:** барлық зертхана жұмыстары
-  `ui/pages/experiment_workspace_page.py` бетін қолданады, тек
-  `ExperimentDefinition` конфигурациясы арқылы ерекшеленеді.
-- **Жеңіл контроллер:** әр модульдің `experiment_controller.py` файлы
-  Serial-дан келген деректі қабылдап, `DataValidator` пен
-  `CalculationEngine` арқылы өңдеп, нәтижені `Measurement` ретінде
-  `ExperimentSession`-ға қосады және UI-ге Qt signal арқылы жібереді.
-  `ExperimentWorkspacePage` тек осы сигналға жазылып, интерфейсті
-  жаңартады (валидация/есептеу логикасы бетте жоқ).
-- **Serial байланыс:** `infrastructure/serial_comm/` ішінде бөлек
-  `QThread`-та жұмыс істейді. `QSerialPort` объектісі тек worker
-  thread ішінде құрылады және қолданылады, UI онымен тек
-  `SerialThreadController` арқылы, signal/slot негізінде байланысады.
-- **Сақтау:** V1.0-де `JsonSessionRepository` (JSON файл) қолданылады,
-  `IMeasurementRepository` интерфейсі арқылы кейін `SqliteRepository`
-  ауыстырылып қосылады.
-- **Экспорт:** V1.0-де тек CSV және Excel (`IExporter` интерфейсі
-  арқылы), PDF кейінгі кезеңде қосылады.
+```
+ui/               PySide6 беттер, виджеттер, ThemeManager QSS
+domain/           entity, интерфейстер, CalculationEngine, DataValidator, sync_engine
+infrastructure/   Serial, SQLite репозиторийлер, HTTP sync клиент, экспорт адаптерлері
+modules/          физика каталогы (ExperimentDefinition)
+firmware/         voltage_sensor / current_sensor (Arduino)
+core/             нұсқа, тұрақтылар, жолдар, лог
+```
 
-## Кеңейту нүктелері
+DI container жоқ: `app.py` мен `ui/main_window.py` қолмен байланыстырады.
+Оқиғалар — Qt signals/slots.
 
-| Кеңейту | Қосылатын жер |
+`infrastructure/storage/json_session_repository.py` — пайдаланылмайтын
+ескі stub; сессиялар `SqliteSessionRepository` арқылы сақталады.
+
+## Сақтау
+
+Жергілікті дерекқор: `%LOCALAPPDATA%\ArduinoPhysicsLab\...` SQLite
+(`infrastructure/storage/database.py`).
+
+Негізгі репозиторийлер (`infrastructure/storage/sqlite_*.py`):
+
+| Репозиторий | Не сақтайды |
 |---|---|
-| SQLite | `infrastructure/storage/sqlite_repository.py` (`IMeasurementRepository`) |
-| PDF экспорт | `infrastructure/export/pdf_exporter.py` (`IExporter`) |
-| Жылу/Магнит/Жарық модульдері | `modules/thermal/`, `modules/magnetic/`, `modules/optics/` + `module_registry.py`-ге тіркеу |
+| `SqliteSessionRepository` | тәжірибе сессиялары мен өлшемдер |
+| `SqliteMeasurementBatchRepository` | cloud sync chunk-тары |
+| `SqliteClassroomRepository` / `SqliteStudentRepository` / `SqliteTeacherRepository` | сынып, оқушы, мұғалім |
+| `SqliteFeedbackRepository` / `SqliteQuestionRepository` | кері байланыс, сұрақтар банкі |
+| `SqliteSyncOutboxRepository` | офлайн outbox (кейін серверге push) |
+| `SqliteStudentProgressRepository` | оқушы прогресі |
 
-Толық серия-хаттама сипаттамасы үшін [serial_protocol.md](serial_protocol.md)
-файлын қараңыз.
+Сервер жағы: `DATABASE_URL` (Railway-де Postgres) немесе жергілікті SQLite.
+
+## Экспорт
+
+`domain/interfaces/i_exporter.py` → нақты іске асырулар:
+
+- `domain/services/csv_exporter.py`
+- `domain/services/excel_exporter.py`
+- `domain/services/pdf_exporter.py`
+
+Таңдау: `infrastructure/export/exporter_factory.py`
+(`csv` / `xlsx` / `pdf`).
+
+## Физика модульдері
+
+Тіркеу `app.py` ішінде, каталог қалталары:
+
+| Каталог | UI атауы | Күйі |
+|---|---|---|
+| `modules/heat/` | Жылу құбылыстары | каталог, `is_implemented=False` |
+| `modules/electricity/` | Электр құбылыстары | 5 жұмыс істейтін тәжірибе + температура тәжірибесі жоспарлы |
+| `modules/electromagnetism/` | Электромагниттік құбылыстар | каталог, `is_implemented=False` |
+| `modules/light/` | Жарық құбылыстары | каталог, `is_implemented=False` |
+
+Жоқ жолдар: `modules/thermal`, `modules/magnetic`, `modules/optics`.
+
+Барлық ашылатын тәжірибе `ExperimentWorkspacePage` + `ExperimentDefinition`.
+Электр өлшеу ағыны: Serial → `PacketParser` → `DataValidator` →
+`CalculationEngine` → `ExperimentSession` (көп құрылғыда
+`MultiSensorExperimentCoordinator`).
+
+## Desktop UI (рөл бойынша)
+
+Рөл `RoleSelectionPage` / аккаунт арқылы бір рет таңдалады.
+
+**Оқушы:** басты бет, зертханалар, менің нәтижелерім, кері байланыс, профиль.
+
+**Мұғалім:** бақылау тақтасы, сыныптар, нәтижелер, деректер журналы,
+кері байланысты тексеру, аналитика, сұрақтар банкі, құрылғылар, баптаулар.
+
+Навигация кестесі: `ui/navigation/navigation_config.py`.
+
+## Cloud sync
+
+Клиент: `domain/services/sync_engine.py` + `infrastructure/sync/sync_worker.py`.
+Офлайн жазбалар outbox-қа түседі, байланыс барда push/pull.
+
+Сервер: FastAPI `server/app/` — `/api/v1/auth`, `/api/v1/sync`, аккаунттар,
+Jinja сайт (`server/app/web/`).
+
+## Firmware
+
+- `firmware/voltage_sensor/` — `SENSOR=VOLTAGE`, `U=`
+- `firmware/current_sensor/` — `SENSOR=CURRENT`, `I=`
+
+Тақтай сынағы: [hardware_test_guide.md](hardware_test_guide.md).

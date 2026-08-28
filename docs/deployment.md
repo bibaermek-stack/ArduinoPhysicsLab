@@ -30,23 +30,15 @@ Two independent deployment units:
 
 ## 2. Desktop installation / package
 
-Build a distributable onedir folder (no installer yet — see §21
-"Installer decision" in the Phase 9 report):
+Build a single-file Windows executable:
 
 ```powershell
 pip install -r requirements.txt -r requirements-build.txt
-pwsh build/build.ps1
+python -m PyInstaller build\app.spec --distpath release --workpath build\work --noconfirm
 ```
 
-Output: `release/ArduinoPhysicsLab/` containing `ArduinoPhysicsLab.exe`
-and an `_internal/` folder with all bundled Python/Qt libraries and
-resources (`Design/02_FluentIcons/svg/`, `ui/resources/images/`). Copy
-this **entire folder** to the target PC — Python is never required
-there, only the folder itself.
-
-Onedir was chosen over onefile (§ `build/app.spec` comments): faster
-startup, fewer antivirus false positives, easier for a school IT
-technician to inspect/allowlist.
+Output: `release/ArduinoPhysicsLab.exe` (onefile, no `_internal` folder).
+Copy that file to the target PC — Python is not required there.
 
 ## 3. Server deployment
 
