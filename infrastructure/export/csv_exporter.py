@@ -1,4 +1,5 @@
-"""CsvExporter — IExporter интерфейсінің CSV форматына арналған іске асыруы.
+"""CsvExporter — IExporter CSV іске асыруы (domain CSVExporter)."""
 
-TODO: ExperimentSession-ды CSV файлға жазу логикасын қосу.
-"""
+from domain.services.csv_exporter import CSVExporter as CsvExporter
+
+__all__ = ["CsvExporter"]

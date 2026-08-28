@@ -46,6 +46,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from core.constants import SERIAL_BAUD_RATE
 from infrastructure.storage.app_preferences import AppPreferences
 from ui.themes.theme_manager import apply_application_theme
 from infrastructure.storage.database import get_default_database_path
@@ -53,7 +54,7 @@ from infrastructure.storage.database import get_default_database_path
 # § ``infrastructure/serial_comm/device_identifier.py``/``device_manager.py``/
 # ``ui/pages/devices_page.py``-мен БІРДЕЙ канондық протокол мәні (§ audit —
 # "do not assume 115200" тексерілді, бұл ШЫН МӘНІНДЕ протоколда бекітілген).
-_CANONICAL_BAUD_RATE = 115200
+_CANONICAL_BAUD_RATE = SERIAL_BAUD_RATE
 
 _RESET_CONFIRM_TITLE = "Баптауларды қалпына келтіру"
 _RESET_CONFIRM_TEXT = "Әдепкі баптауларды қалпына келтіресіз бе?"

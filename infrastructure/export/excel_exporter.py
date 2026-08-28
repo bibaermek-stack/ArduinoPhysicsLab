@@ -1,5 +1,5 @@
-"""ExcelExporter — IExporter интерфейсінің Excel (XLSX) форматына арналған
-іске асыруы (openpyxl негізінде).
+"""ExcelExporter — IExporter Excel іске асыруы (domain ExcelExporter)."""
 
-TODO: ExperimentSession-ды XLSX файлға жазу логикасын қосу.
-"""
+from domain.services.excel_exporter import ExcelExporter
+
+__all__ = ["ExcelExporter"]

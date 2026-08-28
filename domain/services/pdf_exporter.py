@@ -21,6 +21,7 @@ from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, Tabl
 
 from domain.entities.experiment_session import ExperimentSession
 from domain.entities.measurement import Measurement
+from domain.interfaces.i_exporter import IExporter
 
 _TITLE_TEXT = "Arduino Physics Lab"
 _SUBTITLE_TEXT = "Өлшеу нәтижелері"
@@ -183,7 +184,7 @@ class _NumberedCanvas(pdfcanvas.Canvas):
         self.drawCentredString(A4[0] / 2, 1.3 * cm, text)
 
 
-class PDFExporter:
+class PDFExporter(IExporter):
     """``ExperimentSession``-ды қарапайым академиялық стильдегі PDF
     есебіне жазатын сервис.
     """

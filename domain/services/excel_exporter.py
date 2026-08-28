@@ -14,6 +14,7 @@ from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.worksheet import Worksheet
 
 from domain.entities.experiment_session import ExperimentSession
+from domain.interfaces.i_exporter import IExporter
 
 _MEASUREMENTS_SHEET_NAME = "Measurements"
 _INFO_SHEET_NAME = "Experiment Info"
@@ -32,7 +33,7 @@ _VALUE_COLUMNS: tuple[tuple[str, int], ...] = (
 _COLUMN_WIDTHS: dict[int, float] = {1: 6, 2: 14, 3: 14, 4: 14, 5: 14}
 
 
-class ExcelExporter:
+class ExcelExporter(IExporter):
     """``ExperimentSession``-ды жеңіл форматталған .xlsx жұмыс кітабына
     жазатын сервис.
     """

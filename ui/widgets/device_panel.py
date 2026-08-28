@@ -18,12 +18,13 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from core.constants import SERIAL_BAUD_RATE, SERIAL_BAUD_RATES
 from domain.entities.connected_device import ConnectedDevice
 from infrastructure.serial_comm.device_scanner import SerialDeviceInfo
 from ui.widgets.device_card import DeviceCard
 
-_BAUD_RATES = (9600, 57600, 115200)
-_DEFAULT_BAUD_RATE = 115200
+_BAUD_RATES = SERIAL_BAUD_RATES
+_DEFAULT_BAUD_RATE = SERIAL_BAUD_RATE
 
 _SENSOR_TYPE_ORDER: dict[str, int] = {
     "VOLTAGE": 0,

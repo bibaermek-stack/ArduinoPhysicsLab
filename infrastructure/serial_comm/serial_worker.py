@@ -10,7 +10,7 @@ QSerialPort объектісін тек осы thread ішінде (``initialize
 from PySide6.QtCore import QIODeviceBase, QObject, Signal, Slot
 from PySide6.QtSerialPort import QSerialPort
 
-_MAX_BUFFER_SIZE = 64 * 1024  # 64 KB
+from core.constants import SERIAL_RECEIVE_BUFFER_MAX_BYTES
 
 
 class SerialWorker(QObject):
@@ -146,7 +146,7 @@ class SerialWorker(QObject):
         chunk = bytes(self._serial.readAll())
         self._receive_buffer.extend(chunk)
 
-        if len(self._receive_buffer) > _MAX_BUFFER_SIZE:
+        if len(self._receive_buffer) > SERIAL_RECEIVE_BUFFER_MAX_BYTES:
             self.error_occurred.emit(
                 "Serial буфер шектен асты (newline табылмады), буфер тазаланды"
             )

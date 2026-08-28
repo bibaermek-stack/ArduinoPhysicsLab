@@ -7,9 +7,8 @@ import math
 from collections.abc import Callable
 from dataclasses import dataclass
 
+from core.constants import CURRENT_EPSILON
 from domain.entities.experiment_definition import ExperimentDefinition
-
-CURRENT_EPSILON = 1e-9
 
 _CalculatorResult = tuple[float | None, str | None]
 _Calculator = Callable[[dict[str, float], float | None], _CalculatorResult]

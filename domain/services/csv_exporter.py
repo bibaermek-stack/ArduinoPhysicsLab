@@ -8,7 +8,10 @@
 
 import csv
 
+from pathlib import Path
+
 from domain.entities.experiment_session import ExperimentSession
+from domain.interfaces.i_exporter import IExporter
 
 _HEADER = ("No", "Time(s)", "Voltage(V)", "Current(A)", "Power(W)")
 _TIME_DECIMALS = 2
@@ -21,12 +24,12 @@ _VALUE_COLUMNS: tuple[tuple[str, int], ...] = (
 )
 
 
-class CSVExporter:
+class CSVExporter(IExporter):
     """``ExperimentSession``-ды стандартты, Excel аша алатын CSV
     файлына жазатын сервис.
     """
 
-    def export(self, session: ExperimentSession, output_path: str) -> bool:
+    def export(self, session: ExperimentSession, output_path: str | Path) -> bool:
         """``session.measurements``-ті ``output_path`` файлына CSV
         түрінде жазады.
 
