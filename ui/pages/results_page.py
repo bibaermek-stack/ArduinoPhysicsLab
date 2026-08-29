@@ -70,7 +70,7 @@ from domain.services.teacher_scope import resolve_allowed_classroom_ids
 from infrastructure.storage.sqlite_active_teacher_repository import SqliteActiveTeacherRepository
 from infrastructure.storage.sqlite_teacher_repository import SqliteTeacherRepository
 from modules.module_registry import ModuleRegistry
-from ui.themes.theme_manager import COLOR_SUCCESS, COLOR_WARNING
+from ui.themes.theme_manager import COLOR_SUCCESS, COLOR_WARNING, SPACING_LG, SPACING_MD, SPACING_XS
 from ui.widgets.experiment_report_dialog import ExperimentReportDialog
 
 _PAGE_TITLE = "Нәтижелер"
@@ -328,6 +328,8 @@ class ResultsPage(QWidget):
         _make_background_transparent(caption_label)
 
         card_layout = QVBoxLayout(card)
+        card_layout.setContentsMargins(SPACING_LG, SPACING_MD, SPACING_LG, SPACING_MD)
+        card_layout.setSpacing(SPACING_XS)
         card_layout.addWidget(value_label)
         card_layout.addWidget(caption_label)
         return card

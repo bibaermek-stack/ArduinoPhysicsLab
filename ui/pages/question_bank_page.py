@@ -53,7 +53,15 @@ from domain.entities.question_record import QuestionContent, QuestionRecord
 from domain.entities.user_role import UserRole
 from domain.interfaces.i_question_repository import IQuestionRepository
 from modules.module_registry import ModuleRegistry
-from ui.themes.theme_manager import COLOR_ACCENT, COLOR_INFO, COLOR_SUCCESS, COLOR_TEXT_MUTED
+from ui.themes.theme_manager import (
+    COLOR_ACCENT,
+    COLOR_INFO,
+    COLOR_SUCCESS,
+    COLOR_TEXT_MUTED,
+    SPACING_LG,
+    SPACING_MD,
+    SPACING_XS,
+)
 
 _PAGE_TITLE = "Сұрақтар банкі"
 _PAGE_SUBTITLE = "Зертханалық жұмыстарға арналған бақылау сұрақтарын дайындау және басқару."
@@ -602,6 +610,8 @@ class QuestionBankPage(QWidget):
         _make_background_transparent(caption_label)
 
         card_layout = QVBoxLayout(card)
+        card_layout.setContentsMargins(SPACING_LG, SPACING_MD, SPACING_LG, SPACING_MD)
+        card_layout.setSpacing(SPACING_XS)
         card_layout.addWidget(value_label)
         card_layout.addWidget(caption_label)
         return card

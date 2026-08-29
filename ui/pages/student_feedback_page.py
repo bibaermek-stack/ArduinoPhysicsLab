@@ -53,7 +53,7 @@ from domain.interfaces.i_teacher_note_repository import ITeacherNoteRepository
 from domain.services.experiment_conclusion import build_automatic_conclusion
 from domain.services.experiment_report_data import build_experiment_report_data
 from modules.module_registry import ModuleRegistry
-from ui.themes.theme_manager import COLOR_TEXT_MUTED
+from ui.themes.theme_manager import COLOR_TEXT_MUTED, SPACING_LG, SPACING_MD, SPACING_XS
 from ui.widgets.experiment_report_dialog import ExperimentReportDialog
 
 _PAGE_TITLE = "Кері байланыс"
@@ -307,6 +307,8 @@ class StudentFeedbackPage(QWidget):
         _make_background_transparent(caption_label)
 
         card_layout = QVBoxLayout(card)
+        card_layout.setContentsMargins(SPACING_LG, SPACING_MD, SPACING_LG, SPACING_MD)
+        card_layout.setSpacing(SPACING_XS)
         card_layout.addWidget(value_label)
         card_layout.addWidget(caption_label)
         return card

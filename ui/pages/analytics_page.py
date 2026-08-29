@@ -71,6 +71,9 @@ from ui.themes.theme_manager import (
     COLOR_TEXT_MUTED,
     COLOR_WARNING,
     RADIUS_SM,
+    SPACING_LG,
+    SPACING_MD,
+    SPACING_XS,
 )
 from ui.widgets.class_activity_carousel import classroom_accent_color
 
@@ -657,6 +660,8 @@ class AnalyticsPage(QWidget):
         _make_background_transparent(caption_label)
 
         card_layout = QVBoxLayout(card)
+        card_layout.setContentsMargins(SPACING_LG, SPACING_MD, SPACING_LG, SPACING_MD)
+        card_layout.setSpacing(SPACING_XS)
         card_layout.addWidget(value_label)
         card_layout.addWidget(caption_label)
         return card

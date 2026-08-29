@@ -62,6 +62,9 @@ from ui.themes.theme_manager import (
     COLOR_INFO,
     COLOR_SUCCESS,
     COLOR_WARNING,
+    SPACING_LG,
+    SPACING_MD,
+    SPACING_XS,
 )
 from ui.widgets.class_activity_carousel import (
     ActivityCardData,
@@ -273,6 +276,7 @@ class TeacherDashboardPage(QWidget):
         _make_background_transparent(caption_label)
 
         text_column = QVBoxLayout()
+        text_column.setSpacing(SPACING_XS)
         text_column.addWidget(value_label)
         text_column.addWidget(caption_label)
 
@@ -289,7 +293,14 @@ class TeacherDashboardPage(QWidget):
             f"background-color: {accent}; border-radius: {_SUMMARY_ICON_BADGE_PX // 2}px;"
         )
 
+        # § "do not enlarge the cards" (Phase 13) сақталады — тек Qt-тың
+        # платформаға тәуелді әдепкі layout margin-і (стильге қарай ~9-11px
+        # ауытқиды) нақты, детерминистік токенге ауыстырылады: карточканың
+        # биіктігі/қаріп өлшемі ӨЗГЕРМЕЙДІ, тек ішкі "тыныс алу орны"
+        # theme_manager.py SPACING токендерінен нақтыланады.
         card_layout = QHBoxLayout(card)
+        card_layout.setContentsMargins(SPACING_LG, SPACING_MD, SPACING_LG, SPACING_MD)
+        card_layout.setSpacing(SPACING_MD)
         card_layout.addLayout(text_column, 1)
         card_layout.addWidget(icon_badge, 0, Qt.AlignmentFlag.AlignVCenter)
         return card

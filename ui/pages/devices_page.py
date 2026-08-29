@@ -28,6 +28,7 @@ from domain.entities.connected_device import ConnectedDevice
 from infrastructure.serial_comm.device_manager import DeviceManager
 from infrastructure.serial_comm.device_scanner import DeviceScanner, SerialDeviceInfo
 from infrastructure.serial_comm.packet_parser import PacketParser
+from ui.themes.theme_manager import SPACING_LG, SPACING_MD, SPACING_XS
 from ui.widgets.managed_device_card import STATUS_ERROR, ManagedDeviceCard
 
 _DEFAULT_BAUD_RATE = 115200
@@ -287,6 +288,8 @@ class DevicesPage(QWidget):
         _make_background_transparent(caption_label)
 
         card_layout = QVBoxLayout(card)
+        card_layout.setContentsMargins(SPACING_LG, SPACING_MD, SPACING_LG, SPACING_MD)
+        card_layout.setSpacing(SPACING_XS)
         card_layout.addWidget(value_label)
         card_layout.addWidget(caption_label)
         return card

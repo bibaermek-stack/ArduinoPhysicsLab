@@ -29,7 +29,7 @@ class PeoplePage(QWidget):
         self._results: list[dict] = []
         self._incoming: list[dict] = []
 
-        title = QLabel("Адамдар", self)
+        title = QLabel("Байланыстар", self)
         title_font = title.font()
         title_font.setBold(True)
         title_font.setPointSize(title_font.pointSize() + 4)
