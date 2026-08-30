@@ -73,7 +73,7 @@ DI container жоқ: `app.py` мен `ui/main_window.py` қолмен байла
 
 | Каталог | UI атауы | Күйі |
 |---|---|---|
-| `modules/heat/` | Жылу құбылыстары | каталог, `is_implemented=False` |
+| `modules/heat/` | Жылу құбылыстары | 1 арна/UI жағынан дайын (`compare-heat-quantity`, hardware-валидациясы жетіспейді) + 1 бос каталог, екеуі де `is_implemented=False` |
 | `modules/electricity/` | Электр құбылыстары | 5 жұмыс істейтін тәжірибе + температура тәжірибесі жоспарлы |
 | `modules/electromagnetism/` | Электромагниттік құбылыстар | каталог, `is_implemented=False` |
 | `modules/light/` | Жарық құбылыстары | каталог, `is_implemented=False` |

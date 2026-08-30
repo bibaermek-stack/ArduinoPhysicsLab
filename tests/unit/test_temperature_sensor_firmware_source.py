@@ -141,18 +141,23 @@ def test_debug_lines_are_compiled_out_by_default(firmware_source: str) -> None:
 # ---- SET_EXP whitelist: тек metal-resistance-temperature ------------------
 
 
-def test_whitelist_contains_only_the_temperature_experiment(firmware_source: str) -> None:
+def test_whitelist_contains_both_temperature_experiments(firmware_source: str) -> None:
+    # kезeng 39B: compare-heat-quantity (жылу №1) қосылды —
+    # metal-resistance-temperature-мен (электр №8) қатар.
     ids = set(
         re.findall(r'const char EXPERIMENT_ID_STR_\d\[\] PROGMEM = "([^"]+)";', firmware_source)
     )
-    assert ids == {"metal-resistance-temperature"}
+    assert ids == {"metal-resistance-temperature", "compare-heat-quantity"}
 
 
-def test_experiment_id_buffer_fits_the_temperature_experiment_id(firmware_source: str) -> None:
+def test_experiment_id_buffer_fits_the_longest_temperature_experiment_id(
+    firmware_source: str,
+) -> None:
+    longest_id = max(("metal-resistance-temperature", "compare-heat-quantity"), key=len)
     match = re.search(r"const uint8_t EXPERIMENT_ID_MAX_LEN = (\d+);", firmware_source)
     assert match is not None
     max_len = int(match.group(1))
-    assert max_len > len("metal-resistance-temperature")
+    assert max_len > len(longest_id)
 
 
 def test_boot_default_experiment_id_is_neutral(firmware_source: str) -> None:

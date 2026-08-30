@@ -8,7 +8,9 @@ from modules.heat.experiments_config import HEAT_EXPERIMENTS
 
 
 class HeatModule(IPhysicsModule):
-    """"Жылу құбылыстары" модулі: 2 жоспарланған зертхана жұмысын қамтиды."""
+    """"Жылу құбылыстары" модулі: 2 жоспарланған зертхана жұмысын қамтиды
+    (біреуі — compare-heat-quantity — арна/UI жағынан толық дайын, тек
+    hardware-валидациясы жетіспейді; § experiments_config.py)."""
 
     def get_name(self) -> str:
         return "Жылу құбылыстары"

@@ -65,16 +65,20 @@
   - OLED табылмаса: экран жаңартылмайды, sensor/protocol жұмысына
     мүлде әсер етпейді.
 
-  Multi-device: бұл firmware ЖАЛҒЫЗ тәжірибеге — metal-resistance-
-  temperature — қатысады (тек OSCB white-list-те сол бір id бар),
-  бірақ сол тәжірибе Voltage/Current Sensor-мен БІРГЕ, үш бөлек
-  физикалық Arduino ретінде жұмыс істейді (MultiSensorExperiment
-  Coordinator/ChannelAggregator, docs/serial_protocol.md §13). Сол
-  себепті Voltage/Current Sensor firmware-нің whitelist-іне де
-  "metal-resistance-temperature" қосылды (firmware/voltage_sensor/
-  voltage_sensor.ino, firmware/current_sensor/current_sensor.ino) —
-  әйтпесе PC осы тәжірибені бастағанда сол екі Arduino SET_EXP-ті
-  қабылдамай, U=/I= жіберуді тоқтатар еді.
+  Multi-device: бұл firmware ЕКІ тәжірибеге қатысады (whitelist-те
+  екеуі де бар):
+  - "metal-resistance-temperature" (электр модулі №8) — Voltage/Current
+    Sensor-мен БІРГЕ, үш бөлек физикалық Arduino ретінде жұмыс істейді
+    (MultiSensorExperimentCoordinator/ChannelAggregator,
+    docs/serial_protocol.md §13). Сол себепті Voltage/Current Sensor
+    firmware-нің whitelist-іне де "metal-resistance-temperature"
+    қосылды (firmware/voltage_sensor/voltage_sensor.ino,
+    firmware/current_sensor/current_sensor.ino) — әйтпесе PC осы
+    тәжірибені бастағанда сол екі Arduino SET_EXP-ті қабылдамай, U=/I=
+    жіберуді тоқтатар еді.
+  - "compare-heat-quantity" (жылу модулі №1, kезeng 39B) — ЖАЛҒЫЗ осы
+    Arduino (required_sensor_types=("TEMPERATURE",), бір-құрылғылы
+    ExperimentController pipeline-і, coordinator қажет емес).
 */
 
 #include <OneWire.h>
@@ -143,8 +147,8 @@ size_t lineLength = 0;
 // ---- Ағымдағы тәжірибе ID (SET_EXP арқылы өзгереді) --------------------
 // Бос мән — ЕШБІР нақты тәжірибе ID-мен СӘЙКЕС КЕЛМЕЙДІ (Voltage/
 // Current Sensor firmware-мен бірдей себеп: docs/serial_protocol.md §6).
-// "metal-resistance-temperature" (29 таңба) ЕҢ ҰЗЫН/ЖАЛҒЫЗ whitelist
-// id-і болғандықтан, буфер соған +қор етіп 32-ге қойылды (Voltage/
+// "metal-resistance-temperature" (29 таңба) ЕКІ whitelist id-нің ЕҢ
+// ҰЗЫНЫ болғандықтан, буфер соған +қор етіп 32-ге қойылды (Voltage/
 // Current Sensor-дегі 24-тен үлкен — сол екі файл да осы тәжірибенің
 // ұзын id-ін сыйдыру үшін дәл СОЛ мәнге көтерілді, тарихи параллель
 // қашықтан толықтырылды).
@@ -152,14 +156,17 @@ const uint8_t EXPERIMENT_ID_MAX_LEN = 32;
 char currentExperimentId[EXPERIMENT_ID_MAX_LEN] = "";
 
 // ---- Support етілетін тәжірибе id-лерінің whitelist-і -------------------
-// Бұл сенсор ЖАЛҒЫЗ "metal-resistance-temperature" тәжірибесіне
-// қатысады (experiments_config.py-дегі required_sensor_types=
-// ("VOLTAGE","CURRENT","TEMPERATURE") — жалғыз осы тәжірибеде
-// TEMPERATURE бар).
+// Бұл сенсор ЕКІ тәжірибеге қатысады:
+//  - "metal-resistance-temperature" (электр модулі №8, VOLTAGE+CURRENT+
+//    TEMPERATURE үш Arduino бірге);
+//  - "compare-heat-quantity" (жылу модулі №1, kезeng 39B, ЖАЛҒЫЗ осы
+//    Arduino — required_sensor_types=("TEMPERATURE",)).
 const char EXPERIMENT_ID_STR_0[] PROGMEM = "metal-resistance-temperature";
+const char EXPERIMENT_ID_STR_1[] PROGMEM = "compare-heat-quantity";
 
 const char *const SUPPORTED_EXPERIMENT_IDS[] PROGMEM = {
   EXPERIMENT_ID_STR_0,
+  EXPERIMENT_ID_STR_1,
 };
 const uint8_t SUPPORTED_EXPERIMENT_COUNT =
     sizeof(SUPPORTED_EXPERIMENT_IDS) / sizeof(SUPPORTED_EXPERIMENT_IDS[0]);

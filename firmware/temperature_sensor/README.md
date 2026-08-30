@@ -67,16 +67,26 @@ Firmware бұл уақытты `delay()`-сіз, `millis()`-негізді state
 2. `HELLO?` жіберіңіз →
    `TYPE=HELLO,DEV=APL-TEMPERATURE-01,MODEL=V1,SENSOR=TEMPERATURE,CHIP=DS18B20,FW=1.0`
    келуі керек.
-3. `SET_EXP=metal-resistance-temperature` жіберіңіз →
-   `OK,EXP=metal-resistance-temperature`.
+3. `SET_EXP=metal-resistance-temperature` НЕМЕСЕ
+   `SET_EXP=compare-heat-quantity` жіберіңіз (екеуі де whitelist-те) →
+   `OK,EXP=<жіберген id>`.
 4. DS18B20 дұрыс жалғанған болса, шамамен 1 Hz жиілікпен
-   `EXP=metal-resistance-temperature,TEMP=<цельсий>` жолдары келе
-   бастауы керек (сым/резистор дұрыс емес болса — ешбір `EXP=` жолы
-   келмейді, бірақ `HELLO?`/`SET_EXP=` жұмыс істей береді).
+   `EXP=<id>,TEMP=<цельсий>` жолдары келе бастауы керек (сым/резистор
+   дұрыс емес болса — ешбір `EXP=` жолы келмейді, бірақ
+   `HELLO?`/`SET_EXP=` жұмыс істей береді).
 5. Бөлмелік температурада (~20-25 °C) мән тұрақты болуы керек; DS18B20
    ұшын қолмен ұстасаңыз, бірнеше секундта мән көтерілуі керек.
 
-## Multi-device (толық тәжірибе, 3 Arduino)
+## compare-heat-quantity (жылу №1) — жалғыз Arduino
+
+Бұл тәжірибе (`modules/heat/experiments_config.py`) ТЕК осы бір
+Temperature Sensor Arduino-ны қажет етеді (`required_sensor_types=
+("TEMPERATURE",)`) — Voltage/Current Sensor-мен байланысы жоқ, бір-
+құрылғылы `ExperimentController` pipeline-і арқылы (coordinator-сіз)
+жұмыс істейді. Температура-уақыт графигі ғана тіркеледі; бөлінген жылу
+мөлшерін (Q = mcΔT) оқушы графиктен алынған ΔT-мен өзі есептейді.
+
+## metal-resistance-temperature (электр №8) — толық тәжірибе, 3 Arduino
 
 `metal-resistance-temperature` (№8) — Voltage Sensor + Current Sensor +
 Temperature Sensor **бір мезгілде, үш бөлек физикалық Arduino** ретінде
