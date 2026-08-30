@@ -4,6 +4,16 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Arduino Physics Lab{% endblock %}</title>
+  <meta name="description" content="{% block description %}Мектеп физика зертханасы: Arduino датчиктерімен нақты уақытта өлшеу, Windows қолданбасы, мұғалім/оқушы кабинеттері мен зертхана журналы.{% endblock %}">
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="kk_KZ">
+  <meta property="og:site_name" content="Arduino Physics Lab">
+  <meta property="og:title" content="{% block og_title %}{{ self.title() }}{% endblock %}">
+  <meta property="og:description" content="{{ self.description() }}">
+  <meta property="og:url" content="{{ request.url }}">
+  <meta property="og:image" content="{{ request.url_for('static', path='favicon.svg') }}">
+  <meta name="twitter:card" content="summary">
   <link rel="stylesheet" href="/static/app.css?v=4">
 </head>
 <body>
