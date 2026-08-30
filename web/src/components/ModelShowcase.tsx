@@ -50,16 +50,18 @@ function Scene({ glbUrl, labels, sectionEl, onReveal, onReady }: ModelShowcasePr
     const revealAt: Array<{ time: number; label: string; index: number }> = [];
 
     const timeline = createTimeline({
-      // enter/leave-ді ӘДЕЙІ көрсетпейміз: onScroll-тың ӨЗ дефолты дәл
-      // керегіміз — target-тың ЖОҒАРЫ шеті container-дың ТӨМЕНГІ шетіне
-      // жеткенде басталып (секция төменнен енді "кіре" бастағанда),
-      // target-тың ТӨМЕН шеті container-дың ЖОҒАРҒЫ шетіне жеткенде
-      // аяқталады (секция толық скролл етіп өткенде). enter/leave string-ті
-      // "[container] [target]" ретімен қолмен жазу оңай шатастырады —
-      // расталды: бастапқы `enter:"top bottom", leave:"bottom top"`
-      // нұсқасы ДӘЛ КЕРІСІНШЕ (leave-ге сай "enter", enter-ге сай "leave")
-      // орналасып, canvas бос қалуына әкелген.
-      autoplay: onScroll({ target: sectionEl, sync: true }),
+      // enter — дефолт бойынша (target-тың ЖОҒАРЫ шеті container-дың
+      // ТӨМЕНГІ шетіне жеткенде, секция төменнен "кіре" бастағанда).
+      //
+      // leave-ді ӘДЕЙІ ЕРТЕРЕК қойдық: дефолт leave ("target-тың ТӨМЕН
+      // шеті container-дың ЖОҒАРҒЫ шетіне жеткенде") секцияны толық
+      // скролл етіп ӨТКЕНДЕ ғана аяқталады — ал пайдаланушы мәтінді
+      // оқып болып, секция әлі толық көрініп тұрған кезде скроллды
+      // тоқтатады (расталды: бөлшектер жартылай жиналған күйде
+      // "тоңып" қалады). container='center' қойып, "секцияның ТӨМЕН
+      // шеті viewport-тың ОРТАСЫНА жеткенде толық жиналсын" дедік —
+      // бұл секция әлі жақсы көрініп тұрғанда іске асады.
+      autoplay: onScroll({ target: sectionEl, sync: true, leave: "center bottom" }),
       onUpdate: (self) => {
         const t = self.currentTime;
         for (const entry of revealAt) {
