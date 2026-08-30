@@ -1,0 +1,17 @@
+# Arduino Physics Lab — test-time-only dependencies.
+#
+# Not needed to run the app; only for `python -m pytest`.
+#
+#   pip install -r requirements.txt -r requirements-test.txt
+#
+# pytest-xdist: tests/unit/conftest.py runs each parentless page/dialog
+# widget through close()+deleteLater() teardown (see its docstring), but
+# ~2600 heavy Qt/pyqtgraph GUI tests in one process can still hit a
+# Windows-only native crash (0xc0000374 / access violation) somewhere in
+# the run. Running with `-n auto --dist=loadfile` (see docs/recovery.md
+# "Correct test invocation") isolates each test *file* to its own worker
+# process, so a crash kills only that worker — pytest-xdist detects the
+# "node down", reports the in-flight test as failed, and the rest of the
+# suite keeps running instead of the whole invocation aborting.
+
+pytest-xdist==3.8.0

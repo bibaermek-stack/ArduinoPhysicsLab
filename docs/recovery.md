@@ -96,6 +96,31 @@ between the two same-named `tests` directories, neither of which uses
 them. This is a test-invocation artifact, not a code defect — keep
 using two separate commands.
 
+### `tests/unit` on Windows: run it under pytest-xdist
+
+`tests/unit` alone is ~2600 tests, several hundred of which build real
+`QWidget`/`pyqtgraph.PlotWidget` trees. Even with the `close()` +
+`deleteLater()` teardown in `tests/unit/conftest.py`, running the whole
+folder in a single process can still hit a Windows-only native crash
+(`Windows fatal exception: 0xc0000374` / `access violation` — Qt/GC
+heap corruption, not a Python exception, so pytest can't catch or
+report it) somewhere in the run — the exact test that trips it isn't
+stable between runs. Install `requirements-test.txt` once, then always
+run `tests/unit` distributed by file:
+
+```bash
+pip install -r requirements-test.txt
+python -m pytest tests/unit -q -n auto --dist=loadfile
+```
+
+`--dist=loadfile` keeps each test *file* on one worker (so file-scoped
+`qt_application` fixtures still behave). If a worker crashes, xdist
+prints `[gwN] node down: Not properly terminated`, marks the in-flight
+test as failed, and the rest of the suite keeps running — a single
+`python -m pytest tests/unit -q` (no `-n`) run stops dead at the crash
+and everything after it never executes, which looks like a much bigger
+failure than it is.
+
 ## Runtime data location (installed/packaged app, Phase 9+)
 
 This section is about *end-user* installations, not this source
