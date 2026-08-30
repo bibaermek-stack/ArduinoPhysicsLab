@@ -78,9 +78,15 @@ function Scene({ glbUrl, labels, sectionEl, onReveal, onReady }: ModelShowcasePr
       const offset = i * STAGGER_MS;
       // Бастапқы күй — "жарылған" (parentless бөлшектер шашылған), scroll
       // ілгерілеген сайын өз орнына жиналады (§5: originalPosition ↔
-      // explodedPosition).
+      // explodedPosition). Айналу — GLB-дегі НАҚТЫ бастапқы бұрылысқа
+      // (originalRotation) қайтады, әрдайым (0,0,0)-ге ЕМЕС (жоғарыдағы
+      // түсініктемені қараңыз).
       part.node.position.copy(part.exploded);
-      part.node.rotation.copy(part.spin);
+      part.node.rotation.set(
+        part.originalRotation.x + part.spinOffset.x,
+        part.originalRotation.y + part.spinOffset.y,
+        part.originalRotation.z + part.spinOffset.z
+      );
 
       timeline.add(
         part.node.position,
@@ -89,7 +95,12 @@ function Scene({ glbUrl, labels, sectionEl, onReveal, onReady }: ModelShowcasePr
       );
       timeline.add(
         part.node.rotation,
-        { x: 0, y: 0, z: 0, ease: "outCubic" },
+        {
+          x: part.originalRotation.x,
+          y: part.originalRotation.y,
+          z: part.originalRotation.z,
+          ease: "outCubic",
+        },
         offset
       );
 

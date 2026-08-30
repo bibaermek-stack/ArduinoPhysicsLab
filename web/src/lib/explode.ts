@@ -4,7 +4,8 @@ export interface ExplodedPart {
   node: THREE.Object3D;
   original: THREE.Vector3;
   exploded: THREE.Vector3;
-  spin: THREE.Euler;
+  originalRotation: THREE.Euler;
+  spinOffset: THREE.Euler;
   label: string | null;
 }
 
@@ -35,12 +36,19 @@ export function computeExplodedParts(root: THREE.Object3D, labels: string[]): Ex
     dir.normalize();
     const distance = radius * (1.6 + Math.random() * 1.6);
     const exploded = original.clone().addScaledVector(dir, distance);
-    const spin = new THREE.Euler(
+    // МАҢЫЗДЫ (расталған bug): GLB-де бөлшектердің көбінде "жиналған"
+    // бастапқы бұрылысы (0,0,0) ЕМЕС (мыс. robot_arm/instax-тың барлық
+    // балаларында -90° X бұрылысы бар — gltf-transform-ның Z-up→Y-up
+    // түзетуі). Бұл бұрылысты САҚТАП, "жиналу" анимациясы соған қайтуы
+    // керек — әйтпесе бүкіл модель толық жиналған кезде 90°-қа "аударылып"
+    // тұрады (robot қол бүйіріне құлаған сияқты көрінген, расталған).
+    const originalRotation = node.rotation.clone();
+    const spinOffset = new THREE.Euler(
       (Math.random() - 0.5) * Math.PI * 1.4,
       (Math.random() - 0.5) * Math.PI * 1.4,
       (Math.random() - 0.5) * Math.PI * 1.4
     );
-    return { node, original, exploded, spin, label: labels[i] ?? null };
+    return { node, original, exploded, originalRotation, spinOffset, label: labels[i] ?? null };
   });
 }
 
