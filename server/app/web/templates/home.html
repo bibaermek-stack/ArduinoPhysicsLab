@@ -3,7 +3,7 @@
 <section class="hero">
   <div class="hero-copy">
     <span class="kicker">Мектеп физика зертханасы</span>
-    <h1>Цифрлық физика зертханасы енді желіде</h1>
+    <h1 data-stagger-text>Цифрлық физика зертханасы енді желіде</h1>
     <p class="lead">Email немесе Google арқылы кіріңіз, мұғалім не оқушы болыңыз, өз ID-ңызбен табысыңыз. Windows қолданбасы Arduino датчиктерімен жұмыс істейді және осы серверге синхрондалады.</p>
     <div class="actions">
       {% if account %}
@@ -18,6 +18,8 @@
   </div>
   <div class="hero-visual" aria-hidden="true">
     <div class="atom"><span></span><span></span><span></span><i></i></div>
+    <div id="hero-3d-root"></div>
+    <div id="hero-loading-root"></div>
     <div class="lab-readout">
       <span>Live · COM3</span>
       U = <b>5.02 V</b><br>
@@ -60,6 +62,66 @@
     <p>Компьютердегі .exe Arduino-мен өлшейді, ал аккаунт осы сайтпен ортақ.</p>
   </article>
 </section>
+<section class="showcase-intro">
+  <span class="kicker">Оқушы жобалары</span>
+  <h2 data-stagger-text>Зертханада не жиналады</h2>
+  <p class="lead">Төмен скролл жасаған сайын, оқушылар жинаған нақты құрылғылардың 3D модельдері бөліктен бүтінге жиналады.</p>
+</section>
+<section class="model-showcase" data-glb="/static/models/instax.glb" data-camera="0.01,3.6,2.4"
+  data-labels='["Байланыс сымдары", "Arduino + breadboard негізі", "OLED дисплей платасы", "LED индикаторы", "Камера платасы", "Корпус қақпағы"]'>
+  <div class="model-canvas-root" aria-hidden="true"></div>
+  <div class="model-copy">
+    <span class="kicker">Жоба · 05–06 сабақ</span>
+    <h3 data-stagger-text>Instax OLED камера</h3>
+    <p>Arduino негізіндегі OLED дисплей стенді — датчик деректерін нақты уақытта экранға шығарады.</p>
+    <div class="model-stats">
+      <span>6 бөлшек</span>
+      <span>Arduino Uno</span>
+      <span>787 КБ 3D модель</span>
+    </div>
+    <div class="model-readout">
+      <span>Жиналуда</span>
+      <ul></ul>
+    </div>
+  </div>
+</section>
+<section class="model-showcase reverse" data-glb="/static/models/robot_arm.glb" data-camera="-2.1,1.6,3.6"
+  data-labels='["Байланыс сымдары", "Сервоприводтар", "Серво корпусы", "Басқару платасы", "LED индикаторы", "Негізгі плата", "Ағаш манипулятор корпусы", "Бекіткіштер"]'>
+  <div class="model-canvas-root" aria-hidden="true"></div>
+  <div class="model-copy">
+    <span class="kicker">Жоба · 40-сабақ</span>
+    <h3 data-stagger-text>Радиобасқарылатын робот-манипулятор</h3>
+    <p>SG90 сервоприводтарынан жиналған робот қолы — механика мен электрониканы біріктірген оқушы жинағы.</p>
+    <div class="model-stats">
+      <span>8 бөлшек</span>
+      <span>SG90 × 4</span>
+      <span>3.78 МБ 3D модель</span>
+    </div>
+    <div class="model-readout">
+      <span>Жиналуда</span>
+      <ul></ul>
+    </div>
+  </div>
+</section>
+<section class="showcase-intro">
+  <span class="kicker">Қолданбадан</span>
+  <h2 data-stagger-text>Windows қолданбасының ішінде</h2>
+  <p class="lead">Мұғалім кабинеті, тәжірибелер тізімі және нақты уақыттағы график — нағыз скриншоттар.</p>
+</section>
+<section class="app-gallery">
+  <figure>
+    <img src="/static/img/screenshot-dashboard.png" alt="Мұғалім бақылау тақтасы: сыныптар, оқушылар, аяқталған жұмыстар саны" loading="lazy">
+    <figcaption>Бақылау тақтасы</figcaption>
+  </figure>
+  <figure>
+    <img src="/static/img/screenshot-experiments.png" alt="Тәжірибелер тізімі: жылу, электр, электромагниттік, жарық құбылыстары" loading="lazy">
+    <figcaption>Тәжірибелер тізімі</figcaption>
+  </figure>
+  <figure>
+    <img src="/static/img/screenshot-live-graph.png" alt="Электр тізбегін құрастыру тәжірибесі: кернеу мен ток күшінің нақты уақыттағы графигі" loading="lazy">
+    <figcaption>Нақты уақыт графигі</figcaption>
+  </figure>
+</section>
 {% if not account %}
 <section class="card">
   <h2>Бастау</h2>
@@ -70,4 +132,8 @@
   </div>
 </section>
 {% endif %}
+{% endblock %}
+{% block scripts %}
+<link rel="stylesheet" href="/static/app/main.css?v=5">
+<script type="module" src="/static/app/main.js?v=5"></script>
 {% endblock %}

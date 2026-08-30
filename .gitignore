@@ -19,6 +19,10 @@ dist/
 venv/
 env/
 
+# --- web/ (React/Three.js public-site build) — dist/ already ignored above;
+#     compiled output is committed as server/app/web/static/app/{main.js,main.css} ---
+web/node_modules/
+
 # --- Test/tooling caches ---
 .pytest_cache/
 .mypy_cache/
