@@ -196,7 +196,10 @@ size_t lineLength = 0;
 // қысқа "ohms-law" ғана үнемі сәтті шығатыны осымен түсіндіріледі. Түзету
 // — толық heap-сіз `char[]`+`strcmp` парсинг (Voltage/Current екі
 // firmware-де де ДӘЛ БІРДЕЙ логика, parity талабы бойынша).
-const uint8_t EXPERIMENT_ID_MAX_LEN = 24; // "parallel-connection" (19 таңба) + '\0' + қор
+// kезeng 39B (metal-resistance-temperature қосылды): "metal-resistance-
+// temperature" (29 таңба) ЕҢ ҰЗЫН whitelist id-і болғандықтан, буфер
+// 24-тен 32-ге көтерілді (+ '\0' + қор).
+const uint8_t EXPERIMENT_ID_MAX_LEN = 32;
 char currentExperimentId[EXPERIMENT_ID_MAX_LEN] = "";
 
 // ---- Support етілетін тәжірибе id-лерінің whitelist-і -------------------
@@ -212,6 +215,11 @@ const char EXPERIMENT_ID_STR_1[] PROGMEM = "series-connection";
 const char EXPERIMENT_ID_STR_2[] PROGMEM = "parallel-connection";
 const char EXPERIMENT_ID_STR_3[] PROGMEM = "current-work-power";
 const char EXPERIMENT_ID_STR_4[] PROGMEM = "ohms-law";
+// kезeng 39B: metal-resistance-temperature (№8) осы Voltage Sensor-ды да
+// (Current/Temperature Sensor-мен бірге, 3 бөлек Arduino) қажет етеді —
+// firmware/temperature_sensor/temperature_sensor.ino-дегі толық
+// түсіндірмені қараңыз.
+const char EXPERIMENT_ID_STR_5[] PROGMEM = "metal-resistance-temperature";
 
 const char *const SUPPORTED_EXPERIMENT_IDS[] PROGMEM = {
   EXPERIMENT_ID_STR_0,
@@ -219,6 +227,7 @@ const char *const SUPPORTED_EXPERIMENT_IDS[] PROGMEM = {
   EXPERIMENT_ID_STR_2,
   EXPERIMENT_ID_STR_3,
   EXPERIMENT_ID_STR_4,
+  EXPERIMENT_ID_STR_5,
 };
 const uint8_t SUPPORTED_EXPERIMENT_COUNT =
     sizeof(SUPPORTED_EXPERIMENT_IDS) / sizeof(SUPPORTED_EXPERIMENT_IDS[0]);

@@ -154,6 +154,12 @@ EXP=E02,U=5.0,I=0.2,CHK=A3
 - Бұл кеңейту тек осы файлда ([packet_parser.py](../infrastructure/serial_comm/packet_parser.py))
   жүзеге асады, `domain/`, `ui/` қабаттарына тиіспейді.
 
+**Жаңарту (kезeng 39B):** `TEMP=` жоғарыдағы мысал емес, ЕНДІ нақты
+firmware-і бар ([`firmware/temperature_sensor/`](../firmware/temperature_sensor/))
+— бірақ "Жылу" модулі үшін емес, электр модулінің №8 тәжірибесі
+(`metal-resistance-temperature`) үшін. Firmware нақты hardware-де әлі
+тексерілмегендіктен, `is_implemented=False` қалпында.
+
 ## 11. HELLO handshake (құрылғыны автоматты тану)
 
 Бағдарлама әр жеке Arduino-негізіндегі датчикті **COM-порт атауына емес**,

@@ -241,7 +241,14 @@ def test_no_arduino_string_class_used_for_command_parsing(firmware_code: str) ->
 
 def test_experiment_id_buffer_fits_longest_supported_id(firmware_source: str) -> None:
     longest_id = max(
-        ("current-voltage", "series-connection", "parallel-connection", "current-work-power", "ohms-law"),
+        (
+            "current-voltage",
+            "series-connection",
+            "parallel-connection",
+            "current-work-power",
+            "ohms-law",
+            "metal-resistance-temperature",
+        ),
         key=len,
     )
     match = re.search(r"const uint8_t EXPERIMENT_ID_MAX_LEN = (\d+);", firmware_source)
@@ -250,10 +257,13 @@ def test_experiment_id_buffer_fits_longest_supported_id(firmware_source: str) ->
     assert max_len > len(longest_id)
 
 
-def test_whitelist_contains_exactly_the_five_implemented_ids(firmware_source: str) -> None:
+def test_whitelist_contains_exactly_the_six_implemented_ids(firmware_source: str) -> None:
     # kезeng 30: SRAM түзетуі — whitelist енді PROGMEM string table
     # (EXPERIMENT_ID_STR_N жеке тұрақтылары + PROGMEM pointer массиві),
     # бұрынғы inline "SUPPORTED_EXPERIMENT_IDS[] = {...}" литералдары емес.
+    # kезeng 39B: "metal-resistance-temperature" (№8) қосылды — Voltage
+    # Sensor сол тәжірибеде Current/Temperature Sensor-мен бірге (3 бөлек
+    # Arduino) қатысады.
     ids = set(
         re.findall(r'const char EXPERIMENT_ID_STR_\d\[\] PROGMEM = "([^"]+)";', firmware_source)
     )
@@ -263,6 +273,7 @@ def test_whitelist_contains_exactly_the_five_implemented_ids(firmware_source: st
         "parallel-connection",
         "current-work-power",
         "ohms-law",
+        "metal-resistance-temperature",
     }
 
 
