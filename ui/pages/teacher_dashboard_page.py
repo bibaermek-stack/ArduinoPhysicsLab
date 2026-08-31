@@ -230,6 +230,10 @@ class TeacherDashboardPage(QWidget):
         title_font.setPointSize(title_font.pointSize() + 4)
         title_label.setFont(title_font)
 
+        self._greeting_label = QLabel("", self)
+        self._greeting_label.setProperty("role", "secondary")
+        _make_background_transparent(self._greeting_label)
+
         summary_row = QHBoxLayout()
         summary_row.addWidget(self._build_summary_card("classrooms", "Сыныптар саны"), 1)
         summary_row.addWidget(self._build_summary_card("students", "Оқушылар саны"), 1)
@@ -242,6 +246,7 @@ class TeacherDashboardPage(QWidget):
 
         layout = QVBoxLayout(self)
         layout.addWidget(title_label)
+        layout.addWidget(self._greeting_label)
         layout.addLayout(summary_row)
         layout.addLayout(middle_row)
         layout.addWidget(self._build_alerts_panel())
@@ -522,6 +527,7 @@ class TeacherDashboardPage(QWidget):
         return resolve_allowed_classroom_ids(self._teacher_repository, self._active_teacher_repository)
 
     def _refresh(self) -> None:
+        self._refresh_greeting()
         allowed_classroom_ids = self._allowed_classroom_ids()
         counts = self._student_progress_repository.compute_dashboard_counts(allowed_classroom_ids)
         for key, label in self._value_labels.items():
@@ -531,6 +537,14 @@ class TeacherDashboardPage(QWidget):
         self._refresh_activity(experiments_by_id)
         self._refresh_alerts()
         self._refresh_recent_results(experiments_by_id)
+
+    def _refresh_greeting(self) -> None:
+        """§ home_page.py ``_render_greeting()``-мен БІРДЕЙ қағида — белсенді
+        мұғалім анықталмаса (edge-case), ойдан шығарылған атпен емес, бос
+        мәтінмен қалдырамыз."""
+        context = self._active_teacher_repository.get()
+        teacher = self._teacher_repository.get(context.teacher_id) if context is not None else None
+        self._greeting_label.setText(f"Сәлем, {teacher.full_name}!" if teacher is not None else "")
 
     def _refresh_activity(self, experiments_by_id: dict[str, ExperimentDefinition]) -> None:
         snapshots = self._student_progress_repository.compute_classroom_activity(

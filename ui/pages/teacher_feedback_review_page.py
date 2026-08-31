@@ -21,7 +21,6 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QComboBox,
-    QFrame,
     QHBoxLayout,
     QHeaderView,
     QLabel,
@@ -54,9 +53,10 @@ from domain.services.teacher_scope import resolve_allowed_classroom_ids
 from infrastructure.storage.sqlite_active_teacher_repository import SqliteActiveTeacherRepository
 from infrastructure.storage.sqlite_teacher_repository import SqliteTeacherRepository
 from modules.module_registry import ModuleRegistry
-from ui.themes.theme_manager import COLOR_SUCCESS, COLOR_WARNING, SPACING_LG, SPACING_MD, SPACING_XS
+from ui.themes.theme_manager import COLOR_SUCCESS, COLOR_WARNING
 from ui.widgets.experiment_feedback_dialog import ExperimentFeedbackDialog
 from ui.widgets.experiment_report_dialog import ExperimentReportDialog
+from ui.widgets.home_summary_card import HomeSummaryCard
 
 _PAGE_TITLE = "Кері байланысты тексеру"
 _OPEN_REPORT_TEXT = "Есепті ашу"
@@ -130,15 +130,6 @@ _SORT_OPTIONS: tuple[tuple[str, str], ...] = (
     (_SORT_STUDENT, "Оқушы аты"),
     (_SORT_CLASSROOM, "Сынып"),
 )
-
-
-def _make_background_transparent(widget: QWidget) -> None:
-    """§ ``teacher_dashboard_page._make_background_transparent()``-мен
-    БІРДЕЙ себеп/түзету — ``role``-негізді ``QLabel`` өз ЕНІНЕ (QVBoxLayout-
-    та толық созылған) сай ``COLOR_BACKGROUND`` тіктөртбұрышын ақ
-    ``HomeSummaryCard`` үстінде бояп кетеді. instance-деңгейлік
-    ``setStyleSheet()`` ғана жұмыс істейді."""
-    widget.setStyleSheet("background-color: transparent;")
 
 
 @dataclass(frozen=True)
@@ -304,23 +295,8 @@ class TeacherFeedbackReviewPage(QWidget):
     # ---- Жинақы сандар карталары --------------------------------------------
 
     def _build_summary_card(self, key: str, label: str) -> QWidget:
-        card = QFrame(self)
-        card.setObjectName("HomeSummaryCard")
-
-        value_label = QLabel("0", card)
-        value_label.setProperty("role", "cardValue")
-        _make_background_transparent(value_label)
-        self._value_labels[key] = value_label
-
-        caption_label = QLabel(label, card)
-        caption_label.setProperty("role", "cardLabel")
-        _make_background_transparent(caption_label)
-
-        card_layout = QVBoxLayout(card)
-        card_layout.setContentsMargins(SPACING_LG, SPACING_MD, SPACING_LG, SPACING_MD)
-        card_layout.setSpacing(SPACING_XS)
-        card_layout.addWidget(value_label)
-        card_layout.addWidget(caption_label)
+        card = HomeSummaryCard(label, parent=self)
+        self._value_labels[key] = card.value_label
         return card
 
     # ---- Кезек құрастыру/сүзгілеу/сұрыптау -----------------------------------
