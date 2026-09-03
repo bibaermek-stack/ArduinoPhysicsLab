@@ -18,6 +18,7 @@ setApplicationName("ArduinoPhysicsLab")`` әлдеқашан орнатылға�
 
 from __future__ import annotations
 
+import json
 from datetime import datetime
 
 from PySide6.QtCore import QSettings
@@ -97,6 +98,8 @@ _KEY_ACCOUNT_EMAIL = "account/email"
 _KEY_ACCOUNT_NAME = "account/display_name"
 _KEY_ACCOUNT_ROLE = "account/role"
 _KEY_ACCOUNT_PUBLIC_ID = "account/public_id"
+_KEY_SAVED_ACCOUNTS = "account/saved_accounts"
+_MAX_SAVED_ACCOUNTS = 8
 
 
 class AppPreferences:
@@ -267,6 +270,12 @@ class AppPreferences:
     def get_account_token(self) -> str:
         return str(self._settings.value(_KEY_ACCOUNT_TOKEN, "") or "")
 
+    def get_account_id(self) -> str:
+        return str(self._settings.value(_KEY_ACCOUNT_ID, "") or "")
+
+    def get_account_email(self) -> str:
+        return str(self._settings.value(_KEY_ACCOUNT_EMAIL, "") or "")
+
     def get_account_role(self) -> str:
         return str(self._settings.value(_KEY_ACCOUNT_ROLE, "") or "")
 
@@ -292,6 +301,14 @@ class AppPreferences:
         self._settings.setValue(_KEY_ACCOUNT_NAME, display_name)
         self._settings.setValue(_KEY_ACCOUNT_ROLE, role)
         self._settings.setValue(_KEY_ACCOUNT_PUBLIC_ID, public_id)
+        self.upsert_saved_account(
+            account_id=account_id,
+            email=email,
+            display_name=display_name,
+            role=role,
+            public_id=public_id,
+            token=token,
+        )
 
     def clear_account_session(self) -> None:
         self._settings.remove(_KEY_ACCOUNT_TOKEN)
@@ -300,3 +317,74 @@ class AppPreferences:
         self._settings.remove(_KEY_ACCOUNT_NAME)
         self._settings.remove(_KEY_ACCOUNT_ROLE)
         self._settings.remove(_KEY_ACCOUNT_PUBLIC_ID)
+
+    def list_saved_accounts(self) -> tuple[dict[str, str], ...]:
+        raw = self._settings.value(_KEY_SAVED_ACCOUNTS, "[]")
+        try:
+            parsed = json.loads(str(raw or "[]"))
+        except json.JSONDecodeError:
+            return ()
+        if not isinstance(parsed, list):
+            return ()
+        accounts: list[dict[str, str]] = []
+        for item in parsed:
+            if not isinstance(item, dict):
+                continue
+            accounts.append(
+                {
+                    "account_id": str(item.get("account_id") or ""),
+                    "email": str(item.get("email") or ""),
+                    "display_name": str(item.get("display_name") or ""),
+                    "role": str(item.get("role") or ""),
+                    "public_id": str(item.get("public_id") or ""),
+                    "token": str(item.get("token") or ""),
+                }
+            )
+        return tuple(accounts)
+
+    def upsert_saved_account(
+        self,
+        *,
+        account_id: str,
+        email: str,
+        display_name: str,
+        role: str,
+        public_id: str,
+        token: str,
+    ) -> None:
+        account_id = str(account_id or "").strip()
+        email = str(email or "").strip()
+        if not account_id and not email:
+            return
+        remaining: list[dict[str, str]] = []
+        previous_token = ""
+        for existing in self.list_saved_accounts():
+            same_id = account_id and existing["account_id"] == account_id
+            same_email = email and existing["email"].lower() == email.lower()
+            if same_id or same_email:
+                previous_token = existing.get("token") or ""
+                continue
+            remaining.append(existing)
+        saved = {
+            "account_id": account_id,
+            "email": email,
+            "display_name": str(display_name or "").strip(),
+            "role": str(role or "").strip(),
+            "public_id": str(public_id or "").strip(),
+            "token": str(token or "").strip() or previous_token,
+        }
+        updated = [saved, *remaining][:_MAX_SAVED_ACCOUNTS]
+        self._settings.setValue(_KEY_SAVED_ACCOUNTS, json.dumps(updated, ensure_ascii=False))
+
+    def remove_saved_account(self, account_id: str = "", email: str = "") -> None:
+        account_id = str(account_id or "").strip()
+        email = str(email or "").strip().lower()
+        kept = [
+            item
+            for item in self.list_saved_accounts()
+            if not (
+                (account_id and item["account_id"] == account_id)
+                or (email and item["email"].lower() == email)
+            )
+        ]
+        self._settings.setValue(_KEY_SAVED_ACCOUNTS, json.dumps(list(kept), ensure_ascii=False))

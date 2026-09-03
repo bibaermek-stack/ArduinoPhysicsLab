@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import base64
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QImage, QPixmap
 from PySide6.QtWidgets import (
     QFileDialog,
@@ -21,6 +21,8 @@ from infrastructure.sync.account_api_client import AccountApiClient, AccountApiE
 
 
 class ProfilePage(QWidget):
+    logout_requested = Signal()
+
     def __init__(
         self,
         preferences: AppPreferences | None = None,
@@ -55,6 +57,17 @@ class ProfilePage(QWidget):
         save_btn.clicked.connect(self._on_save)
         copy_btn = QPushButton("ID көшіру", self)
         copy_btn.clicked.connect(self._on_copy_id)
+        logout_btn = QPushButton("Шығу", self)
+        logout_btn.setProperty("variant", "danger")
+        logout_btn.style().unpolish(logout_btn)
+        logout_btn.style().polish(logout_btn)
+        logout_btn.clicked.connect(self._on_logout)
+        self._logout_hint = QLabel(
+            "Басқа аккаунтпен кіру немесе жаңасын тіркеу үшін шығыңыз.",
+            self,
+        )
+        self._logout_hint.setProperty("role", "secondary")
+        self._logout_hint.setWordWrap(True)
 
         layout = QVBoxLayout(self)
         layout.addWidget(title)
@@ -67,6 +80,8 @@ class ProfilePage(QWidget):
         col.addWidget(photo_btn)
         col.addWidget(save_btn)
         col.addWidget(copy_btn)
+        col.addWidget(logout_btn)
+        col.addWidget(self._logout_hint)
         row.addLayout(col, 1)
         layout.addLayout(row)
         layout.addWidget(self._status)
@@ -121,3 +136,8 @@ class ProfilePage(QWidget):
             self._status.setText(str(error))
             return
         self._status.setText("Профиль сақталды")
+
+    def _on_logout(self) -> None:
+        self._preferences.clear_account_session()
+        self._preferences.clear_sync_auth_token()
+        self.logout_requested.emit()

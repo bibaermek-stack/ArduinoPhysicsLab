@@ -18,7 +18,7 @@ PIN-мен расталған, пайдаланушы таңдаған мәнм�
 
 import logging
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QMainWindow,
     QSplitter,
@@ -192,6 +192,8 @@ class MainWindow(QMainWindow):
     (§7 "Режимді ауыстыру") бұл терезені/``device_manager``-ды ЕШҚАШАН
     қайта құрмайды — тек навигация/рөл күйі өзгереді.
     """
+
+    logout_requested = Signal()
 
     def __init__(
         self,
@@ -563,6 +565,7 @@ class MainWindow(QMainWindow):
         )
 
         self._profile_page = ProfilePage(preferences=self.app_preferences)
+        self._profile_page.logout_requested.connect(self.logout_requested.emit)
         self._people_page = PeoplePage(preferences=self.app_preferences)
         self._router.register("profile", self._profile_page)
         self._router.register("people", self._people_page)

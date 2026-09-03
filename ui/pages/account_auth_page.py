@@ -56,9 +56,23 @@ class AccountAuthPage(QWidget):
         title = QLabel(_WINDOW_TITLE, self._card)
         title.setObjectName("EntryTitle")
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        subtitle = QLabel("Email немесе Google арқылы кіріңіз", self._card)
+        subtitle = QLabel(
+            "Email немесе Google арқылы кіріңіз. Бірнеше аккаунт тіркеуге болады.",
+            self._card,
+        )
         subtitle.setProperty("role", "secondary")
         subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        subtitle.setWordWrap(True)
+
+        self._saved_frame = QFrame(self._card)
+        self._saved_frame.setObjectName("EntrySurfaceCard")
+        saved_layout = QVBoxLayout(self._saved_frame)
+        saved_layout.setContentsMargins(0, 0, 0, 8)
+        saved_title = QLabel("Сақталған аккаунттар", self._saved_frame)
+        saved_title.setProperty("role", "secondary")
+        saved_layout.addWidget(saved_title)
+        self._saved_list = QVBoxLayout()
+        saved_layout.addLayout(self._saved_list)
 
         self._name_edit = QLineEdit(self._card)
         self._name_edit.setPlaceholderText("Аты-жөні (тіркелу үшін)")
@@ -83,10 +97,20 @@ class AccountAuthPage(QWidget):
         offline_btn.clicked.connect(self.skip_offline)
 
         for widget in (
-            title, subtitle, self._name_edit, self._email_edit, self._password_edit,
-            self._error, login_btn, register_btn, google_btn, offline_btn,
+            title,
+            subtitle,
+            self._saved_frame,
+            self._name_edit,
+            self._email_edit,
+            self._password_edit,
+            self._error,
+            login_btn,
+            register_btn,
+            google_btn,
+            offline_btn,
         ):
             layout.addWidget(widget)
+        self.refresh_saved_accounts()
 
         row.addWidget(self._card, 0, Qt.AlignmentFlag.AlignVCenter)
         row.addStretch(1)
@@ -102,6 +126,63 @@ class AccountAuthPage(QWidget):
         if side > 0:
             paint_atom(painter, QRectF(-side * 0.22, -side * 0.22, side, side), 0.0, opacity=0.06, animated=False)
         painter.end()
+
+    def prepare_for_reuse(self) -> None:
+        self._password_edit.clear()
+        self._error.setText("")
+        self.refresh_saved_accounts()
+
+    def refresh_saved_accounts(self) -> None:
+        while self._saved_list.count():
+            item = self._saved_list.takeAt(0)
+            widget = item.widget()
+            if widget is not None:
+                widget.deleteLater()
+        accounts = self._preferences.list_saved_accounts()
+        self._saved_frame.setVisible(bool(accounts))
+        for account in accounts:
+            self._saved_list.addWidget(self._make_saved_row(account))
+
+    def _make_saved_row(self, account: dict[str, str]) -> QWidget:
+        row = QWidget(self._saved_frame)
+        layout = QHBoxLayout(row)
+        layout.setContentsMargins(0, 0, 0, 0)
+        name = account.get("display_name") or account.get("email") or "Аккаунт"
+        email = account.get("email") or ""
+        public_id = account.get("public_id") or ""
+        label = " · ".join(part for part in (name, email or public_id) if part)
+        open_btn = QPushButton(label, row)
+        open_btn.setToolTip("Осы аккаунтпен кіру")
+        open_btn.clicked.connect(lambda _checked=False, acc=account: self._on_saved_account_clicked(acc))
+        remove_btn = QPushButton("Өшіру", row)
+        remove_btn.clicked.connect(lambda _checked=False, acc=account: self._on_remove_saved_account(acc))
+        layout.addWidget(open_btn, 1)
+        layout.addWidget(remove_btn)
+        return row
+
+    def _on_saved_account_clicked(self, account: dict[str, str]) -> None:
+        token = account.get("token") or ""
+        if token:
+            payload = {
+                "access_token": token,
+                "account_id": account.get("account_id") or "",
+                "display_name": account.get("display_name") or "",
+                "role": account.get("role") or "",
+                "public_id": account.get("public_id") or "",
+                "needs_role": not bool(account.get("role")),
+            }
+            self._emit_payload(payload, account.get("email") or "")
+            return
+        self._email_edit.setText(account.get("email") or "")
+        self._password_edit.setFocus()
+        self._set_error("Құпия сөзді енгізіп, Кіру басыңыз")
+
+    def _on_remove_saved_account(self, account: dict[str, str]) -> None:
+        self._preferences.remove_saved_account(
+            account_id=account.get("account_id") or "",
+            email=account.get("email") or "",
+        )
+        self.refresh_saved_accounts()
 
     def _set_error(self, text: str) -> None:
         self._error.setText(text)

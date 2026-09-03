@@ -139,3 +139,47 @@ def test_active_experiment_sync_interval_persists(temp_settings) -> None:
     preferences = AppPreferences(temp_settings)
     preferences.set_active_experiment_sync_interval_seconds(5)
     assert preferences.get_active_experiment_sync_interval_seconds() == 5
+
+
+def test_saved_accounts_upsert_and_logout_keep_roster(temp_settings) -> None:
+    preferences = AppPreferences(temp_settings)
+    preferences.set_account_session(
+        token="tok-a",
+        account_id="acc-a",
+        email="a@school.kz",
+        display_name="Айгерім",
+        role="teacher",
+        public_id="T-01",
+    )
+    preferences.set_account_session(
+        token="tok-b",
+        account_id="acc-b",
+        email="b@school.kz",
+        display_name="Бақыт",
+        role="student",
+        public_id="S-01",
+    )
+
+    emails = [item["email"] for item in preferences.list_saved_accounts()]
+    assert emails == ["b@school.kz", "a@school.kz"]
+
+    preferences.clear_account_session()
+    assert preferences.get_account_token() == ""
+    assert [item["email"] for item in preferences.list_saved_accounts()] == [
+        "b@school.kz",
+        "a@school.kz",
+    ]
+
+
+def test_remove_saved_account_by_email(temp_settings) -> None:
+    preferences = AppPreferences(temp_settings)
+    preferences.upsert_saved_account(
+        account_id="acc-a",
+        email="a@school.kz",
+        display_name="A",
+        role="teacher",
+        public_id="T-01",
+        token="tok",
+    )
+    preferences.remove_saved_account(email="a@school.kz")
+    assert preferences.list_saved_accounts() == ()

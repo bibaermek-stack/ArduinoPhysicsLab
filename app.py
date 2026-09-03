@@ -334,8 +334,9 @@ def run() -> int:
             app.aboutToQuit.connect(window.sync_thread_controller.stop)
             window.trigger_manual_sync()
 
+        window.logout_requested.connect(_on_logout)
         role_selection_page.close()
-        account_auth_page.close()
+        account_auth_page.hide()
         for page in cloud_role_page_holder:
             page.close()
 
@@ -379,8 +380,37 @@ def run() -> int:
             _show_cloud_role_picker()
             return
         role = UserRole.TEACHER if data.get("role") == "teacher" else UserRole.STUDENT
-        account_auth_page.close()
+        account_auth_page.hide()
         _open_main_window(role)
+
+    def _detach_main_windows() -> None:
+        while main_window_holder:
+            window = main_window_holder.pop()
+            try:
+                app.aboutToQuit.disconnect(window.device_manager.shutdown_all)
+            except (TypeError, RuntimeError):
+                pass
+            try:
+                app.aboutToQuit.disconnect(window._experiment_workspace_page.finalize_active_session)
+            except (TypeError, RuntimeError):
+                pass
+            if window.sync_thread_controller is not None:
+                try:
+                    app.aboutToQuit.disconnect(window.sync_thread_controller.stop)
+                except (TypeError, RuntimeError):
+                    pass
+                window.sync_thread_controller.stop()
+            window.device_manager.shutdown_all()
+            window.close()
+
+    def _on_logout() -> None:
+        app_preferences.clear_account_session()
+        app_preferences.clear_sync_auth_token()
+        account_auth_page.prepare_for_reuse()
+        account_auth_page.showMaximized()
+        account_auth_page.raise_()
+        account_auth_page.activateWindow()
+        _detach_main_windows()
 
     def _start_offline() -> None:
         account_auth_page.hide()
