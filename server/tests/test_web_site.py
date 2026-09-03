@@ -13,6 +13,7 @@ def test_download_page_renders(client) -> None:
     assert "Windows" in response.text
     assert "/download/windows" in response.text
     assert "ArduinoPhysicsLab.exe" in response.text
+    assert "0.10.0" in response.text
 
 
 def test_zip_download_url_is_rewritten_to_exe(monkeypatch) -> None:
@@ -28,6 +29,7 @@ def test_zip_download_url_is_rewritten_to_exe(monkeypatch) -> None:
 def test_download_windows_offers_exe(client) -> None:
     response = client.get("/download/windows", follow_redirects=False)
     assert response.status_code in (200, 303)
+    assert "no-store" in (response.headers.get("cache-control") or "")
     if response.status_code == 303:
         assert "ArduinoPhysicsLab.exe" in response.headers["location"]
     else:

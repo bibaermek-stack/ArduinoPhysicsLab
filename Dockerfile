@@ -17,6 +17,8 @@ COPY server/requirements-postgres.txt /app/server/requirements-postgres.txt
 RUN pip install --no-cache-dir -r /app/server/requirements.txt -r /app/server/requirements-postgres.txt
 
 COPY server /app/server
+COPY core/__init__.py /app/core/__init__.py
+COPY core/version.py /app/core/version.py
 COPY --from=webbuild /web/dist/main.js /app/server/app/web/static/app/main.js
 COPY --from=webbuild /web/dist/main.css /app/server/app/web/static/app/main.css
 ENV PYTHONPATH=/app

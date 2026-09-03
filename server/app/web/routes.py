@@ -11,6 +11,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from starlette.status import HTTP_303_SEE_OTHER
 
+from core.version import __version__ as APP_VERSION
 from server.app.db.session import get_db
 from server.app.models.account_models import AccountRecord
 from server.app.services.account_service import (
@@ -191,21 +192,30 @@ def google_setup(
 
 @router.get("/download", response_class=HTMLResponse)
 def download_page(request: Request, account: AccountRecord | None = Depends(get_web_account)) -> HTMLResponse:
-    return templates.TemplateResponse(request, "download.html", {"account": account})
+    return templates.TemplateResponse(
+        request,
+        "download.html",
+        {"account": account, "app_version": APP_VERSION},
+    )
 
 
 @router.get("/download/windows")
 def download_windows() -> Response:
+    headers = {
+        "Cache-Control": "no-store, no-cache, must-revalidate",
+        "Pragma": "no-cache",
+    }
     local = _local_windows_exe()
     if local is not None:
         return FileResponse(
             local,
             media_type="application/vnd.microsoft.portable-executable",
             filename="ArduinoPhysicsLab.exe",
+            headers=headers,
         )
     url = _windows_exe_url()
     if url:
-        return RedirectResponse(url, status_code=HTTP_303_SEE_OTHER)
+        return RedirectResponse(url, status_code=HTTP_303_SEE_OTHER, headers=headers)
     raise HTTPException(status_code=404, detail="Windows .exe әлі жүктелмеген")
 
 
