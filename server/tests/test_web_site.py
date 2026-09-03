@@ -13,7 +13,7 @@ def test_download_page_renders(client) -> None:
     assert "Windows" in response.text
     assert "/download/windows" in response.text
     assert "ArduinoPhysicsLab.exe" in response.text
-    assert "0.10.0" in response.text
+    assert "0.10.1" in response.text
 
 
 def test_zip_download_url_is_rewritten_to_exe(monkeypatch) -> None:
