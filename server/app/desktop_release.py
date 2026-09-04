@@ -5,4 +5,4 @@ Docker контекстінде ``core/`` жоқ (.dockerignore), сондықт
 ``DESKTOP_VERSION == core.version.__version__`` екенін тексереді.
 """
 
-DESKTOP_VERSION = "0.10.3"
+DESKTOP_VERSION = "0.10.4"

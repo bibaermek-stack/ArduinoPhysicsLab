@@ -13,7 +13,7 @@ def test_download_page_renders(client) -> None:
     assert "Windows" in response.text
     assert "/download/windows" in response.text
     assert "ArduinoPhysicsLab.exe" in response.text
-    assert "0.10.3" in response.text
+    assert "0.10.4" in response.text
     assert "вирус емес" in response.text
     assert "Журнал защиты" in response.text
 
