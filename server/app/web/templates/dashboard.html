@@ -15,9 +15,18 @@
         <span class="kicker">{% if account.role == 'teacher' %}Мұғалім{% else %}Оқушы{% endif %}</span>
         <h1>Сәлем, {{ account.display_name }}</h1>
         <p>Сіздің ID: <span class="idpill">{{ account.public_id }}</span></p>
+        {% if account.role == "teacher" %}
+          <p>Оқушыларға берілетін код: <span class="idpill">{{ account.public_id }}</span></p>
+        {% elif link and link.link_status == "active" and link.teacher %}
+          <p>Жетекші: {{ link.teacher.display_name }} ({{ link.teacher.public_id }})</p>
+        {% elif link and link.link_status == "pending" and link.teacher %}
+          <p>Өтініш жіберілді: {{ link.teacher.display_name }}. Қабылдау күтілуде.</p>
+        {% elif account.role == "student" %}
+          <p>Дербес режим — мұғалімге кейін профильден қосыла аласыз.</p>
+        {% endif %}
       </div>
     </div>
-    <p class="lead">Осы кодты достарыңызға немесе мұғаліміңізге жіберіңіз. Windows қолданбасына сол аккаунтпен кіріңіз.</p>
+    <p class="lead">{% if account.role == "teacher" %}Оқушы осы кодты «Мұғалімге қосылу» өрісіне енгізеді.{% else %}Экспериментті Windows .exe-де өз бетіңізше жасаңыз, мұғалім кодын білгенде сыныпқа қосылыңыз.{% endif %}</p>
     <div class="actions">
       <a class="btn btn-lab" href="/people">Адам іздеу</a>
       <a class="btn btn-ghost" href="/profile">Профиль</a>
@@ -26,9 +35,9 @@
   </section>
   <aside>
     <div class="stat">
-      <span>Кіріс өтініш</span>
+      <span>{% if account.role == "teacher" %}Жаңа оқушылар{% else %}Кіріс өтініш{% endif %}</span>
       <b>{{ incoming_count }}</b>
-      <p>Қабылдау немесе қабылдамау үшін адамдар бетіне өтіңіз.</p>
+      <p>Қабылдау немесе бас тарту үшін адамдар бетіне өтіңіз.</p>
     </div>
     <div class="stat">
       <span>Зертхана</span>

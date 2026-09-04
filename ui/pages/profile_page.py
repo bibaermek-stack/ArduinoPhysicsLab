@@ -7,10 +7,14 @@ import base64
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QImage, QPixmap
 from PySide6.QtWidgets import (
+    QDialog,
+    QDialogButtonBox,
     QFileDialog,
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QListWidget,
+    QListWidgetItem,
     QPushButton,
     QVBoxLayout,
     QWidget,
@@ -18,6 +22,81 @@ from PySide6.QtWidgets import (
 
 from infrastructure.storage.app_preferences import AppPreferences
 from infrastructure.sync.account_api_client import AccountApiClient, AccountApiError
+
+
+class ConnectTeacherDialog(QDialog):
+    """Оқушы мұғалім кодын енгізеді немесе аты бойынша іздейді."""
+
+    def __init__(self, client: AccountApiClient, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self._client = client
+        self._results: list[dict] = []
+        self.setWindowTitle("Мұғалімге қосылу")
+
+        self._code_edit = QLineEdit(self)
+        self._code_edit.setPlaceholderText("Мұғалім коды, мысалы T-7K2M9Q")
+        code_btn = QPushButton("Кодпен қосылу", self)
+        code_btn.setObjectName("PrimaryButton")
+        code_btn.clicked.connect(self._on_connect_code)
+
+        self._search_edit = QLineEdit(self)
+        self._search_edit.setPlaceholderText("Аты-жөні бойынша іздеу")
+        search_btn = QPushButton("Іздеу", self)
+        search_btn.clicked.connect(self._on_search)
+        self._results_list = QListWidget(self)
+        pick_btn = QPushButton("Таңдалған мұғалімге өтініш", self)
+        pick_btn.clicked.connect(self._on_connect_selected)
+        self._error = QLabel("", self)
+        self._error.setWordWrap(True)
+
+        layout = QVBoxLayout(self)
+        layout.addWidget(QLabel("Мұғаліміңіздің кодын енгізіңіз", self))
+        layout.addWidget(self._code_edit)
+        layout.addWidget(code_btn)
+        layout.addWidget(QLabel("Немесе аты-жөні бойынша іздеңіз", self))
+        search_row = QHBoxLayout()
+        search_row.addWidget(self._search_edit, 1)
+        search_row.addWidget(search_btn)
+        layout.addLayout(search_row)
+        layout.addWidget(self._results_list)
+        layout.addWidget(pick_btn)
+        layout.addWidget(self._error)
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close, self)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
+
+    def _on_connect_code(self) -> None:
+        try:
+            self._client.connect_teacher(self._code_edit.text().strip())
+        except AccountApiError as error:
+            self._error.setText(str(error))
+            return
+        self.accept()
+
+    def _on_search(self) -> None:
+        try:
+            self._results = self._client.search_teachers(self._search_edit.text().strip())
+        except AccountApiError as error:
+            self._error.setText(str(error))
+            return
+        self._results_list.clear()
+        for item in self._results:
+            self._results_list.addItem(
+                QListWidgetItem(f"{item.get('public_id')} — {item.get('display_name')}")
+            )
+        self._error.setText(f"{len(self._results)} мұғалім" if self._results else "Табылмады")
+
+    def _on_connect_selected(self) -> None:
+        row = self._results_list.currentRow()
+        if row < 0 or row >= len(self._results):
+            self._error.setText("Алдымен мұғалімді таңдаңыз")
+            return
+        try:
+            self._client.connect_teacher(str(self._results[row].get("public_id") or ""))
+        except AccountApiError as error:
+            self._error.setText(str(error))
+            return
+        self.accept()
 
 
 class ProfilePage(QWidget):
@@ -46,6 +125,12 @@ class ProfilePage(QWidget):
 
         self._id_label = QLabel("ID: —", self)
         self._role_label = QLabel("Рөл: —", self)
+        self._link_label = QLabel("", self)
+        self._link_label.setWordWrap(True)
+        self._link_label.setProperty("role", "secondary")
+        self._connect_btn = QPushButton("Мұғалімге қосылу", self)
+        self._connect_btn.clicked.connect(self._on_connect_teacher)
+        self._connect_btn.hide()
         self._name_edit = QLineEdit(self)
         self._status = QLabel("", self)
         self._status.setWordWrap(True)
@@ -76,6 +161,8 @@ class ProfilePage(QWidget):
         col = QVBoxLayout()
         col.addWidget(self._id_label)
         col.addWidget(self._role_label)
+        col.addWidget(self._link_label)
+        col.addWidget(self._connect_btn)
         col.addWidget(self._name_edit)
         col.addWidget(photo_btn)
         col.addWidget(save_btn)
@@ -104,6 +191,39 @@ class ProfilePage(QWidget):
             image = QImage.fromData(raw)
             self._photo.setPixmap(QPixmap.fromImage(image).scaled(120, 120, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
         self._status.setText("")
+        self._apply_link(me)
+
+    def _apply_link(self, me: dict) -> None:
+        role = me.get("role")
+        status = me.get("link_status") or "independent"
+        teacher = me.get("teacher") or {}
+        if role == "teacher":
+            self._link_label.setText(f"Оқушыларға берілетін код: {me.get('public_id') or '—'}")
+            self._connect_btn.hide()
+            return
+        if role != "student":
+            self._link_label.setText("")
+            self._connect_btn.hide()
+            return
+        if status == "active" and teacher:
+            self._link_label.setText(
+                f"Сіздің жетекшіңіз: {teacher.get('display_name')} ({teacher.get('public_id')})"
+            )
+            self._connect_btn.hide()
+            return
+        if status == "pending":
+            name = teacher.get("display_name") or teacher.get("public_id") or "мұғалім"
+            self._link_label.setText(f"Өтініш жіберілді: {name}. Қабылдау күтілуде.")
+            self._connect_btn.hide()
+            return
+        self._link_label.setText("Дербес режим (мұғалім таңдалмаған)")
+        self._connect_btn.show()
+
+    def _on_connect_teacher(self) -> None:
+        dialog = ConnectTeacherDialog(self._client, self)
+        if dialog.exec():
+            self.on_enter()
+            self._status.setText("Өтініш жіберілді. Мұғалім қабылдағаннан кейін сыныпқа қосыласыз.")
 
     def _on_copy_id(self) -> None:
         from PySide6.QtWidgets import QApplication

@@ -17,11 +17,13 @@ from server.app.models.account_models import AccountRecord
 from server.app.schemas.account import (
     AccountProfileResponse,
     AccountTokenResponse,
+    LinkedTeacherSummary,
     LoginRequest,
     ProfileUpdateRequest,
     RegisterRequest,
     SelectRoleRequest,
 )
+from server.app.services.people_service import student_link_status
 from server.app.services.account_service import (
     AccountError,
     create_account_token,
@@ -53,7 +55,20 @@ def _token_response(account: AccountRecord) -> AccountTokenResponse:
     )
 
 
-def _profile(account: AccountRecord) -> AccountProfileResponse:
+def _profile(account: AccountRecord, db: Session | None = None) -> AccountProfileResponse:
+    teacher_summary = None
+    link_status = "independent"
+    invite_code = account.public_id if account.role == "teacher" else None
+    if db is not None:
+        info = student_link_status(db, account)
+        link_status = str(info.get("link_status") or "independent")
+        invite_code = info.get("invite_code")
+        teacher = info.get("teacher")
+        if teacher is not None and getattr(teacher, "public_id", None):
+            teacher_summary = LinkedTeacherSummary(
+                public_id=teacher.public_id or "",
+                display_name=teacher.display_name,
+            )
     return AccountProfileResponse(
         account_id=account.id,
         email=account.email,
@@ -62,6 +77,9 @@ def _profile(account: AccountRecord) -> AccountProfileResponse:
         public_id=account.public_id,
         photo_base64=encode_photo_base64(account.photo_bytes),
         needs_role=account.role is None,
+        link_status=link_status,
+        teacher=teacher_summary,
+        invite_code=invite_code,
     )
 
 
@@ -69,6 +87,19 @@ def _profile(account: AccountRecord) -> AccountProfileResponse:
 def register(body: RegisterRequest, db: Session = Depends(get_db)) -> AccountTokenResponse:
     try:
         account = register_account(db, body.email, body.password, body.display_name)
+    except AccountError as error:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(error)) from None
+    db.commit()
+    db.refresh(account)
+    return _token_response(account)
+
+
+@router.post("/student/register", response_model=AccountTokenResponse, dependencies=[Depends(require_api_key)])
+def register_student(body: RegisterRequest, db: Session = Depends(get_db)) -> AccountTokenResponse:
+    """Оқушы бір қадамда тіркеледі — мұғалімсіз дербес режим."""
+    try:
+        account = register_account(db, body.email, body.password, body.display_name)
+        account = select_role(db, account, "student")
     except AccountError as error:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(error)) from None
     db.commit()
@@ -220,8 +251,11 @@ def google_callback(
 
 
 @me_router.get("", response_model=AccountProfileResponse, dependencies=[Depends(require_api_key)])
-def read_me(account: AccountRecord = Depends(get_current_account)) -> AccountProfileResponse:
-    return _profile(account)
+def read_me(
+    db: Session = Depends(get_db),
+    account: AccountRecord = Depends(get_current_account),
+) -> AccountProfileResponse:
+    return _profile(account, db)
 
 
 @me_router.patch("", response_model=AccountProfileResponse, dependencies=[Depends(require_api_key)])
@@ -245,4 +279,4 @@ def update_me(
                 raise HTTPException(status_code=400, detail=str(error)) from None
     db.commit()
     db.refresh(account)
-    return _profile(account)
+    return _profile(account, db)

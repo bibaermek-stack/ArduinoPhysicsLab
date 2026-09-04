@@ -9,6 +9,7 @@ from server.app.api.deps import get_current_account, require_api_key
 from server.app.db.session import get_db
 from server.app.models.account_models import AccountRecord
 from server.app.schemas.account import (
+    ConnectTeacherBody,
     PersonSummary,
     RequestListResponse,
     RequestSummary,
@@ -20,10 +21,12 @@ from server.app.services.people_service import (
     KIND_FRIEND,
     KIND_TEACHER_STUDENT,
     accept_request,
+    connect_to_teacher,
     decline_request,
     get_by_public_id,
     list_requests,
     search_people,
+    search_teachers,
     send_request,
 )
 
@@ -37,6 +40,43 @@ def _summary(account: AccountRecord, include_photo: bool = False) -> PersonSumma
         display_name=account.display_name,
         role=account.role or "",
         photo_base64=encode_photo_base64(account.photo_bytes) if include_photo else None,
+    )
+
+
+@router.get("/teachers/search", response_model=SearchResponse)
+def teachers_search(
+    query: str = Query(default="", min_length=0, alias="query"),
+    db: Session = Depends(get_db),
+    account: AccountRecord = Depends(get_current_account),
+) -> SearchResponse:
+    del account
+    rows = search_teachers(db, query)
+    return SearchResponse(results=[_summary(row) for row in rows if row.public_id])
+
+
+@router.post("/student/connect-teacher", response_model=RequestSummary)
+def student_connect_teacher(
+    body: ConnectTeacherBody,
+    db: Session = Depends(get_db),
+    account: AccountRecord = Depends(get_current_account),
+) -> RequestSummary:
+    try:
+        row = connect_to_teacher(db, account, body.resolved_code())
+    except AccountError as error:
+        code = status.HTTP_404_NOT_FOUND if "табылмады" in str(error) else status.HTTP_400_BAD_REQUEST
+        raise HTTPException(status_code=code, detail=str(error)) from None
+    db.commit()
+    from_acc = db.get(AccountRecord, row.from_account_id)
+    to_acc = db.get(AccountRecord, row.to_account_id)
+    return RequestSummary(
+        id=row.id,
+        kind=row.kind,
+        from_public_id=from_acc.public_id or "" if from_acc else "",
+        from_display_name=from_acc.display_name if from_acc else "",
+        to_public_id=to_acc.public_id or "" if to_acc else "",
+        to_display_name=to_acc.display_name if to_acc else "",
+        status=row.status,
+        direction="outgoing",
     )
 
 

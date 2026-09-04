@@ -6,8 +6,15 @@
   <h1>Адамдар</h1>
   {% if error %}<p class="error">{{ error }}</p>{% endif %}
   {% if ok %}<p class="ok">Өтініш жіберілді</p>{% endif %}
+  {% if account.role == "student" %}
+    <form method="post" action="/profile/connect-teacher" class="search-row">
+      <input type="hidden" name="next" value="/people">
+      <input name="teacher_code" placeholder="Мұғалім коды, мысалы T-7K2M9Q">
+      <button class="btn btn-lab" type="submit">Кодпен қосылу</button>
+    </form>
+  {% endif %}
   <form method="get" action="/people" class="search-row">
-    <input name="q" value="{{ q }}" placeholder="ID немесе аты, мысалы T-7K2M9Q">
+    <input name="q" value="{{ q }}" placeholder="{% if account.role == 'student' %}Мұғалімнің аты немесе коды{% else %}ID немесе аты, мысалы T-7K2M9Q{% endif %}">
     <button class="btn btn-lab" type="submit">Іздеу</button>
   </form>
   {% for person in results %}
@@ -34,7 +41,7 @@
   {% endfor %}
 </section>
 <section class="card">
-  <h2>Өтініштер</h2>
+  <h2>{% if account.role == "teacher" %}Жаңа оқушылар{% else %}Өтініштер{% endif %}</h2>
   {% for row, from_acc, to_acc in requests %}
     <div class="person">
       <div>
@@ -44,7 +51,7 @@
       {% if row.to_account_id == account.id and row.status == "pending" %}
         <div class="actions" style="margin-top:0">
           <form method="post" action="/people/accept"><input type="hidden" name="request_id" value="{{ row.id }}"><button class="btn btn-lab">Қабылдау</button></form>
-          <form method="post" action="/people/decline"><input type="hidden" name="request_id" value="{{ row.id }}"><button class="btn btn-danger">Жоқ</button></form>
+          <form method="post" action="/people/decline"><input type="hidden" name="request_id" value="{{ row.id }}"><button class="btn btn-danger">Бас тарту</button></form>
         </div>
       {% endif %}
     </div>

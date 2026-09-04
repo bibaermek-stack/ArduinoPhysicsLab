@@ -52,3 +52,62 @@ def test_logout_button_clears_session_and_emits(preferences: AppPreferences) -> 
     assert preferences.get_account_email() == ""
     assert [item["email"] for item in preferences.list_saved_accounts()] == ["a@school.kz"]
     page.hide()
+
+
+class _FakeMeClient:
+    def __init__(self, payload: dict) -> None:
+        self._payload = payload
+
+    def me(self) -> dict:
+        return self._payload
+
+
+def test_independent_student_sees_connect_button(preferences: AppPreferences) -> None:
+    page = ProfilePage(preferences=preferences)
+    page._client = _FakeMeClient(
+        {
+            "public_id": "S-AAAAAA",
+            "role": "student",
+            "display_name": "Оқушы",
+            "link_status": "independent",
+            "teacher": None,
+        }
+    )
+    page.on_enter()
+    assert "Дербес режим" in page._link_label.text()
+    assert page._connect_btn.isHidden() is False
+    page.hide()
+
+
+def test_pending_student_hides_connect_button(preferences: AppPreferences) -> None:
+    page = ProfilePage(preferences=preferences)
+    page._client = _FakeMeClient(
+        {
+            "public_id": "S-CCCCCC",
+            "role": "student",
+            "display_name": "Оқушы",
+            "link_status": "pending",
+            "teacher": {"public_id": "T-LAB102", "display_name": "Ахметов А."},
+        }
+    )
+    page.on_enter()
+    assert "Қабылдау күтілуде" in page._link_label.text()
+    assert page._connect_btn.isHidden() is True
+    page.hide()
+
+
+def test_linked_student_hides_connect_button(preferences: AppPreferences) -> None:
+    page = ProfilePage(preferences=preferences)
+    page._client = _FakeMeClient(
+        {
+            "public_id": "S-BBBBBB",
+            "role": "student",
+            "display_name": "Оқушы",
+            "link_status": "active",
+            "teacher": {"public_id": "T-LAB102", "display_name": "Ахметов А."},
+        }
+    )
+    page.on_enter()
+    assert "Ахметов А." in page._link_label.text()
+    assert page._connect_btn.isHidden() is True
+    page.hide()

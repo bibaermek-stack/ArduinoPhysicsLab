@@ -46,6 +46,95 @@ def search_people(db: Session, query: str, limit: int = 20) -> list[AccountRecor
     return rows
 
 
+def search_teachers(db: Session, query: str, limit: int = 20) -> list[AccountRecord]:
+    """Аты немесе T- коды бойынша тек мұғалімдер."""
+    needle = query.strip()
+    if len(needle) < 2:
+        return []
+    pattern = f"%{needle}%"
+    return (
+        db.query(AccountRecord)
+        .filter(AccountRecord.role == "teacher")
+        .filter(AccountRecord.public_id.isnot(None))
+        .filter(
+            or_(
+                AccountRecord.public_id.ilike(pattern),
+                AccountRecord.display_name.ilike(pattern),
+                AccountRecord.email.ilike(pattern),
+            )
+        )
+        .limit(limit)
+        .all()
+    )
+
+
+def connect_to_teacher(db: Session, student: AccountRecord, teacher_code: str) -> RelationshipRequestRecord:
+    """Оқушы мұғалім кодын (T-XXXXXX) енгізіп, қосылу өтінішін жібереді."""
+    if student.role != "student":
+        raise AccountError("Мұғалімге тек оқушы қосыла алады")
+    code = teacher_code.strip().upper()
+    if not code:
+        raise AccountError("Мұғалім кодын енгізіңіз")
+    info = student_link_status(db, student)
+    if info.get("link_status") == "active":
+        raise AccountError("Сіз әлдеқашан мұғалімге қосылғансыз")
+    pending_teacher = info.get("teacher") if info.get("link_status") == "pending" else None
+    pending_code = (getattr(pending_teacher, "public_id", None) or "").upper()
+    if pending_code and pending_code != code:
+        raise AccountError("Өтініш әлдеқашан жіберілген. Қабылдау күтілуде.")
+    try:
+        teacher = get_by_public_id(db, code)
+    except AccountError as error:
+        raise AccountError("Мұғалім коды табылмады") from error
+    if teacher.role != "teacher":
+        raise AccountError("Бұл код мұғалімге тиесілі емес")
+    return send_request(db, student, teacher.public_id or code, KIND_TEACHER_STUDENT)
+
+
+def student_link_status(db: Session, account: AccountRecord) -> dict:
+    """Оқушы: independent / pending / active. Мұғалім: invite_code = public_id."""
+    if account.role == "teacher":
+        return {
+            "link_status": "active",
+            "teacher": None,
+            "invite_code": account.public_id,
+        }
+    if account.role != "student":
+        return {"link_status": "independent", "teacher": None, "invite_code": None}
+
+    links = (
+        db.query(RelationshipLinkRecord)
+        .filter(
+            RelationshipLinkRecord.kind == KIND_TEACHER_STUDENT,
+            or_(
+                RelationshipLinkRecord.account_a_id == account.id,
+                RelationshipLinkRecord.account_b_id == account.id,
+            ),
+        )
+        .all()
+    )
+    for link in links:
+        other_id = link.account_b_id if link.account_a_id == account.id else link.account_a_id
+        other = db.get(AccountRecord, other_id)
+        if other is not None and other.role == "teacher":
+            return {"link_status": "active", "teacher": other, "invite_code": None}
+
+    pending = (
+        db.query(RelationshipRequestRecord)
+        .filter(
+            RelationshipRequestRecord.kind == KIND_TEACHER_STUDENT,
+            RelationshipRequestRecord.from_account_id == account.id,
+            RelationshipRequestRecord.status == "pending",
+        )
+        .first()
+    )
+    if pending is not None:
+        target = db.get(AccountRecord, pending.to_account_id)
+        return {"link_status": "pending", "teacher": target, "invite_code": None}
+
+    return {"link_status": "independent", "teacher": None, "invite_code": None}
+
+
 def get_by_public_id(db: Session, public_id: str) -> AccountRecord:
     record = db.query(AccountRecord).filter(AccountRecord.public_id == public_id.strip().upper()).first()
     if record is None:

@@ -27,10 +27,13 @@ from server.app.services.people_service import (
     KIND_FRIEND,
     KIND_TEACHER_STUDENT,
     accept_request,
+    connect_to_teacher,
     decline_request,
     list_requests,
     search_people,
+    search_teachers,
     send_request,
+    student_link_status,
 )
 import jwt
 
@@ -279,6 +282,7 @@ def app_home(
     if not account.role:
         return RedirectResponse("/role", status_code=HTTP_303_SEE_OTHER)
     incoming = list_requests(db, account)
+    link = student_link_status(db, account)
     return templates.TemplateResponse(
         request,
         "dashboard.html",
@@ -286,6 +290,7 @@ def app_home(
             "account": account,
             "photo": encode_photo_base64(account.photo_bytes),
             "incoming_count": sum(1 for row, _f, _t in incoming if row.to_account_id == account.id),
+            "link": link,
         },
     )
 
@@ -293,12 +298,14 @@ def app_home(
 @router.get("/profile", response_class=HTMLResponse, response_model=None)
 def profile_page(
     request: Request,
+    db: Session = Depends(get_db),
     account: AccountRecord | None = Depends(get_web_account),
     saved: str = "",
     error: str = "",
 ) -> Response:
     if account is None:
         return RedirectResponse("/login", status_code=HTTP_303_SEE_OTHER)
+    link = student_link_status(db, account)
     return templates.TemplateResponse(
         request,
         "profile.html",
@@ -307,6 +314,7 @@ def profile_page(
             "photo": encode_photo_base64(account.photo_bytes),
             "saved": saved,
             "error": error,
+            "link": link,
         },
     )
 
@@ -333,6 +341,26 @@ async def profile_save(
     return RedirectResponse("/profile?saved=1", status_code=HTTP_303_SEE_OTHER)
 
 
+@router.post("/profile/connect-teacher")
+def profile_connect_teacher(
+    db: Session = Depends(get_db),
+    account: AccountRecord | None = Depends(get_web_account),
+    teacher_code: str = Form(""),
+    next: str = Form(""),
+) -> RedirectResponse:
+    if account is None:
+        return RedirectResponse("/login", status_code=HTTP_303_SEE_OTHER)
+    target = "/people" if next == "/people" else "/profile"
+    try:
+        connect_to_teacher(db, account, teacher_code)
+        db.commit()
+    except AccountError as exc:
+        db.rollback()
+        return RedirectResponse(f"{target}?error={exc}", status_code=HTTP_303_SEE_OTHER)
+    flag = "ok=1" if target == "/people" else "saved=1"
+    return RedirectResponse(f"{target}?{flag}", status_code=HTTP_303_SEE_OTHER)
+
+
 @router.get("/people", response_class=HTMLResponse, response_model=None)
 def people_page(
     request: Request,
@@ -344,7 +372,12 @@ def people_page(
 ) -> Response:
     if account is None:
         return RedirectResponse("/login", status_code=HTTP_303_SEE_OTHER)
-    results = search_people(db, q) if q else []
+    if q and account.role == "student":
+        results = search_teachers(db, q)
+    elif q:
+        results = search_people(db, q)
+    else:
+        results = []
     incoming = list_requests(db, account)
     return templates.TemplateResponse(
         request,

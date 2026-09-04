@@ -86,6 +86,20 @@ class AccountApiClient:
         payload = self._request("GET", "/api/v1/people/search", headers=self._headers(), params={"q": query})
         return list(payload.get("results") or [])
 
+    def search_teachers(self, query: str) -> list[dict]:
+        payload = self._request(
+            "GET", "/api/v1/teachers/search", headers=self._headers(), params={"query": query}
+        )
+        return list(payload.get("results") or [])
+
+    def connect_teacher(self, teacher_code: str) -> dict:
+        return self._request(
+            "POST",
+            "/api/v1/student/connect-teacher",
+            headers=self._headers(),
+            json={"teacher_code": teacher_code},
+        )
+
     def send_teacher_student(self, public_id: str) -> dict:
         return self._request(
             "POST",

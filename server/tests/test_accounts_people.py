@@ -51,6 +51,7 @@ def test_select_role_assigns_public_id(client) -> None:
     assert body["public_id"].startswith("T-")
     me = client.get("/api/v1/me", headers=headers)
     assert me.json()["role"] == "teacher"
+    assert me.json()["invite_code"] == body["public_id"]
 
 
 def test_teacher_student_request_flow(client) -> None:
@@ -104,6 +105,84 @@ def test_legacy_railway_url_rewrites_to_ab65(monkeypatch) -> None:
     )
     assert accounts._public_base_url() == live
     assert accounts._google_redirect_uri() == live
+
+
+def test_student_register_is_independent_until_teacher_accepts(client) -> None:
+    registered = client.post(
+        "/api/v1/auth/student/register",
+        json={"email": "solo@school.kz", "password": "secret1", "display_name": "Дербес"},
+        headers={"X-API-Key": _TEST_API_KEY},
+    )
+    assert registered.status_code == 200, registered.text
+    assert registered.json()["role"] == "student"
+    assert registered.json()["public_id"].startswith("S-")
+    headers = {
+        "X-API-Key": _TEST_API_KEY,
+        "Authorization": f"Bearer {registered.json()['access_token']}",
+    }
+    me = client.get("/api/v1/me", headers=headers)
+    assert me.json()["link_status"] == "independent"
+    assert me.json()["teacher"] is None
+
+
+def test_connect_teacher_by_code_then_accept(client, db_session_factory) -> None:
+    import json
+
+    from server.app.models.account_models import AccountRecord
+    from server.app.models.sync_models import StudentRecord, TeacherClassroomLinkRecord
+
+    teacher_headers, teacher = _auth(client, "lab@school.kz", "secret1", "Асқар Серікұлы", "teacher")
+    student_headers, _student = _auth(client, "kid@school.kz", "secret1", "Оқушы", "student")
+
+    found = client.get(
+        "/api/v1/teachers/search",
+        params={"query": "Асқар"},
+        headers=student_headers,
+    )
+    assert found.status_code == 200
+    assert any(item["public_id"] == teacher["public_id"] for item in found.json()["results"])
+
+    sent = client.post(
+        "/api/v1/student/connect-teacher",
+        json={"teacher_id": teacher["public_id"]},
+        headers=student_headers,
+    )
+    assert sent.status_code == 200, sent.text
+    assert sent.json()["status"] == "pending"
+
+    pending_me = client.get("/api/v1/me", headers=student_headers)
+    assert pending_me.json()["link_status"] == "pending"
+
+    incoming = client.get("/api/v1/requests/incoming", headers=teacher_headers)
+    request_id = incoming.json()["items"][0]["id"]
+    accepted = client.post(f"/api/v1/requests/{request_id}/accept", headers=teacher_headers)
+    assert accepted.status_code == 200
+
+    linked = client.get("/api/v1/me", headers=student_headers)
+    assert linked.json()["link_status"] == "active"
+    assert linked.json()["teacher"]["public_id"] == teacher["public_id"]
+    assert linked.json()["teacher"]["display_name"] == "Асқар Серікұлы"
+
+    db = db_session_factory()
+    try:
+        student_acc = db.query(AccountRecord).filter(AccountRecord.email == "kid@school.kz").one()
+        teacher_acc = db.query(AccountRecord).filter(AccountRecord.email == "lab@school.kz").one()
+        student_row = db.get(StudentRecord, student_acc.student_sync_id)
+        rooms = json.loads(db.get(TeacherClassroomLinkRecord, teacher_acc.teacher_sync_id).classroom_sync_ids_json)
+        assert student_row.classroom_sync_id == rooms[0]
+    finally:
+        db.close()
+
+
+def test_connect_teacher_rejects_unknown_code(client) -> None:
+    student_headers, _student = _auth(client, "lost@school.kz", "secret1", "Оқушы", "student")
+    response = client.post(
+        "/api/v1/student/connect-teacher",
+        json={"teacher_code": "T-ZZZZZZ"},
+        headers=student_headers,
+    )
+    assert response.status_code == 404
+    assert "табылмады" in response.json()["detail"]
 
 
 def test_wrong_password(client) -> None:

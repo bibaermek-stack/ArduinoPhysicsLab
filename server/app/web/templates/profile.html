@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Профиль · Arduino Physics Lab{% endblock %}
 {% block body %}
-<form class="auth" method="post" action="/profile" enctype="multipart/form-data">
+<section class="auth">
   <span class="kicker">Профиль</span>
   <h1>{{ account.display_name }}</h1>
   {% if saved %}<p class="ok">Сақталды</p>{% endif %}
@@ -14,6 +14,26 @@
     {% endif %}
   </div>
   <p>ID: <span class="idpill">{{ account.public_id or "—" }}</span></p>
+  {% if account.role == "teacher" %}
+    <p>Оқушыларға берілетін мұғалім коды: <span class="idpill">{{ account.public_id }}</span></p>
+  {% elif account.role == "student" %}
+    {% if link and link.link_status == "active" and link.teacher %}
+      <p>Сіздің жетекшіңіз: <b>{{ link.teacher.display_name }}</b> ({{ link.teacher.public_id }})</p>
+    {% elif link and link.link_status == "pending" and link.teacher %}
+      <p>Мұғалімге өтініш жіберілді: <b>{{ link.teacher.display_name }}</b>. Қабылдау күтілуде.</p>
+    {% else %}
+      <p>Дербес режим (мұғалім таңдалмаған). Эксперименттерді өз бетіңізше жасай аласыз.</p>
+      <form method="post" action="/profile/connect-teacher">
+        <label>Мұғалім коды (мысалы T-7K2M9Q)</label>
+        <input type="text" name="teacher_code" placeholder="T-XXXXXX" required>
+        <div class="actions">
+          <button class="btn btn-lab" type="submit">Мұғалімге қосылу</button>
+        </div>
+      </form>
+    {% endif %}
+  {% endif %}
+</section>
+<form class="auth" method="post" action="/profile" enctype="multipart/form-data">
   <label>Аты-жөні</label>
   <input type="text" name="display_name" value="{{ account.display_name }}">
   <label>Сурет</label>

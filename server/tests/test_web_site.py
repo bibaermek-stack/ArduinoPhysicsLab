@@ -82,3 +82,44 @@ def test_login_required_for_people(client) -> None:
     response = client.get("/people", follow_redirects=False)
     assert response.status_code == 303
     assert response.headers["location"] == "/login"
+
+
+def test_web_student_connects_with_teacher_code(client) -> None:
+    from server.tests.conftest import _TEST_API_KEY
+
+    teacher = client.post(
+        "/api/v1/auth/register",
+        json={"email": "ask@school.kz", "password": "secret1", "display_name": "Асқар Серікұлы"},
+        headers={"X-API-Key": _TEST_API_KEY},
+    )
+    assert teacher.status_code == 200
+    teacher_headers = {
+        "X-API-Key": _TEST_API_KEY,
+        "Authorization": f"Bearer {teacher.json()['access_token']}",
+    }
+    selected = client.post("/api/v1/auth/select-role", json={"role": "teacher"}, headers=teacher_headers)
+    teacher_code = selected.json()["public_id"]
+
+    register = client.post(
+        "/register",
+        data={"email": "solo-web@school.kz", "password": "secret1", "display_name": "Дербес"},
+        follow_redirects=False,
+    )
+    assert register.status_code == 303
+    role = client.post("/role", data={"role": "student"}, follow_redirects=False)
+    assert role.status_code == 303
+    profile = client.get("/profile")
+    assert profile.status_code == 200
+    assert "Дербес режим" in profile.text
+    assert "Мұғалімге қосылу" in profile.text
+    sent = client.post(
+        "/profile/connect-teacher",
+        data={"teacher_code": teacher_code},
+        follow_redirects=False,
+    )
+    assert sent.status_code == 303
+    after = client.get("/profile")
+    assert "Қабылдау күтілуде" in after.text
+    people = client.get("/people")
+    assert "Дербес" in people.text
+    assert "Қабылдау" in people.text or "мұғалім/оқушы" in people.text
