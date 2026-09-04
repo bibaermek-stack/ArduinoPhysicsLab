@@ -277,7 +277,7 @@ def test_offline_button_emits_skip_offline(page_factory) -> None:
     page, _ = page_factory()
     button = next(
         b for b in page._card.findChildren(QPushButton)
-        if b.text() == "Интернетсіз кіру (PIN / код)"
+        if b.text() == "Интернетсіз кіру"
     )
     received: list[None] = []
     page.skip_offline.connect(lambda: received.append(None))

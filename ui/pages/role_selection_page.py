@@ -326,10 +326,20 @@ class RoleSelectionPage(QWidget):
         self.show_student_login()
 
     def _on_teacher_clicked(self) -> None:
-        if self._cloud_account_mode:
-            self.role_selected.emit(UserRole.TEACHER)
-            return
-        self.show_teacher_login()
+        # Cloud аккаунт (email/Google) кіруі PIN-ді алмастырады — ескі
+        # жергілікті PIN экраны қалдық, мұғалім батырмасы бірден рөл береді.
+        self._activate_default_teacher()
+        self.role_selected.emit(UserRole.TEACHER)
+
+    def _activate_default_teacher(self) -> None:
+        current = self._active_teacher_repository.get()
+        if current is not None:
+            teacher = self._teacher_repository.get(current.teacher_id)
+            if teacher is not None and teacher.is_active:
+                return
+        teachers = self._teacher_repository.list_active()
+        if teachers:
+            self._active_teacher_repository.set(ActiveTeacherContext(teacher_id=teachers[0].id))
 
     # ---- Ортақ кіру-карточка құрылысы --------------------------------------
 

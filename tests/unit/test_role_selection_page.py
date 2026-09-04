@@ -204,17 +204,15 @@ def test_show_student_login_focuses_code_field(page_factory) -> None:
 # ---- Teacher login: full-page (no modal) -----------------------------------
 
 
-def test_teacher_button_switches_to_teacher_login_view_without_emitting_role(page_factory) -> None:
+def test_teacher_button_emits_role_without_pin(page_factory) -> None:
     page, _, _, _, _ = page_factory()
     received: list[UserRole] = []
     page.role_selected.connect(received.append)
 
     page._teacher_button.click()
 
-    assert not page._mode_view.isVisibleTo(page)
-    assert page._teacher_login_view.isVisibleTo(page)
-    assert not page._student_login_view.isVisibleTo(page)
-    assert received == []
+    assert received == [UserRole.TEACHER]
+    assert not page._teacher_login_view.isVisibleTo(page)
 
 
 def test_teacher_button_does_not_create_pin_dialog(page_factory, qt_application: QApplication) -> None:
@@ -229,7 +227,7 @@ def test_teacher_button_does_not_create_pin_dialog(page_factory, qt_application:
 
 def test_teacher_login_back_button_returns_to_mode_view(page_factory) -> None:
     page, _, _, _, _ = page_factory()
-    page._teacher_button.click()
+    page.show_teacher_login()
 
     page._teacher_login_back_button.click()
 

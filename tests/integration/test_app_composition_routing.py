@@ -212,22 +212,16 @@ def test_teacher_button_with_correct_pin_changes_role_to_teacher(qt_application:
 
     window._role_selection_page._teacher_button.click()
     qt_application.processEvents()
-    _enter_teacher_pin(window)
-    qt_application.processEvents()
 
     assert window._current_role is UserRole.TEACHER
 
 
 def test_teacher_button_never_creates_pin_dialog(qt_application: QApplication) -> None:
-    """§ "no teacher PIN modal/dialog is created" — толық экрандық
-    teacher_login көрінісі ашылғанда, ``TeacherPinDialog`` данасы ЕШҚАШАН
-    құрылмайды."""
+    """Мұғалім батырмасы PIN экранын ашпайды және модаль да құрмайды."""
     window = _build_window(UserRole.TEACHER)
     window._sidebar._switch_role_button.click()
 
     window._role_selection_page._teacher_button.click()
-    qt_application.processEvents()
-    _enter_teacher_pin(window)
     qt_application.processEvents()
 
     assert window._current_role is UserRole.TEACHER
@@ -274,8 +268,6 @@ def test_repeated_role_switching_does_not_duplicate_pages(qt_application: QAppli
         window._sidebar._switch_role_button.click()
         qt_application.processEvents()
         window._role_selection_page._teacher_button.click()
-        qt_application.processEvents()
-        _enter_teacher_pin(window)
         qt_application.processEvents()
 
     assert id(window._experiment_list_page) == experiment_list_id
@@ -414,8 +406,8 @@ def _seed_student(window, student_id: str = "s1") -> None:
 
 def _switch_role_via_real_clicks(window, qt_app, to_role: UserRole, student_id: str = "s1") -> None:
     """Sidebar 'Режімді ауыстыру' -> embedded RoleSelectionPage
-    Student/Teacher button -> (Teacher болса) PIN 1234 -- БАРЛЫҒЫ НАҚТЫ
-    hit-testing-пен тексерілген click арқылы.
+    Student/Teacher button -- БАРЛЫҒЫ НАҚТЫ hit-testing-пен тексерілген
+    click арқылы. Мұғалім PIN экраны қалдық, батырма бірден рөл береді.
 
     STUDENT тармағы ЕНДІ толық код-логин ағынын орындайды (§ Mode
     Switch + Student Access Screen Redesign — "Оқушы режимі" батырмасы
@@ -438,9 +430,6 @@ def _switch_role_via_real_clicks(window, qt_app, to_role: UserRole, student_id: 
         _click_via_real_hit_testing(window, window._role_selection_page._login_button)
     else:
         _click_via_real_hit_testing(window, window._role_selection_page._teacher_button)
-        qt_app.processEvents()
-        window._role_selection_page._pin_edit.setText(_DEV_PIN)
-        _click_via_real_hit_testing(window, window._role_selection_page._teacher_login_button)
     qt_app.processEvents()
 
 
@@ -569,13 +558,8 @@ def test_scenario_d_repeated_round_trips_no_duplication(qt_application: QApplica
 # ---- E. Wrong PIN ----------------------------------------------------------
 
 
-def test_scenario_e_wrong_pin_does_not_activate_teacher(qt_application: QApplication) -> None:
-    """§ Teacher Login Redesign: қате PIN бетті ЕШҚАШАН ЖАППАЙДЫ/
-    ӘКЕТПЕЙДІ — "teacher_login" көрінісінде қалады, inline қате
-    хабарлама көрінеді (§ ескі ``TeacherPinDialog._on_confirm_clicked``-
-    тегі "wrong PIN never closes the dialog" семантикасымен БІРДЕЙ, енді
-    модаль ЕМЕС, беттің ӨЗІНДЕ).
-    """
+def test_scenario_e_teacher_button_skips_pin(qt_application: QApplication) -> None:
+    """Ескі PIN экраны қалдық — мұғалім батырмасы бірден рөлді ауыстырады."""
     window = _build_window(UserRole.STUDENT)
     window.show()
     _seed_student(window)
@@ -584,25 +568,15 @@ def test_scenario_e_wrong_pin_does_not_activate_teacher(qt_application: QApplica
     assert window._stack.currentWidget() is window._role_selection_page
 
     window._role_selection_page._teacher_button.click()
-    _enter_teacher_pin(window, pin="0000")
     qt_application.processEvents()
 
-    assert window._current_role is UserRole.STUDENT
-    assert window._role_selection_page._teacher_login_view.isVisibleTo(window._role_selection_page)
-    assert window._role_selection_page._pin_error_label.isVisibleTo(window._role_selection_page)
+    assert window._current_role is UserRole.TEACHER
+    assert not window._role_selection_page._teacher_login_view.isVisibleTo(
+        window._role_selection_page
+    )
     assert not any(
         isinstance(widget, TeacherPinDialog) for widget in qt_application.topLevelWidgets()
     )
-
-    window._sidebar.buttons["labs"].click()
-    assert window._stack.currentWidget() is window._experiment_list_page
-
-    # Correct PIN afterwards still works.
-    window._sidebar._switch_role_button.click()
-    window._role_selection_page._teacher_button.click()
-    _enter_teacher_pin(window)
-    qt_application.processEvents()
-    assert window._current_role is UserRole.TEACHER
 
 
 # ---- F. Back keeps current role --------------------------------------------
@@ -620,14 +594,11 @@ def test_scenario_f_back_from_teacher_login_keeps_current_role(qt_application: Q
 
     _click_via_real_hit_testing(window, window._role_selection_page._teacher_button)
     qt_application.processEvents()
-    assert window._role_selection_page._teacher_login_view.isVisibleTo(window._role_selection_page)
 
-    _click_via_real_hit_testing(window, window._role_selection_page._teacher_login_back_button)
-    qt_application.processEvents()
-
-    assert window._current_role is UserRole.STUDENT
-    assert window._stack.currentWidget() is window._role_selection_page
-    assert window._role_selection_page._mode_view.isVisibleTo(window._role_selection_page)
+    assert window._current_role is UserRole.TEACHER
+    assert not window._role_selection_page._teacher_login_view.isVisibleTo(
+        window._role_selection_page
+    )
 
 
 def test_scenario_f_returning_from_role_selection_without_choosing_keeps_role() -> None:

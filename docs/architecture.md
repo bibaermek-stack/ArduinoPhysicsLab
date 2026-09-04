@@ -1,6 +1,6 @@
 # Arduino Physics Lab — архитектура (кодқа сай)
 
-Нұсқа: desktop `0.10.2` (`core/version.py`). Бұл файл **жұмыс істеп тұрған
+Нұсқа: desktop `0.10.3` (`core/version.py`). Бұл файл **жұмыс істеп тұрған
 репозиторий құрылымын** сипаттайды. Ескі жоспардағы JSON-сақтау,
 `modules/thermal|magnetic|optics` жолдары және «тек CSV/Excel» мұнда
 жоқ.

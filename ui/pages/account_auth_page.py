@@ -93,7 +93,7 @@ class AccountAuthPage(QWidget):
         register_btn.clicked.connect(self._on_register)
         google_btn = QPushButton("Google арқылы кіру", self._card)
         google_btn.clicked.connect(self._on_google)
-        offline_btn = QPushButton("Интернетсіз кіру (PIN / код)", self._card)
+        offline_btn = QPushButton("Интернетсіз кіру", self._card)
         offline_btn.clicked.connect(self.skip_offline)
 
         for widget in (
