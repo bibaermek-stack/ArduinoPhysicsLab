@@ -46,6 +46,7 @@ from domain.interfaces.i_teacher_note_repository import ITeacherNoteRepository
 from domain.interfaces.i_teacher_repository import ITeacherRepository
 from domain.services.question_bank_seed import seed_questions_from_catalog
 from domain.services.student_access_code import backfill_missing_student_codes
+from domain.services.student_session import ensure_active_student
 from domain.services.student_home_summary import compute_student_home_summary
 from domain.services.sync_migration import (
     backfill_measurement_batches,
@@ -466,6 +467,8 @@ class MainWindow(QMainWindow):
             active_student_repository=self.active_student_repository,
             teacher_repository=self.teacher_repository,
             active_teacher_repository=self.active_teacher_repository,
+            classroom_repository=self.classroom_repository,
+            preferences=self.app_preferences,
         )
         self._teacher_management_page = teacher_management_page or TeacherManagementPage(
             teacher_repository=self.teacher_repository,
@@ -764,19 +767,27 @@ class MainWindow(QMainWindow):
         measurement session" — сол сияқты, ешбір бет мүлде ашылмайды,
         әйтпесе оқушысыз "Басты бет" көрінер еді).
         """
-        if role is UserRole.STUDENT and self.active_student_repository.get() is None:
-            self._open_student_login()
-            return
+        if role is UserRole.STUDENT:
+            self._ensure_active_student()
         self._router.navigate(default_landing_route(role))
 
+    def _ensure_active_student(self) -> None:
+        ensure_active_student(
+            self.student_repository,
+            self.active_student_repository,
+            self.classroom_repository,
+            display_name=self.app_preferences.get_account_display_name(),
+            account_id=self.app_preferences.get_account_id(),
+            public_id=self.app_preferences.get_account_public_id(),
+        )
+
     def _open_student_login(self) -> None:
-        """§ "Student switching... should now open the same full-screen
-        Student Login surface. Do not show the old classroom/student
-        dropdown screen." — ескі ``StudentSelectionPage`` route-ы МҮЛДЕ
-        ЖОҚ, барлық "оқушыны таңда/ауыстыр" сұранысы ДӘЛ СОЛ
-        ``RoleSelectionPage``-ке, тікелей кіру-код көрінісіне бағытталады
-        (мод таңдау экраны аттап өтіледі)."""
-        self._router.navigate("role_selection", view="student_login")
+        """Жергілікті кіру коды сұралмайды — белсенді оқушы автоматты."""
+        self._ensure_active_student()
+        if self._current_role is not UserRole.STUDENT:
+            self._on_role_selected(UserRole.STUDENT)
+            return
+        self._on_student_selected()
 
     def _on_module_selected(self, module: IPhysicsModule) -> None:
         self._router.navigate("experiment_list", module=module)

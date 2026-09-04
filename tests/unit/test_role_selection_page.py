@@ -16,10 +16,9 @@ Redesign фазасы; Teacher Login Redesign фазасы; Multi-Teacher Accoun
 resolution.py``-де бөлек тексеріледі, бұл жерде тек ROLE SELECTION UI
 ағыны — PIN енгізу/қате/сәтті кіру/сессия жазылуы).
 
-Оқушы батырмасы бірден ``role_selected`` шығармайды — "mode"
-көрінісінен "student_login" көрінісіне ауысады. Мұғалім батырмасы да
-дәл СОЛ сияқты — "mode" көрінісінен "teacher_login" көрінісіне ауысады,
-рөл ТЕК дұрыс PIN расталғаннан кейін ғана ауысады.
+Оқушы батырмасы жергілікті кіру кодын сұрамайды — белсенді оқушыны
+орнатып ``student_login_succeeded`` шығарады. Мұғалім батырмасы PIN
+сұрамайды, бірден ``role_selected`` шығарады.
 
 Барлық тесттер бетті нақты ``.show()`` етеді — ``isVisible()``/
 ``hasFocus()`` тек нақты экранға шығарылған (real top-level shown)
@@ -140,22 +139,24 @@ def test_initial_state_shows_mode_view(page_factory) -> None:
     assert not page._teacher_login_view.isVisibleTo(page)
 
 
-def test_student_button_switches_to_login_view_without_emitting_role(page_factory) -> None:
-    page, _, _, _, _ = page_factory()
-    received: list[UserRole] = []
-    page.role_selected.connect(received.append)
+def test_student_button_emits_login_succeeded_without_code_form(page_factory) -> None:
+    page, _, active_students, _, _ = page_factory()
+    received: list[None] = []
+    roles: list[UserRole] = []
+    page.student_login_succeeded.connect(lambda: received.append(None))
+    page.role_selected.connect(roles.append)
 
     page._student_button.click()
 
-    assert not page._mode_view.isVisibleTo(page)
-    assert page._student_login_view.isVisibleTo(page)
-    assert not page._teacher_login_view.isVisibleTo(page)
-    assert received == []
+    assert received == [None]
+    assert roles == []
+    assert not page._student_login_view.isVisibleTo(page)
+    assert active_students.get() is not None
 
 
 def test_back_button_returns_to_mode_view(page_factory) -> None:
     page, _, _, _, _ = page_factory()
-    page._student_button.click()
+    page.show_student_login()
 
     page._login_back_button.click()
 
@@ -165,7 +166,7 @@ def test_back_button_returns_to_mode_view(page_factory) -> None:
 
 def test_on_enter_default_shows_mode_view(page_factory) -> None:
     page, _, _, _, _ = page_factory()
-    page._student_button.click()
+    page.show_student_login()
 
     page.on_enter()
 
@@ -186,7 +187,7 @@ def test_on_enter_student_login_view_jumps_directly_to_login(page_factory) -> No
 
 def test_show_mode_selection_focuses_student_button(page_factory) -> None:
     page, _, _, _, _ = page_factory()
-    page._student_button.click()  # move away first
+    page.show_student_login()
 
     page.show_mode_selection()
 

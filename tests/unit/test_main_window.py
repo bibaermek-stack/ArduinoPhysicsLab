@@ -1049,18 +1049,18 @@ def test_switch_role_navigation_hides_sidebar() -> None:
     assert window._sidebar.isHidden()
 
 
-def test_switch_student_action_opens_student_login_view_with_sidebar_hidden() -> None:
-    window, _home_page, _list_page, _workspace_page = _make_window(
+def test_switch_student_action_stays_on_home_without_code_form() -> None:
+    window, home_page, _list_page, _workspace_page = _make_window(
         initial_role=UserRole.STUDENT
     )
 
     window._sidebar.switch_student_requested.emit()
 
-    assert window._stack.currentWidget() is window._role_selection_page
-    assert not window._role_selection_page._mode_view.isVisibleTo(
+    assert window._stack.currentWidget() is home_page
+    assert not window._role_selection_page._student_login_view.isVisibleTo(
         window._role_selection_page
     )
-    assert window._sidebar.isHidden()
+    assert not window._sidebar.isHidden()
 
 
 def test_selecting_teacher_from_role_selection_restores_teacher_sidebar() -> None:
@@ -1134,15 +1134,15 @@ def test_old_student_selection_route_no_longer_registered() -> None:
     assert not hasattr(window, "_student_selection_page")
 
 
-def test_open_student_login_helper_navigates_to_role_selection_student_login_view() -> None:
-    window, _home_page, _list_page, workspace_page = _make_window(
+def test_open_student_login_helper_stays_on_home_without_code_form() -> None:
+    window, home_page, _list_page, workspace_page = _make_window(
         initial_role=UserRole.STUDENT
     )
 
     workspace_page.student_selection_requested.emit()
 
-    assert window._stack.currentWidget() is window._role_selection_page
-    assert window._role_selection_page._student_login_view.isVisibleTo(
+    assert window._stack.currentWidget() is home_page
+    assert not window._role_selection_page._student_login_view.isVisibleTo(
         window._role_selection_page
     )
 

@@ -292,6 +292,8 @@ def run() -> int:
         active_student_repository=active_student_repository,
         teacher_repository=teacher_repository,
         active_teacher_repository=active_teacher_repository,
+        classroom_repository=classroom_repository,
+        preferences=app_preferences,
     )
     account_auth_page = AccountAuthPage(preferences=app_preferences)
     _trace_logger.info("6. AccountAuthPage opened")
@@ -346,6 +348,8 @@ def run() -> int:
             active_student_repository=active_student_repository,
             teacher_repository=teacher_repository,
             active_teacher_repository=active_teacher_repository,
+            classroom_repository=classroom_repository,
+            preferences=app_preferences,
             cloud_account_mode=True,
         )
         cloud_role_page_holder.append(picker)

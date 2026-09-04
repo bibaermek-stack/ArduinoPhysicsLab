@@ -93,7 +93,10 @@ from domain.interfaces.i_active_student_repository import IActiveStudentReposito
 from domain.interfaces.i_active_teacher_repository import IActiveTeacherRepository
 from domain.interfaces.i_student_repository import IStudentRepository
 from domain.interfaces.i_teacher_repository import ITeacherRepository
+from domain.interfaces.i_classroom_repository import IClassroomRepository
+from domain.services.student_session import ensure_active_student
 from domain.services.teacher_pin import resolve_teacher_by_pin
+from infrastructure.storage.app_preferences import AppPreferences
 from infrastructure.storage.sqlite_active_student_repository import SqliteActiveStudentRepository
 from infrastructure.storage.sqlite_active_teacher_repository import SqliteActiveTeacherRepository
 from infrastructure.storage.sqlite_student_repository import SqliteStudentRepository
@@ -172,6 +175,8 @@ class RoleSelectionPage(QWidget):
         active_student_repository: IActiveStudentRepository | None = None,
         teacher_repository: ITeacherRepository | None = None,
         active_teacher_repository: IActiveTeacherRepository | None = None,
+        classroom_repository: IClassroomRepository | None = None,
+        preferences: AppPreferences | None = None,
         cloud_account_mode: bool = False,
         parent: QWidget | None = None,
     ) -> None:
@@ -186,6 +191,8 @@ class RoleSelectionPage(QWidget):
         self._active_teacher_repository = (
             active_teacher_repository or SqliteActiveTeacherRepository()
         )
+        self._classroom_repository = classroom_repository
+        self._preferences = preferences
 
         outer_layout = QVBoxLayout(self)
         outer_layout.setContentsMargins(0, 0, 0, 0)
@@ -320,16 +327,27 @@ class RoleSelectionPage(QWidget):
         return view
 
     def _on_student_mode_clicked(self) -> None:
-        if self._cloud_account_mode:
-            self.student_login_succeeded.emit()
-            return
-        self.show_student_login()
+        # Email/Google кіруі жергілікті кіру кодын алмастырады — мұғалім
+        # PIN экраны сияқты бұл форма да қалдық.
+        self._activate_default_student()
+        self.student_login_succeeded.emit()
 
     def _on_teacher_clicked(self) -> None:
         # Cloud аккаунт (email/Google) кіруі PIN-ді алмастырады — ескі
         # жергілікті PIN экраны қалдық, мұғалім батырмасы бірден рөл береді.
         self._activate_default_teacher()
         self.role_selected.emit(UserRole.TEACHER)
+
+    def _activate_default_student(self) -> None:
+        preferences = self._preferences
+        ensure_active_student(
+            self._student_repository,
+            self._active_student_repository,
+            self._classroom_repository,
+            display_name=preferences.get_account_display_name() if preferences else "",
+            account_id=preferences.get_account_id() if preferences else "",
+            public_id=preferences.get_account_public_id() if preferences else "",
+        )
 
     def _activate_default_teacher(self) -> None:
         current = self._active_teacher_repository.get()

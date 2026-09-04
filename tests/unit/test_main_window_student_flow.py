@@ -97,13 +97,14 @@ def _login_as_student_via_code(window: MainWindow, code: str) -> None:
     page._on_login_clicked()
 
 
-def test_student_role_without_active_student_lands_on_student_login() -> None:
-    window, _workspace, _active, _classrooms, _students = _make_window(
+def test_student_role_without_active_student_lands_on_home() -> None:
+    window, _workspace, active, _classrooms, _students = _make_window(
         initial_role=UserRole.STUDENT, seed_active_student=False
     )
 
-    assert window._stack.currentWidget() is window._role_selection_page
-    assert window._role_selection_page._student_login_view.isVisibleTo(
+    assert window._stack.currentWidget() is window._home_page
+    assert active.get() is not None
+    assert not window._role_selection_page._student_login_view.isVisibleTo(
         window._role_selection_page
     )
 
@@ -128,7 +129,7 @@ def test_logging_in_with_valid_code_navigates_home_and_updates_sidebar() -> None
     window, workspace_page, active_repository, _classrooms, students = _make_window(
         initial_role=UserRole.STUDENT, seed_active_student=False
     )
-    assert window._stack.currentWidget() is window._role_selection_page
+    assert window._stack.currentWidget() is window._home_page
     code = _student_code(students)
 
     _login_as_student_via_code(window, code)
@@ -136,7 +137,7 @@ def test_logging_in_with_valid_code_navigates_home_and_updates_sidebar() -> None
     assert window._stack.currentWidget() is window._home_page
     assert active_repository.get() == ActiveStudentContext(classroom_id="c1", student_id="s1")
     assert "Серіков Айдос" in window._sidebar._active_student_label.text()
-    assert workspace_page.refresh_active_student_calls == 1
+    assert workspace_page.refresh_active_student_calls >= 1
 
 
 def test_switch_student_navigates_to_role_selection_login_view_and_closes_dialogs() -> None:
@@ -147,8 +148,8 @@ def test_switch_student_navigates_to_role_selection_login_view_and_closes_dialog
 
     window._sidebar.switch_student_requested.emit()
 
-    assert window._stack.currentWidget() is window._role_selection_page
-    assert window._role_selection_page._student_login_view.isVisibleTo(
+    assert window._stack.currentWidget() is window._home_page
+    assert not window._role_selection_page._student_login_view.isVisibleTo(
         window._role_selection_page
     )
     assert workspace_page.close_open_dialogs_calls >= 1
@@ -252,7 +253,7 @@ def test_teacher_can_navigate_to_feedback_teacher_route() -> None:
     assert window._stack.currentWidget() is window._teacher_feedback_review_page
 
 
-def test_role_switch_to_student_without_active_student_redirects_to_student_login() -> None:
+def test_role_switch_to_student_without_active_student_lands_on_home() -> None:
     window, _workspace, active_repository, _classrooms, _students = _make_window(
         initial_role=UserRole.TEACHER, seed_active_student=False
     )
@@ -260,7 +261,8 @@ def test_role_switch_to_student_without_active_student_redirects_to_student_logi
     window._role_selection_page.role_selected.emit(UserRole.STUDENT)
 
     assert window._current_role is UserRole.STUDENT
-    assert window._stack.currentWidget() is window._role_selection_page
-    assert window._role_selection_page._student_login_view.isVisibleTo(
+    assert window._stack.currentWidget() is window._home_page
+    assert active_repository.get() is not None
+    assert not window._role_selection_page._student_login_view.isVisibleTo(
         window._role_selection_page
     )

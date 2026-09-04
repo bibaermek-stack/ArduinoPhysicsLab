@@ -184,23 +184,18 @@ def test_switch_role_sidebar_action_opens_role_selection_page(qt_application: QA
 
 
 def test_student_button_changes_role_to_student(qt_application: QApplication) -> None:
-    """§ Mode Switch + Student Access Screen Redesign: "Оқушы режимі"
-    батырмасы ЕНДІ бірден рөлді ауыстырмайды — кіру-код формасына ғана
-    өтеді (§ ``role_selection_page.py``). Рөл ТЕК жарамды код
-    расталғаннан кейін ғана өзгереді."""
+    """Оқушы батырмасы жергілікті кіру кодын сұрамайды."""
     window = _build_window(UserRole.TEACHER)
-    code = _create_student(window)
+    _create_student(window)
     window._sidebar._switch_role_button.click()
 
     window._role_selection_page._student_button.click()
     qt_application.processEvents()
-    assert window._current_role is UserRole.TEACHER  # әлі ауыспаған
-
-    window._role_selection_page._code_edit.setText(code)
-    window._role_selection_page._login_button.click()
-    qt_application.processEvents()
 
     assert window._current_role is UserRole.STUDENT
+    assert not window._role_selection_page._student_login_view.isVisibleTo(
+        window._role_selection_page
+    )
 
 
 def test_teacher_button_with_correct_pin_changes_role_to_teacher(qt_application: QApplication) -> None:
@@ -232,12 +227,9 @@ def test_teacher_button_never_creates_pin_dialog(qt_application: QApplication) -
 
 def test_experiments_remain_navigable_after_role_change(qt_application: QApplication) -> None:
     window = _build_window(UserRole.TEACHER)
-    code = _create_student(window)
+    _create_student(window)
     window._sidebar._switch_role_button.click()
     window._role_selection_page._student_button.click()
-    qt_application.processEvents()
-    window._role_selection_page._code_edit.setText(code)
-    window._role_selection_page._login_button.click()
     qt_application.processEvents()
     assert window._current_role is UserRole.STUDENT
 
@@ -253,7 +245,7 @@ def test_experiments_remain_navigable_after_role_change(qt_application: QApplica
 
 def test_repeated_role_switching_does_not_duplicate_pages(qt_application: QApplication) -> None:
     window = _build_window(UserRole.TEACHER)
-    code = _create_student(window)
+    _create_student(window)
     experiment_list_id = id(window._experiment_list_page)
     role_selection_id = id(window._role_selection_page)
 
@@ -261,9 +253,6 @@ def test_repeated_role_switching_does_not_duplicate_pages(qt_application: QAppli
         window._sidebar._switch_role_button.click()
         qt_application.processEvents()
         window._role_selection_page._student_button.click()
-        qt_application.processEvents()
-        window._role_selection_page._code_edit.setText(code)
-        window._role_selection_page._login_button.click()
         qt_application.processEvents()
         window._sidebar._switch_role_button.click()
         qt_application.processEvents()
@@ -409,11 +398,7 @@ def _switch_role_via_real_clicks(window, qt_app, to_role: UserRole, student_id: 
     Student/Teacher button -- БАРЛЫҒЫ НАҚТЫ hit-testing-пен тексерілген
     click арқылы. Мұғалім PIN экраны қалдық, батырма бірден рөл береді.
 
-    STUDENT тармағы ЕНДІ толық код-логин ағынын орындайды (§ Mode
-    Switch + Student Access Screen Redesign — "Оқушы режимі" батырмасы
-    енді бірден рөлді ауыстырмайды): ``student_id`` алдын ала
-    ``_create_student()``/``_seed_student()`` арқылы КОДПЕН құрылған
-    болуы тиіс.
+    STUDENT тармағы кіру кодын сұрамайды — батырма бірден рөл береді.
     """
     window._sidebar._switch_role_button.click()
     qt_app.processEvents()
@@ -421,13 +406,6 @@ def _switch_role_via_real_clicks(window, qt_app, to_role: UserRole, student_id: 
 
     if to_role is UserRole.STUDENT:
         _click_via_real_hit_testing(window, window._role_selection_page._student_button)
-        qt_app.processEvents()
-        student = window.student_repository.get(student_id)
-        assert student is not None and student.student_code, (
-            "STUDENT-ге ауысу үшін кодталған оқушы алдын ала бар болуы керек"
-        )
-        window._role_selection_page._code_edit.setText(student.student_code)
-        _click_via_real_hit_testing(window, window._role_selection_page._login_button)
     else:
         _click_via_real_hit_testing(window, window._role_selection_page._teacher_button)
     qt_app.processEvents()
