@@ -10,6 +10,7 @@
 # app lean").
 
 import shutil
+import sys
 from pathlib import Path
 
 from PyInstaller.utils.hooks import collect_data_files, collect_submodules
@@ -17,6 +18,10 @@ from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 block_cipher = None
 
 _PROJECT_ROOT = Path(SPECPATH).resolve().parent
+sys.path.insert(0, str(_PROJECT_ROOT / "build"))
+from windows_resources import prepare as _prepare_windows_resources
+
+_VERSION_FILE, _ICON_FILE = _prepare_windows_resources(_PROJECT_ROOT)
 
 _DATAS = [
     (str(_PROJECT_ROOT / "Design" / "02_FluentIcons" / "svg"), "Design/02_FluentIcons/svg"),
@@ -105,4 +110,6 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon=str(_ICON_FILE) if _ICON_FILE is not None else None,
+    version=str(_VERSION_FILE),
 )

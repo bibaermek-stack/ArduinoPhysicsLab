@@ -40,6 +40,11 @@ python -m PyInstaller build\app.spec --distpath release --workpath build\work --
 Output: `release/ArduinoPhysicsLab.exe` (onefile, no `_internal` folder).
 Copy that file to the target PC — Python is not required there.
 
+Windows Defender often flags an **unsigned** PyInstaller onefile as a
+virus. That is a false positive. The download page explains how to
+Allow the file in Protection history. A paid Authenticode certificate
+is the only durable fix for SmartScreen.
+
 ## 3. Server deployment
 
 Separate machine/service from every desktop client:
