@@ -4,6 +4,7 @@
 import re
 
 from core.version import __version__
+from server.app.desktop_release import DESKTOP_VERSION
 
 
 def test_version_is_a_non_empty_semver_like_string() -> None:
@@ -13,3 +14,4 @@ def test_version_is_a_non_empty_semver_like_string() -> None:
 
 def test_version_matches_current_release() -> None:
     assert __version__ == "0.10.2"
+    assert DESKTOP_VERSION == __version__

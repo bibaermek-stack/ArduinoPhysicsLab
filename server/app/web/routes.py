@@ -11,7 +11,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from starlette.status import HTTP_303_SEE_OTHER
 
-from core.version import __version__ as APP_VERSION
+from server.app.desktop_release import DESKTOP_VERSION as APP_VERSION
 from server.app.db.session import get_db
 from server.app.models.account_models import AccountRecord
 from server.app.services.account_service import (
