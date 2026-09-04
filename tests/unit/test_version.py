@@ -13,5 +13,5 @@ def test_version_is_a_non_empty_semver_like_string() -> None:
 
 
 def test_version_matches_current_release() -> None:
-    assert __version__ == "0.10.4"
+    assert __version__ == "0.10.5"
     assert DESKTOP_VERSION == __version__

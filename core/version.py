@@ -7,4 +7,4 @@ Deployment & Release Readiness).
 қайталанбайды (§ "Do NOT scatter version strings across many files").
 """
 
-__version__ = "0.10.4"
+__version__ = "0.10.5"
