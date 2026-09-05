@@ -5,3 +5,4 @@ openpyxl==3.1.5
 reportlab==5.0.1
 httpx==0.28.1
 certifi==2026.7.22
+websockets==14.2
