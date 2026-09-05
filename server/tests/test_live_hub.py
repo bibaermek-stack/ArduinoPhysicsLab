@@ -77,3 +77,17 @@ def test_new_publisher_replaces_old_send() -> None:
     assert previous is None
     previous = hub.set_publisher("stu-1", new_send)
     assert previous is old_send
+
+
+def test_clear_publisher_if_does_not_clear_newer() -> None:
+    hub = LiveHub()
+    old: list[dict] = []
+    new: list[dict] = []
+    old_send = old.append
+    new_send = new.append
+    hub.set_publisher("stu-1", old_send)
+    hub.set_publisher("stu-1", new_send)
+    assert hub.clear_publisher_if("stu-1", old_send) is False
+    assert hub.publisher_state("stu-1") == "idle"
+    assert hub.clear_publisher_if("stu-1", new_send) is True
+    assert hub.publisher_state("stu-1") == "offline"

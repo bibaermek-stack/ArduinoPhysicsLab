@@ -40,6 +40,12 @@ class LiveHub:
             self._publishers[account_id] = send
         return previous
 
+    def clear_publisher_if(self, account_id: str, send: SendFn) -> bool:
+        if self._publishers.get(account_id) is not send:
+            return False
+        self.set_publisher(account_id, None)
+        return True
+
     def add_viewer(self, viewer_id: str, watch_ids: frozenset[str], send: SendFn) -> None:
         self._viewers[viewer_id] = (watch_ids, send)
 
