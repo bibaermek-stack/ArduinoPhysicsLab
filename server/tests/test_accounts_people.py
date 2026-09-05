@@ -193,3 +193,29 @@ def test_wrong_password(client) -> None:
         headers={"X-API-Key": _TEST_API_KEY},
     )
     assert login.status_code == 401
+
+
+def test_list_linked_students_only_accepted(client, db_session_factory) -> None:
+    from server.app.models.account_models import AccountRecord
+    from server.app.services.people_service import list_linked_students
+
+    teacher_headers, teacher = _auth(client, "link-t@school.kz", "secret1", "Мұғалім", "teacher")
+    student_headers, student = _auth(client, "link-s@school.kz", "secret1", "Оқушы", "student")
+    lone_headers, _lone = _auth(client, "link-solo@school.kz", "secret1", "Дербес", "student")
+    del lone_headers
+    sent = client.post(
+        "/api/v1/student/connect-teacher",
+        json={"teacher_code": teacher["public_id"]},
+        headers=student_headers,
+    )
+    assert sent.status_code == 200
+    incoming = client.get("/api/v1/requests/incoming", headers=teacher_headers)
+    request_id = incoming.json()["items"][0]["id"]
+    client.post(f"/api/v1/requests/{request_id}/accept", headers=teacher_headers)
+    db = db_session_factory()
+    try:
+        teacher_row = db.query(AccountRecord).filter(AccountRecord.email == "link-t@school.kz").one()
+        linked = list_linked_students(db, teacher_row)
+        assert [row.email for row in linked] == ["link-s@school.kz"]
+    finally:
+        db.close()

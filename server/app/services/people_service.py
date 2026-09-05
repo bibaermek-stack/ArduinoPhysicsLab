@@ -135,6 +135,30 @@ def student_link_status(db: Session, account: AccountRecord) -> dict:
     return {"link_status": "independent", "teacher": None, "invite_code": None}
 
 
+def list_linked_students(db: Session, teacher: AccountRecord) -> list[AccountRecord]:
+    if teacher.role != "teacher":
+        return []
+    links = (
+        db.query(RelationshipLinkRecord)
+        .filter(RelationshipLinkRecord.kind == KIND_TEACHER_STUDENT)
+        .filter(
+            or_(
+                RelationshipLinkRecord.account_a_id == teacher.id,
+                RelationshipLinkRecord.account_b_id == teacher.id,
+            )
+        )
+        .all()
+    )
+    result: list[AccountRecord] = []
+    for link in links:
+        other_id = link.account_b_id if link.account_a_id == teacher.id else link.account_a_id
+        other = db.get(AccountRecord, other_id)
+        if other is not None and other.role == "student":
+            result.append(other)
+    result.sort(key=lambda row: (row.display_name or "", row.public_id or ""))
+    return result
+
+
 def get_by_public_id(db: Session, public_id: str) -> AccountRecord:
     record = db.query(AccountRecord).filter(AccountRecord.public_id == public_id.strip().upper()).first()
     if record is None:
