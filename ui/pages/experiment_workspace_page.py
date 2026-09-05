@@ -158,6 +158,7 @@ class ExperimentWorkspacePage(QWidget):
     back_requested = Signal()
     student_selection_requested = Signal()
     measurement_running_changed = Signal(bool)
+    live_sample_ready = Signal(object, str)
 
     def __init__(
         self,
@@ -1158,6 +1159,18 @@ class ExperimentWorkspacePage(QWidget):
         жоқ, тек презентация.
         """
         self._device_panel.update_measurement_value(measurement.values)
+        self._emit_live_sample(measurement)
+
+    def _emit_live_sample(self, measurement: Measurement) -> None:
+        """Жергілікті үлгіні live WS кезегіне де жібереді — сокетті КҮТПЕЙДІ."""
+        session_id = ""
+        session = getattr(self._experiment_controller, "session", None)
+        if session is not None:
+            session_id = str(getattr(session, "id", "") or "")
+        try:
+            self.live_sample_ready.emit(measurement, session_id)
+        except Exception as exc:  # noqa: BLE001 - live stream must not block USB
+            _logger.warning("live sample emit failed: %s", exc)
 
     def _on_handshake_timeout(self, port_name: str) -> None:
         self._device_panel.show_message(f"'{port_name}': HELLO handshake уақыты бітті")

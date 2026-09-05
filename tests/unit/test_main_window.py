@@ -7,6 +7,7 @@ ExperimentWorkspacePage ауысуын баптайды. Құрылғы/тәжі
 """
 
 import sys
+from datetime import datetime, timezone
 
 import pytest
 from PySide6.QtCore import QObject, Signal
@@ -15,6 +16,7 @@ from PySide6.QtWidgets import QApplication, QWidget
 import infrastructure.serial_comm.device_manager as device_manager_module
 from domain.entities.active_student_context import ActiveStudentContext
 from domain.entities.experiment_definition import ExperimentDefinition
+from domain.entities.measurement import Measurement
 from domain.entities.user_role import UserRole
 from domain.interfaces.i_active_student_repository import IActiveStudentRepository
 from domain.interfaces.i_physics_module import IPhysicsModule
@@ -92,6 +94,7 @@ class FakeExperimentWorkspacePage(QWidget):
     back_requested = Signal()
     student_selection_requested = Signal()
     measurement_running_changed = Signal(bool)
+    live_sample_ready = Signal(object, str)
 
     def __init__(self) -> None:
         super().__init__()
@@ -141,6 +144,7 @@ class _FakeModule(IPhysicsModule):
 def _make_window(
     initial_role: UserRole = UserRole.TEACHER,
     active_student_repository: IActiveStudentRepository | None = None,
+    live_stream_controller=None,
 ) -> tuple[MainWindow, FakeHomePage, FakeExperimentListPage, FakeExperimentWorkspacePage]:
     home_page = FakeHomePage()
     experiment_list_page = FakeExperimentListPage()
@@ -152,6 +156,7 @@ def _make_window(
         experiment_list_page=experiment_list_page,
         experiment_workspace_page=experiment_workspace_page,
         active_student_repository=active_student_repository or _make_seeded_active_student_repository(),
+        live_stream_controller=live_stream_controller,
     )
     return window, home_page, experiment_list_page, experiment_workspace_page
 
@@ -1282,3 +1287,88 @@ def test_manual_sync_button_reuses_same_coalescing_controller() -> None:
     window.trigger_manual_sync()
 
     assert sync_thread_controller.run_sync_now_calls == 1
+
+
+# ---- Live stream: queue samples without waiting on the socket -------------
+
+
+class DummyLive:
+    def __init__(self) -> None:
+        self.items: list = []
+        self.status: list = []
+
+    def enqueue_measurement(self, measurement, session_id: str) -> None:
+        self.items.append((measurement, session_id))
+
+    def set_status(self, state: str, experiment_id: str) -> None:
+        self.status.append((state, experiment_id))
+
+
+def test_live_measurement_slot_queues_sample() -> None:
+    dummy = DummyLive()
+    window, _home, _list, _workspace = _make_window()
+    window.live_stream_controller = dummy
+    sample = Measurement(
+        timestamp=datetime(2026, 9, 4, 12, tzinfo=timezone.utc),
+        values={"voltage": 1.2},
+        experiment_id="ohms-law",
+    )
+    window._on_live_measurement(sample)
+    assert dummy.items[0][0] is sample
+    assert dummy.status[-1] == ("measuring", "ohms-law")
+
+
+def test_live_stream_controller_defaults_to_none() -> None:
+    window, _home, _list, _workspace = _make_window()
+    assert window.live_stream_controller is None
+    sample = Measurement(
+        timestamp=datetime(2026, 9, 4, 12, tzinfo=timezone.utc),
+        values={"voltage": 1.2},
+        experiment_id="ohms-law",
+    )
+    window._on_live_measurement(sample)
+
+
+def test_live_status_idle_on_workspace_leave() -> None:
+    dummy = DummyLive()
+    window, _home, _list, workspace = _make_window()
+    window.live_stream_controller = dummy
+    workspace.back_requested.emit()
+    assert dummy.status[-1] == ("idle", "")
+
+
+def test_live_status_idle_when_measurement_stops() -> None:
+    dummy = DummyLive()
+    window, _home, _list, workspace = _make_window()
+    window.live_stream_controller = dummy
+    workspace.measurement_running_changed.emit(False)
+    assert dummy.status[-1] == ("idle", "")
+
+
+def test_live_measurement_uses_session_id_from_workspace() -> None:
+    dummy = DummyLive()
+    window, _home, _list, workspace = _make_window()
+    window.live_stream_controller = dummy
+    workspace._experiment_controller = type(
+        "Controller", (), {"session": type("Session", (), {"id": "sess-9"})()}
+    )()
+    sample = Measurement(
+        timestamp=datetime(2026, 9, 4, 12, tzinfo=timezone.utc),
+        values={"voltage": 1.2},
+        experiment_id="ohms-law",
+    )
+    window._on_live_measurement(sample)
+    assert dummy.items[0][1] == "sess-9"
+
+
+def test_live_sample_ready_signal_queues_without_waiting() -> None:
+    dummy = DummyLive()
+    window, _home, _list, workspace = _make_window(live_stream_controller=dummy)
+    sample = Measurement(
+        timestamp=datetime(2026, 9, 4, 12, tzinfo=timezone.utc),
+        values={"voltage": 1.2},
+        experiment_id="ohms-law",
+    )
+    workspace.live_sample_ready.emit(sample, "sess-1")
+    assert dummy.items[0] == (sample, "sess-1")
+    assert dummy.status[-1] == ("measuring", "ohms-law")

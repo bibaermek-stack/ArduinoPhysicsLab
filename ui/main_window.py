@@ -31,6 +31,7 @@ from PySide6.QtWidgets import (
 _trace_logger = logging.getLogger("apl.trace")
 
 from domain.entities.experiment_definition import ExperimentDefinition
+from domain.entities.measurement import Measurement
 from domain.entities.user_role import UserRole
 from domain.interfaces.i_active_student_repository import IActiveStudentRepository
 from domain.interfaces.i_active_teacher_repository import IActiveTeacherRepository
@@ -68,6 +69,7 @@ from infrastructure.storage.sqlite_student_repository import SqliteStudentReposi
 from infrastructure.storage.sqlite_teacher_note_repository import SqliteTeacherNoteRepository
 from infrastructure.storage.sqlite_teacher_repository import SqliteTeacherRepository
 from infrastructure.storage.teacher_scoped_classroom_repository import TeacherScopedClassroomRepository
+from infrastructure.sync.live_stream_controller import LiveStreamController
 from infrastructure.sync.sync_thread_controller import SyncThreadController
 from modules.module_registry import ModuleRegistry
 from ui.navigation.background_category import resolve_experiment_category, resolve_route_category
@@ -233,6 +235,7 @@ class MainWindow(QMainWindow):
         sync_thread_controller: SyncThreadController | None = None,
         classroom_monitoring_page: ClassroomMonitoringPage | None = None,
         student_monitoring_page: StudentMonitoringDetailPage | None = None,
+        live_stream_controller: LiveStreamController | None = None,
     ) -> None:
         super().__init__()
         self.setWindowTitle("Arduino Physics Lab")
@@ -317,6 +320,9 @@ class MainWindow(QMainWindow):
         # ЖӘНЕ startup-тан кейін нақты іске қосады (§ ``build_main_window()``
         # ӨЗІ де тек ҚҰРАСТЫРАДЫ, синхрондауды АВТОМАТТЫ ЕШҚАШАН бастамайды).
         self.sync_thread_controller: SyncThreadController | None = sync_thread_controller
+        # None әдепкісі QThread/WebSocket жаратпайды — тестер желісіз қалады.
+        # start() тек app.py showMaximized-тан кейін, аккаунт токені барда.
+        self.live_stream_controller: LiveStreamController | None = live_stream_controller
         # § Phase 5 (Connectivity-Aware Automatic Sync): ағымдағы route
         # атауын сақтайды (§ ``_on_route_changed()`` — "auto-refresh the
         # currently visible data-dependent page on pull") ЖӘНЕ толық
@@ -617,8 +623,13 @@ class MainWindow(QMainWindow):
             self._open_student_login
         )
         self._experiment_workspace_page.measurement_running_changed.connect(
-            lambda running: self._sidebar.set_switch_student_enabled(not running)
+            self._on_measurement_running_changed
         )
+        live_sample_ready = getattr(
+            self._experiment_workspace_page, "live_sample_ready", None
+        )
+        if live_sample_ready is not None:
+            live_sample_ready.connect(self._on_live_measurement)
         self._role_selection_page.role_selected.connect(self._on_role_selected)
         self._role_selection_page.student_login_succeeded.connect(
             self._on_student_login_succeeded
@@ -734,6 +745,10 @@ class MainWindow(QMainWindow):
         (``ExperimentWorkspacePage.current_module_accent_key()``),
         қалған барлық route үшін статикалық кесте жеткілікті.
         """
+        left_workspace = (
+            self._current_route_name == "experiment_workspace"
+            and route_name != "experiment_workspace"
+        )
         self._current_route_name = route_name
         if route_name == "experiment_workspace":
             category = resolve_experiment_category(
@@ -749,6 +764,8 @@ class MainWindow(QMainWindow):
         # автоматты жасырады — "ghost divider" қалмайды.
         self._sidebar.setVisible(route_name != "role_selection")
         self._update_app_header(route_name)
+        if left_workspace:
+            self._set_live_idle()
 
     def _on_sidebar_collapse_toggled(self, collapsed: bool) -> None:
         """Sidebar батырмасы жаңа collapsed күйін хабарлағанда, splitter-дің
@@ -806,6 +823,7 @@ class MainWindow(QMainWindow):
         # соңғы single-module таңдауын ("_current_module") қайта
         # пайдаланатын, соның салдарынан stale модуль (мыс. эксперимент
         # sidebar арқылы ашылса) Back-та қате көрсетілетін.
+        self._set_live_idle()
         self._router.navigate("experiment_list")
 
     def _on_placeholder_back(self) -> None:
@@ -981,6 +999,26 @@ class MainWindow(QMainWindow):
         self.app_preferences.set_theme(name)
         apply_application_theme(name)
         self._on_theme_changed(name)
+
+    def _on_measurement_running_changed(self, running: bool) -> None:
+        self._sidebar.set_switch_student_enabled(not running)
+        if not running:
+            self._set_live_idle()
+
+    def _set_live_idle(self) -> None:
+        if self.live_stream_controller is not None:
+            self.live_stream_controller.set_status("idle", "")
+
+    def _on_live_measurement(self, measurement: Measurement, session_id: str = "") -> None:
+        if self.live_stream_controller is None:
+            return
+        if not session_id:
+            controller = getattr(self._experiment_workspace_page, "_experiment_controller", None)
+            session = getattr(controller, "session", None)
+            if session is not None:
+                session_id = str(getattr(session, "id", "") or "")
+        self.live_stream_controller.enqueue_measurement(measurement, session_id)
+        self.live_stream_controller.set_status("measuring", measurement.experiment_id)
 
     def trigger_manual_sync(self) -> None:
         """§15 "Manual Sync": Баптаулар бетіндегі "Қазір синхрондау"

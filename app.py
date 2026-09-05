@@ -47,6 +47,7 @@ from infrastructure.storage.sqlite_student_repository import SqliteStudentReposi
 from infrastructure.storage.sqlite_sync_outbox_repository import SqliteSyncOutboxRepository
 from infrastructure.storage.sqlite_teacher_note_repository import SqliteTeacherNoteRepository
 from infrastructure.storage.sqlite_teacher_repository import SqliteTeacherRepository
+from infrastructure.sync.live_stream_controller import LiveStreamController
 from infrastructure.sync.sync_thread_controller import SyncThreadController
 from modules.electricity.module import ElectricityModule
 from modules.electromagnetism.module import ElectromagnetismModule
@@ -70,6 +71,7 @@ def build_main_window(
     teacher_repository: SqliteTeacherRepository | None = None,
     active_teacher_repository: SqliteActiveTeacherRepository | None = None,
     sync_thread_controller: SyncThreadController | None = None,
+    live_stream_controller: LiveStreamController | None = None,
 ) -> MainWindow:
     """Нақты қолданбамен (``run()``) БІРДЕЙ репозиторий/``MainWindow``
     composition — регрессия-тест пен нақты bootstrap арасында ЕШБІР
@@ -188,9 +190,14 @@ def build_main_window(
     # кезекке қояды (§ ``sync_migration.py::backfill_measurement_
     # batches()`` докстрингі), жоғарыдағы екі backfill-мен БІРДЕЙ
     # конвенция.
+    app_preferences = AppPreferences()
     backfill_measurement_batches(
-        session_repository, measurement_batch_repository, AppPreferences().get_measurement_batch_chunk_size()
+        session_repository, measurement_batch_repository, app_preferences.get_measurement_batch_chunk_size()
     )
+    # LiveStreamController құрастыру QThread/сокет ашпайды; start() тек
+    # run() showMaximized-тан кейін, токен барда шақырылады.
+    if live_stream_controller is None and app_preferences.get_account_token():
+        live_stream_controller = LiveStreamController(app_preferences)
 
     window = MainWindow(
         module_registry=module_registry,
@@ -206,6 +213,7 @@ def build_main_window(
         student_progress_repository=student_progress_repository,
         initial_role=role,
         sync_thread_controller=sync_thread_controller,
+        live_stream_controller=live_stream_controller,
     )
     _trace_logger.info("11. MainWindow constructed, id=%s, role=%s", id(window), role)
     return window
@@ -302,6 +310,9 @@ def run() -> int:
 
     def _open_main_window(role: UserRole) -> None:
         _trace_logger.info("10. _open_main_window() entered, role=%s", role)
+        live_stream_controller = None
+        if app_preferences.get_account_token():
+            live_stream_controller = LiveStreamController(app_preferences)
         window = build_main_window(
             role,
             db_path=db_path,
@@ -310,6 +321,7 @@ def run() -> int:
             active_student_repository=active_student_repository,
             teacher_repository=teacher_repository,
             active_teacher_repository=active_teacher_repository,
+            live_stream_controller=live_stream_controller,
         )
         main_window_holder.append(window)
         # Кезeng 29: терезе әдепкі бойынша sizeHint()-ке (sidebar + бет
@@ -317,6 +329,9 @@ def run() -> int:
         # пайдаланылмай қалатын. showMaximized() экранды толық пайдалануды
         # қамтамасыз етеді (MainWindow.setMinimumSize() төменгі шектеу ретінде).
         window.showMaximized()
+        if window.live_stream_controller is not None and app_preferences.get_account_token():
+            window.live_stream_controller.start()
+            app.aboutToQuit.connect(window.live_stream_controller.stop)
 
         # Persistent sensor connections (DeviceManager, MainWindow арқылы
         # application lifetime бойы иеленіледі) ТЕК application шынымен
@@ -404,6 +419,12 @@ def run() -> int:
                 except (TypeError, RuntimeError):
                     pass
                 window.sync_thread_controller.stop()
+            if window.live_stream_controller is not None:
+                try:
+                    app.aboutToQuit.disconnect(window.live_stream_controller.stop)
+                except (TypeError, RuntimeError):
+                    pass
+                window.live_stream_controller.stop()
             window.device_manager.shutdown_all()
             window.close()
 

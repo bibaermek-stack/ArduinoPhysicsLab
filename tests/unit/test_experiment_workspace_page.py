@@ -991,6 +991,18 @@ def test_measurement_ready_forwards_live_value_to_device_panel() -> None:
     assert card._live_value_label.text() == "5.024 V"
 
 
+def test_measurement_ready_emits_live_sample_with_session_id() -> None:
+    page, fake_controller = _make_page()
+    received: list = []
+    page.live_sample_ready.connect(lambda measurement, session_id: received.append((measurement, session_id)))
+    sample = _make_measurement()
+
+    fake_controller.measurement_ready.emit(sample)
+
+    assert received[0][0] is sample
+    assert received[0][1] == "fake-session"
+
+
 def test_multi_sensor_experiment_creates_coordinator_not_controller() -> None:
     page, fake_coordinator = _make_multi_device_page()
 
