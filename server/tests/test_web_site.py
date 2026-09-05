@@ -123,3 +123,104 @@ def test_web_student_connects_with_teacher_code(client) -> None:
     people = client.get("/people")
     assert "Дербес" in people.text
     assert "Қабылдау" in people.text or "мұғалім/оқушы" in people.text
+
+
+def test_lab_requires_login(client) -> None:
+    response = client.get("/lab", follow_redirects=False)
+    assert response.status_code == 303
+    assert response.headers["location"] == "/login"
+
+
+def test_student_lab_page_has_deep_link(client) -> None:
+    client.post("/register", data={"email": "lab-s@school.kz", "password": "secret1", "display_name": "Оқушы"})
+    client.post("/role", data={"role": "student"})
+    page = client.get("/lab")
+    assert page.status_code == 200
+    assert "arduinolab://open" in page.text
+    assert "/static/live.js" in page.text
+
+
+def test_teacher_monitor_page_renders(client) -> None:
+    client.post("/register", data={"email": "lab-t@school.kz", "password": "secret1", "display_name": "Мұғалім"})
+    client.post("/role", data={"role": "teacher"})
+    page = client.get("/monitor")
+    assert page.status_code == 200
+    assert "live.js" in page.text
+
+
+def test_teacher_lab_redirects_to_monitor(client) -> None:
+    client.post("/register", data={"email": "lab-t2@school.kz", "password": "secret1", "display_name": "Мұғалім"})
+    client.post("/role", data={"role": "teacher"})
+    response = client.get("/lab", follow_redirects=False)
+    assert response.status_code == 303
+    assert response.headers["location"] == "/monitor"
+
+
+def test_student_monitor_redirects_to_lab(client) -> None:
+    client.post("/register", data={"email": "lab-s2@school.kz", "password": "secret1", "display_name": "Оқушы"})
+    client.post("/role", data={"role": "student"})
+    response = client.get("/monitor", follow_redirects=False)
+    assert response.status_code == 303
+    assert response.headers["location"] == "/lab"
+
+
+def test_live_js_uses_cookie_and_skips_auth_frame(client) -> None:
+    js = client.get("/static/live.js")
+    assert js.status_code == 200
+    assert "LiveLab" in js.text
+    assert "/api/v1/live/ws" in js.text
+    assert 'location.protocol === "https:" ? "wss:"' in js.text
+    assert "type=auth" not in js.text
+    assert '"auth"' not in js.text
+    assert "'auth'" not in js.text
+
+
+def test_monitor_student_buttons_use_account_id(client, db_session_factory) -> None:
+    from server.app.models.account_models import AccountRecord, RelationshipRequestRecord
+    from server.tests.conftest import _TEST_API_KEY
+
+    client.post("/register", data={"email": "mon-t@school.kz", "password": "secret1", "display_name": "Мұғалім"})
+    client.post("/role", data={"role": "teacher"})
+    db = db_session_factory()
+    try:
+        teacher = db.query(AccountRecord).filter(AccountRecord.email == "mon-t@school.kz").one()
+        teacher_code = teacher.public_id
+    finally:
+        db.close()
+
+    student = client.post(
+        "/api/v1/auth/register",
+        json={"email": "mon-s@school.kz", "password": "secret1", "display_name": "Оқушы"},
+        headers={"X-API-Key": _TEST_API_KEY},
+    )
+    assert student.status_code == 200
+    student_headers = {
+        "X-API-Key": _TEST_API_KEY,
+        "Authorization": f"Bearer {student.json()['access_token']}",
+    }
+    selected = client.post("/api/v1/auth/select-role", json={"role": "student"}, headers=student_headers)
+    assert selected.status_code == 200
+    student_headers["Authorization"] = f"Bearer {selected.json()['access_token']}"
+    sent = client.post(
+        "/api/v1/student/connect-teacher",
+        json={"teacher_code": teacher_code},
+        headers=student_headers,
+    )
+    assert sent.status_code == 200
+
+    db = db_session_factory()
+    try:
+        request_row = db.query(RelationshipRequestRecord).one()
+        request_id = request_row.id
+        student_row = db.query(AccountRecord).filter(AccountRecord.email == "mon-s@school.kz").one()
+        student_id = student_row.id
+    finally:
+        db.close()
+
+    accepted = client.post("/people/accept", data={"request_id": request_id}, follow_redirects=False)
+    assert accepted.status_code == 303
+    page = client.get("/monitor")
+    assert page.status_code == 200
+    assert f'data-account-id="{student_id}"' in page.text
+    assert "Оқушы" in page.text
+

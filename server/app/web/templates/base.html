@@ -26,6 +26,11 @@
       <div class="nav-links">
         {% if account %}
           <a href="/app" class="{{ 'is-active' if request.url.path == '/app' else '' }}">Кабинет</a>
+          {% if account.role == 'teacher' %}
+            <a href="/monitor" class="{{ 'is-active' if request.url.path == '/monitor' else '' }}">Зертхана</a>
+          {% elif account.role == 'student' %}
+            <a href="/lab" class="{{ 'is-active' if request.url.path == '/lab' else '' }}">Зертхана</a>
+          {% endif %}
           <a href="/people" class="{{ 'is-active' if request.url.path == '/people' else '' }}">Адамдар</a>
           <a href="/profile" class="{{ 'is-active' if request.url.path == '/profile' else '' }}">Профиль</a>
           <a href="/download" class="{{ 'is-active' if request.url.path.startswith('/download') else '' }}">Жүктеу</a>

@@ -29,6 +29,7 @@ from server.app.services.people_service import (
     accept_request,
     connect_to_teacher,
     decline_request,
+    list_linked_students,
     list_requests,
     search_people,
     search_teachers,
@@ -293,6 +294,33 @@ def app_home(
             "link": link,
         },
     )
+
+
+@router.get("/lab", response_class=HTMLResponse, response_model=None)
+def lab_page(
+    request: Request,
+    db: Session = Depends(get_db),
+    account: AccountRecord | None = Depends(get_web_account),
+) -> Response:
+    if account is None:
+        return RedirectResponse("/login", status_code=HTTP_303_SEE_OTHER)
+    if account.role != "student":
+        return RedirectResponse("/monitor" if account.role == "teacher" else "/app", status_code=HTTP_303_SEE_OTHER)
+    return templates.TemplateResponse(request, "lab.html", {"account": account})
+
+
+@router.get("/monitor", response_class=HTMLResponse, response_model=None)
+def monitor_page(
+    request: Request,
+    db: Session = Depends(get_db),
+    account: AccountRecord | None = Depends(get_web_account),
+) -> Response:
+    if account is None:
+        return RedirectResponse("/login", status_code=HTTP_303_SEE_OTHER)
+    if account.role != "teacher":
+        return RedirectResponse("/lab" if account.role == "student" else "/app", status_code=HTTP_303_SEE_OTHER)
+    students = list_linked_students(db, account)
+    return templates.TemplateResponse(request, "monitor.html", {"account": account, "students": students})
 
 
 @router.get("/profile", response_class=HTMLResponse, response_model=None)

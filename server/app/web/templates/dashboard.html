@@ -28,6 +28,11 @@
     </div>
     <p class="lead">{% if account.role == "teacher" %}Оқушы осы кодты «Мұғалімге қосылу» өрісіне енгізеді.{% else %}Экспериментті Windows .exe-де өз бетіңізше жасаңыз, мұғалім кодын білгенде сыныпқа қосылыңыз.{% endif %}</p>
     <div class="actions">
+      {% if account.role == "teacher" %}
+        <a class="btn btn-lab" href="/monitor">Бақылау</a>
+      {% else %}
+        <a class="btn btn-lab" href="/lab">Зертхана</a>
+      {% endif %}
       <a class="btn btn-lab" href="/people">Адам іздеу</a>
       <a class="btn btn-ghost" href="/profile">Профиль</a>
       <a class="btn btn-accent" href="/download">Windows .exe</a>

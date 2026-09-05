@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Бақылау · Arduino Physics Lab{% endblock %}
+{% block body %}
+<section class="card">
+  <span class="kicker">Бақылау</span>
+  <h1>Бақылау</h1>
+  <p id="live-status" style="color:#475569">Офлайн</p>
+  <div class="actions">
+    {% for person in students %}
+      <button type="button" class="btn btn-ghost" data-account-id="{{ person.id }}">{{ person.display_name }}</button>
+    {% else %}
+      <p class="hint">Қосылған оқушы жоқ.</p>
+    {% endfor %}
+  </div>
+  <div style="width:100%;min-height:280px;height:280px;margin-top:16px">
+    <canvas id="live-chart" style="width:100%;height:100%;display:block"></canvas>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="/static/live.js"></script>
+<script>LiveLab.connect({role:"teacher"})</script>
+{% endblock %}
