@@ -54,6 +54,7 @@ _HIDDEN_IMPORTS = [
     "anyio",
     "idna",
     "core.deployment_config",
+    "websockets",
 ]
 _HIDDEN_IMPORTS += collect_submodules("httpx")
 

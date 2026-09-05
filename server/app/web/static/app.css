@@ -183,6 +183,9 @@ body {
 .card + .card, .hero + .card, .feature-grid + .card { margin-top: 20px; }
 .card h2 { font-size: 20px; letter-spacing: -0.02em; margin: 0 0 10px; }
 
+#live-chart { width: 100%; min-height: 280px; background: var(--lab-soft); border-radius: var(--radius-sm); }
+#live-status { color: var(--muted); }
+
 .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; align-items: center; }
 
 .btn {

@@ -21,6 +21,14 @@ Windows .exe (PySide6)                    FastAPI (server/)
 - Desktop `server/` кодын іске қоспайды (`app.py` тек клиент).
 - Сервер `server.run` / Railway арқылы бөлек процесс.
 
+### Тірі ағын (сайт + `.exe`)
+
+Тірі WebSocket журналдық sync емес. `.exe` `LiveStreamWorker` арқылы
+`/api/v1/live/ws` жібереді (in-memory hub); `sync_worker` →
+`/api/v1/sync/*` өзгеріссіз қалады. Браузер `/lab` және `/monitor`
+тек көрініс; START/STOP тек `.exe`-де. Толық шешім:
+[2026-09-04-live-lab-tandem-design.md](superpowers/specs/2026-09-04-live-lab-tandem-design.md).
+
 ## Қабаттар (desktop)
 
 ```
