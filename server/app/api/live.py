@@ -61,9 +61,13 @@ async def _close(websocket: WebSocket, code: int) -> None:
 async def live_ws(websocket: WebSocket, db: Session = Depends(get_db)) -> None:
     await websocket.accept()
     cookie = websocket.cookies.get("apl_web_token")
-    account = _account_from_token(db, cookie) if cookie else None
-    kind = "viewer"
-    if account is None:
+    if cookie:
+        account = _account_from_token(db, cookie)
+        if account is None:
+            await _close(websocket, 4401)
+            return
+        kind = "viewer"
+    else:
         try:
             raw = await websocket.receive_json()
         except WebSocketDisconnect:
@@ -76,8 +80,11 @@ async def live_ws(websocket: WebSocket, db: Session = Depends(get_db)) -> None:
             await _close(websocket, 4401)
             return
         account = _account_from_token(db, str(raw["token"]))
+        if account is None:
+            await _close(websocket, 4401)
+            return
         kind = "desktop"
-    if account is None or not account.role:
+    if not account.role:
         await _close(websocket, 4403)
         return
     send = _make_send(websocket)
@@ -101,17 +108,6 @@ async def live_ws(websocket: WebSocket, db: Session = Depends(get_db)) -> None:
             mtype = message.get("type")
             if mtype == "ping":
                 await websocket.send_json({"type": "pong"})
-            elif mtype == "auth":
-                if message.get("api_key") != get_configured_api_key() or not message.get("token"):
-                    continue
-                auth_account = _account_from_token(db, str(message["token"]))
-                if auth_account is None or not auth_account.role:
-                    continue
-                if kind == "viewer":
-                    hub.remove_viewer(viewer_id)
-                kind = "desktop"
-                account = auth_account
-                hub.set_publisher(account.id, send)
             elif mtype == "samples" and kind == "desktop":
                 points = message.get("points") or []
                 if not isinstance(points, list):
