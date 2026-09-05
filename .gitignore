@@ -68,3 +68,7 @@ build/*.exe
 build/*.dll
 build/work/
 release/
+
+# --- Isolated worktrees and SDD scratch (not source) ---
+.worktrees/
+.superpowers/
