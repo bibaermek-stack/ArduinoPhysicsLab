@@ -41,6 +41,8 @@ from domain.services.sync_migration import (
     backfill_session_sync_queue,
     backfill_sync_ids,
 )
+from infrastructure.os.protocol_handler import register_protocol
+from infrastructure.os.single_instance import SingleInstance
 from infrastructure.storage.app_preferences import AppPreferences
 from infrastructure.storage.sqlite_student_progress_repository import SqliteStudentProgressRepository
 from infrastructure.storage.sqlite_student_repository import SqliteStudentRepository
@@ -259,6 +261,14 @@ def run() -> int:
     QCoreApplication.setApplicationName("ArduinoPhysicsLab")
 
     app = QApplication(sys.argv)
+    gate = SingleInstance("ArduinoPhysicsLab")
+    if not gate.try_lock():
+        gate.send_raise()
+        gate.close()
+        return 0
+    if getattr(sys, "frozen", False):
+        # Dev/pytest are not frozen — never write HKCU from `python -m pytest`.
+        register_protocol(str(Path(sys.argv[0]).resolve()))
     apply_application_theme(AppPreferences().get_theme())
     # § "existing motion helper if already safe/available" — hover/
     # pressed/focus қозғалысы startup экранында да жұмыс істеуі үшін
@@ -440,6 +450,22 @@ def run() -> int:
     def _start_offline() -> None:
         account_auth_page.hide()
         role_selection_page.showMaximized()
+
+    def _raise_existing_window() -> None:
+        if main_window_holder:
+            window = main_window_holder[-1]
+        elif cloud_role_page_holder:
+            window = cloud_role_page_holder[-1]
+        elif role_selection_page.isVisible():
+            window = role_selection_page
+        else:
+            window = account_auth_page
+        window.showMaximized()
+        window.raise_()
+        window.activateWindow()
+
+    gate.on_raise(_raise_existing_window)
+    app.aboutToQuit.connect(gate.close)
 
     account_auth_page.authenticated.connect(_on_authenticated)
     account_auth_page.skip_offline.connect(_start_offline)
