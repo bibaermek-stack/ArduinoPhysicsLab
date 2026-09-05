@@ -1,5 +1,6 @@
 """LiveStreamWorker pure helpers — no real network, no QThread."""
 
+import asyncio
 from datetime import datetime, timezone
 import os
 import sys
@@ -122,3 +123,39 @@ def test_reconnect_delay_seconds_caps_at_10() -> None:
 def test_controller_construct_does_not_start_thread(temp_preferences) -> None:
     controller = LiveStreamController(temp_preferences)
     assert controller.is_running() is False
+
+
+def test_flush_does_not_connect_while_reconnect_backoff_active(temp_preferences) -> None:
+    temp_preferences.set_account_session(
+        token="tok",
+        account_id="a1",
+        email="s@school.kz",
+        display_name="S",
+        role="student",
+        public_id="S-1",
+    )
+    temp_preferences.set_sync_api_base_url("http://127.0.0.1:8000")
+    calls: list[str] = []
+
+    async def fake_connect(url: str):
+        calls.append(url)
+        raise OSError("offline")
+
+    worker = LiveStreamWorker(temp_preferences, connect_ws=fake_connect)
+    loop = asyncio.new_event_loop()
+    worker._loop = loop
+    try:
+        worker._schedule_reconnect()
+        assert worker._reconnect_timer is not None
+        assert worker._reconnect_timer.isActive()
+        worker.flush()
+        worker._ensure_connection_state()
+        worker._pump_loop()
+        assert worker._reconnect_timer.isActive()
+        assert worker._connecting is False
+        assert calls == []
+    finally:
+        if worker._reconnect_timer is not None:
+            worker._reconnect_timer.stop()
+        worker._loop = None
+        loop.close()

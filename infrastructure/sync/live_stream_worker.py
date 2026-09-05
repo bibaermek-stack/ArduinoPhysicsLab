@@ -259,10 +259,14 @@ class LiveStreamWorker(QObject):
                 self._submit(self._close_connection(ws))
             return
         if self._ws is None:
+            if self._reconnect_wait_active():
+                return
             self._try_connect()
 
     def _try_connect(self) -> None:
         if self._closing or self._connecting or self._ws is not None or self._loop is None:
+            return
+        if self._reconnect_wait_active():
             return
         token = (self._preferences.get_account_token() or "").strip()
         base = (self._preferences.get_sync_api_base_url() or "").strip()
@@ -300,6 +304,8 @@ class LiveStreamWorker(QObject):
             self._ws = ws
             self._reconnect_attempt = 0
             self._connecting = False
+            if self._reconnect_timer is not None:
+                self._reconnect_timer.stop()
             if self._loop is not None:
                 self._track(self._loop.create_task(self._recv_loop(ws)))
             if self._state:
@@ -357,8 +363,13 @@ class LiveStreamWorker(QObject):
             except Exception:
                 pass
 
+    def _reconnect_wait_active(self) -> bool:
+        return self._reconnect_timer is not None and self._reconnect_timer.isActive()
+
     def _schedule_reconnect(self) -> None:
         if self._closing:
+            return
+        if self._reconnect_wait_active():
             return
         delay_s = reconnect_delay_seconds(self._reconnect_attempt)
         self._reconnect_attempt += 1
