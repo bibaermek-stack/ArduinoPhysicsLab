@@ -131,6 +131,12 @@ def test_lab_requires_login(client) -> None:
     assert response.headers["location"] == "/login"
 
 
+def test_monitor_requires_login(client) -> None:
+    response = client.get("/monitor", follow_redirects=False)
+    assert response.status_code == 303
+    assert response.headers["location"] == "/login"
+
+
 def test_student_lab_page_has_deep_link(client) -> None:
     client.post("/register", data={"email": "lab-s@school.kz", "password": "secret1", "display_name": "Оқушы"})
     client.post("/role", data={"role": "student"})
@@ -173,6 +179,31 @@ def test_live_js_uses_cookie_and_skips_auth_frame(client) -> None:
     assert "type=auth" not in js.text
     assert '"auth"' not in js.text
     assert "'auth'" not in js.text
+
+
+def test_live_js_hello_does_not_mark_connected(client) -> None:
+    js = client.get("/static/live.js").text
+    marker = 'type === "hello"'
+    hello_at = js.find(marker)
+    assert hello_at != -1
+    snippet = js[hello_at : hello_at + 160]
+    assert "setStatus" not in snippet
+    assert "COPY.connected" not in snippet
+
+
+def test_live_js_buckets_samples_per_account(client) -> None:
+    js = client.get("/static/live.js").text
+    assert "filterAccountId" in js
+    assert "account_id" in js
+    assert "MAX_POINTS" in js
+    click_at = js.find('querySelectorAll("[data-account-id]")')
+    assert click_at != -1
+    click_block = js[click_at : click_at + 700]
+    assert "resetSeries()" not in click_block
+    open_at = js.find("addEventListener(\"open\"")
+    assert open_at != -1
+    open_block = js[open_at : open_at + 220]
+    assert "resetSeries()" in open_block
 
 
 def test_monitor_student_buttons_use_account_id(client, db_session_factory) -> None:

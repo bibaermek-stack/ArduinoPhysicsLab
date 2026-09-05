@@ -116,13 +116,38 @@
     opts = opts || {};
     var role = opts.role || "";
     var filterAccountId = null;
-    var series = {};
+    var buckets = {};
+    var lastState = {};
     var timer = null;
     var closedForGood = false;
 
+    function waitingCopy() {
+      return role === "teacher" ? COPY.offline : COPY.openApp;
+    }
+
+    function bucketFor(accountId) {
+      var id = accountId || "";
+      if (!buckets[id]) {
+        buckets[id] = {};
+      }
+      return buckets[id];
+    }
+
+    function visibleSeries() {
+      if (filterAccountId) {
+        return buckets[filterAccountId] || {};
+      }
+      var ids = Object.keys(buckets);
+      if (!ids.length) {
+        return {};
+      }
+      return buckets[ids[0]] || {};
+    }
+
     function resetSeries() {
-      series = {};
-      drawChart(series);
+      buckets = {};
+      lastState = {};
+      drawChart({});
     }
 
     function matchesFilter(accountId) {
@@ -138,16 +163,17 @@
       } else if (state === "idle") {
         setStatus(COPY.connected);
       } else if (state === "offline") {
-        setStatus(role === "student" ? COPY.openApp : COPY.offline);
+        setStatus(waitingCopy());
       } else {
-        setStatus(COPY.openApp);
+        setStatus(waitingCopy());
       }
     }
 
-    function pushValues(values) {
+    function pushValues(accountId, values) {
       if (!values || typeof values !== "object") {
         return;
       }
+      var series = bucketFor(accountId);
       var key;
       var n;
       for (key in values) {
@@ -174,30 +200,30 @@
       }
       var type = frame.type;
       if (type === "hello") {
-        setStatus(COPY.connected);
         return;
       }
+      var accountId = frame.account_id || "";
       if (type === "presence") {
-        if (!matchesFilter(frame.account_id)) {
-          return;
+        lastState[accountId] = frame.state;
+        if (matchesFilter(accountId)) {
+          applyPresence(frame.state);
         }
-        applyPresence(frame.state);
         return;
       }
       if (type === "samples") {
-        if (!matchesFilter(frame.account_id)) {
-          return;
-        }
         var points = frame.points;
         if (!points || !points.length) {
           return;
         }
         var p;
         for (p = 0; p < points.length; p += 1) {
-          pushValues(points[p] && points[p].values);
+          pushValues(accountId, points[p] && points[p].values);
         }
-        setStatus(COPY.measuring);
-        drawChart(series);
+        lastState[accountId] = "measuring";
+        if (matchesFilter(accountId)) {
+          setStatus(COPY.measuring);
+          drawChart(visibleSeries());
+        }
       }
     }
 
@@ -225,7 +251,8 @@
         return;
       }
       ws.addEventListener("open", function () {
-        setStatus(COPY.openApp);
+        resetSeries();
+        setStatus(waitingCopy());
       });
       ws.addEventListener("message", function (event) {
         var frame;
@@ -240,10 +267,10 @@
         var code = event && event.code;
         if (code === 4401 || code === 4403) {
           closedForGood = true;
-          setStatus(COPY.offline);
+          setStatus(waitingCopy());
           return;
         }
-        setStatus(COPY.openApp);
+        setStatus(waitingCopy());
         scheduleReconnect();
       });
     }
@@ -254,7 +281,12 @@
       for (b = 0; b < buttons.length; b += 1) {
         buttons[b].addEventListener("click", function (ev) {
           filterAccountId = ev.currentTarget.getAttribute("data-account-id");
-          resetSeries();
+          drawChart(visibleSeries());
+          if (Object.prototype.hasOwnProperty.call(lastState, filterAccountId)) {
+            applyPresence(lastState[filterAccountId]);
+          } else {
+            setStatus(waitingCopy());
+          }
         });
       }
       if (buttons.length) {
@@ -264,11 +296,11 @@
 
     if (global.addEventListener) {
       global.addEventListener("resize", function () {
-        drawChart(series);
+        drawChart(visibleSeries());
       });
     }
 
-    setStatus(COPY.openApp);
+    setStatus(waitingCopy());
     openSocket();
   }
 
