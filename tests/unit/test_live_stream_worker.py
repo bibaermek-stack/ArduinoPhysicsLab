@@ -1,6 +1,7 @@
 """LiveStreamWorker pure helpers — no real network, no QThread."""
 
 import asyncio
+import json
 from datetime import datetime, timezone
 import os
 import sys
@@ -9,6 +10,8 @@ import tempfile
 import pytest
 from PySide6.QtCore import QSettings
 from PySide6.QtWidgets import QApplication
+from websockets.exceptions import ConnectionClosed
+from websockets.frames import Close
 
 from domain.entities.measurement import Measurement
 from infrastructure.storage.app_preferences import AppPreferences
@@ -16,6 +19,7 @@ from infrastructure.sync.live_stream_controller import LiveStreamController
 from infrastructure.sync.live_stream_worker import (
     LiveStreamWorker,
     build_samples_frame,
+    is_auth_failure_close,
     reconnect_delay_seconds,
     ws_url_from_http,
 )
@@ -159,3 +163,216 @@ def test_flush_does_not_connect_while_reconnect_backoff_active(temp_preferences)
             worker._reconnect_timer.stop()
         worker._loop = None
         loop.close()
+
+
+def _logged_in(preferences: AppPreferences) -> None:
+    preferences.set_account_session(
+        token="tok",
+        account_id="a1",
+        email="s@school.kz",
+        display_name="S",
+        role="student",
+        public_id="S-1",
+    )
+    preferences.set_sync_api_base_url("http://127.0.0.1:8000")
+
+
+def _closed(code: int) -> ConnectionClosed:
+    return ConnectionClosed(Close(code, ""), None)
+
+
+class _FakeLiveSocket:
+    def __init__(self, incoming: list[object]) -> None:
+        self.sent: list[str] = []
+        self._incoming = list(incoming)
+        self._hang: asyncio.Future | None = None
+
+    async def send(self, data: str) -> None:
+        self.sent.append(data)
+
+    async def recv(self):
+        if self._incoming:
+            item = self._incoming.pop(0)
+            if isinstance(item, BaseException):
+                raise item
+            return item
+        loop = asyncio.get_running_loop()
+        self._hang = loop.create_future()
+        return await self._hang
+
+    async def close(self) -> None:
+        if self._hang is not None and not self._hang.done():
+            self._hang.cancel()
+
+
+def _run_connect(worker: LiveStreamWorker, loop: asyncio.AbstractEventLoop) -> None:
+    loop.run_until_complete(worker._connect("tok", "http://127.0.0.1:8000"))
+
+
+def _cleanup_worker(worker: LiveStreamWorker, loop: asyncio.AbstractEventLoop) -> None:
+    worker._closing = True
+    if worker._reconnect_timer is not None:
+        worker._reconnect_timer.stop()
+
+    async def _cancel() -> None:
+        pending = list(worker._tasks)
+        for task in pending:
+            task.cancel()
+        if pending:
+            await asyncio.gather(*pending, return_exceptions=True)
+
+    try:
+        if not loop.is_closed():
+            loop.run_until_complete(_cancel())
+    finally:
+        worker._loop = None
+        worker._ws = None
+        if not loop.is_closed():
+            loop.close()
+
+
+def test_connect_waits_for_hello_before_resetting_reconnect(temp_preferences) -> None:
+    _logged_in(temp_preferences)
+    hello_gate = asyncio.Event()
+
+    class _HelloGateSocket(_FakeLiveSocket):
+        def __init__(self) -> None:
+            super().__init__([])
+            self._hello_sent = False
+
+        async def recv(self):
+            if not self._hello_sent:
+                await hello_gate.wait()
+                self._hello_sent = True
+                return json.dumps({"type": "hello", "role": "student"})
+            return await super().recv()
+
+    fake = _HelloGateSocket()
+
+    async def fake_connect(url: str):
+        return fake
+
+    worker = LiveStreamWorker(temp_preferences, connect_ws=fake_connect)
+    worker._reconnect_attempt = 4
+    loop = asyncio.new_event_loop()
+    worker._loop = loop
+    try:
+        async def scenario():
+            task = asyncio.create_task(worker._connect("tok", "http://127.0.0.1:8000"))
+            for _ in range(30):
+                await asyncio.sleep(0)
+                if fake.sent:
+                    break
+            assert fake.sent, "auth frame should be sent before hello"
+            assert json.loads(fake.sent[0])["type"] == "auth"
+            assert worker._ws is None
+            assert worker._reconnect_attempt == 4
+            hello_gate.set()
+            await task
+            assert worker._ws is fake
+            assert worker._reconnect_attempt == 0
+
+        loop.run_until_complete(scenario())
+    finally:
+        _cleanup_worker(worker, loop)
+
+
+def test_connect_does_not_reconnect_on_4401(temp_preferences) -> None:
+    _logged_in(temp_preferences)
+    calls: list[str] = []
+    fake = _FakeLiveSocket([_closed(4401)])
+
+    async def fake_connect(url: str):
+        calls.append(url)
+        return fake
+
+    worker = LiveStreamWorker(temp_preferences, connect_ws=fake_connect)
+    worker._reconnect_attempt = 2
+    loop = asyncio.new_event_loop()
+    worker._loop = loop
+    try:
+        _run_connect(worker, loop)
+        assert worker._ws is None
+        assert worker._closed_for_good is True
+        assert worker._reconnect_attempt == 2
+        assert worker._reconnect_timer is None or not worker._reconnect_timer.isActive()
+        worker._ensure_connection_state()
+        worker.flush()
+        worker._pump_loop()
+        assert calls == ["ws://127.0.0.1:8000/api/v1/live/ws"]
+        assert is_auth_failure_close(_closed(4401)) is True
+    finally:
+        _cleanup_worker(worker, loop)
+
+
+def test_connect_does_not_reconnect_on_4403(temp_preferences) -> None:
+    _logged_in(temp_preferences)
+    calls: list[str] = []
+    fake = _FakeLiveSocket([_closed(4403)])
+
+    async def fake_connect(url: str):
+        calls.append(url)
+        return fake
+
+    worker = LiveStreamWorker(temp_preferences, connect_ws=fake_connect)
+    loop = asyncio.new_event_loop()
+    worker._loop = loop
+    try:
+        _run_connect(worker, loop)
+        assert worker._ws is None
+        assert worker._closed_for_good is True
+        worker._ensure_connection_state()
+        worker._pump_loop()
+        assert len(calls) == 1
+        assert is_auth_failure_close(_closed(4403)) is True
+    finally:
+        _cleanup_worker(worker, loop)
+
+
+def test_recv_loop_does_not_reconnect_on_4401_after_hello(temp_preferences) -> None:
+    _logged_in(temp_preferences)
+    fake = _FakeLiveSocket(
+        [
+            json.dumps({"type": "hello", "role": "student"}),
+            _closed(4401),
+        ]
+    )
+
+    async def fake_connect(url: str):
+        return fake
+
+    worker = LiveStreamWorker(temp_preferences, connect_ws=fake_connect)
+    worker._state = ""
+    worker._reconnect_attempt = 3
+    loop = asyncio.new_event_loop()
+    worker._loop = loop
+    try:
+        _run_connect(worker, loop)
+        worker._pump_loop()
+        assert worker._reconnect_attempt == 0
+        assert worker._ws is None
+        assert worker._closed_for_good is True
+        assert worker._reconnect_timer is None or not worker._reconnect_timer.isActive()
+    finally:
+        _cleanup_worker(worker, loop)
+
+
+def test_connect_still_reconnects_on_non_auth_close(temp_preferences) -> None:
+    _logged_in(temp_preferences)
+    fake = _FakeLiveSocket([_closed(1006)])
+
+    async def fake_connect(url: str):
+        return fake
+
+    worker = LiveStreamWorker(temp_preferences, connect_ws=fake_connect)
+    loop = asyncio.new_event_loop()
+    worker._loop = loop
+    try:
+        _run_connect(worker, loop)
+        assert worker._ws is None
+        assert worker._closed_for_good is False
+        assert worker._reconnect_timer is not None
+        assert worker._reconnect_timer.isActive()
+        assert is_auth_failure_close(_closed(1006)) is False
+    finally:
+        _cleanup_worker(worker, loop)

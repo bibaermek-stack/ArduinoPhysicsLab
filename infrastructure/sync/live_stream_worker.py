@@ -28,6 +28,7 @@ _RECONNECT_DELAYS_S = (1, 2, 5, 10)
 _LIVE_WS_PATH = "/api/v1/live/ws"
 _CONNECT_OPEN_TIMEOUT_S = 5
 _CONNECT_CLOSE_TIMEOUT_S = 2
+_AUTH_FAILURE_CLOSE_CODES = (4401, 4403)
 
 
 def ws_url_from_http(base: str) -> str:
@@ -69,6 +70,38 @@ def reconnect_delay_seconds(attempt: int) -> int:
     return min(_RECONNECT_DELAYS_S[index], 10)
 
 
+def websocket_close_code(exc: BaseException) -> int | None:
+    """Close code from ``websockets.ConnectionClosed`` (``.rcvd.code`` / ``.code``)."""
+    rcvd = getattr(exc, "rcvd", None)
+    if rcvd is not None:
+        rcvd_code = getattr(rcvd, "code", None)
+        if isinstance(rcvd_code, int):
+            return rcvd_code
+    code = getattr(exc, "code", None)
+    return code if isinstance(code, int) else None
+
+
+def is_auth_failure_close(exc: BaseException) -> bool:
+    return websocket_close_code(exc) in _AUTH_FAILURE_CLOSE_CODES
+
+
+def _json_object(raw: object) -> dict | None:
+    if isinstance(raw, dict):
+        return raw
+    if isinstance(raw, bytes):
+        try:
+            raw = raw.decode("utf-8")
+        except UnicodeDecodeError:
+            return None
+    if not isinstance(raw, str):
+        return None
+    try:
+        parsed = json.loads(raw)
+    except ValueError:
+        return None
+    return parsed if isinstance(parsed, dict) else None
+
+
 class LiveStreamWorker(QObject):
     error_occurred = Signal(str)
 
@@ -88,6 +121,7 @@ class LiveStreamWorker(QObject):
         self._reconnect_attempt = 0
         self._closing = False
         self._connecting = False
+        self._closed_for_good = False
         self._tasks: set[asyncio.Task] = set()
 
     @Slot()
@@ -99,6 +133,7 @@ class LiveStreamWorker(QObject):
             asyncio.set_event_loop(loop)
             self._loop = loop
             self._closing = False
+            self._closed_for_good = False
 
             self._flush_timer = QTimer(self)
             self._flush_timer.setInterval(_FLUSH_INTERVAL_MS)
@@ -253,10 +288,13 @@ class LiveStreamWorker(QObject):
             if self._reconnect_timer is not None:
                 self._reconnect_timer.stop()
             self._reconnect_attempt = 0
+            self._closed_for_good = False
             ws = self._ws
             self._ws = None
             if ws is not None:
                 self._submit(self._close_connection(ws))
+            return
+        if self._closed_for_good:
             return
         if self._ws is None:
             if self._reconnect_wait_active():
@@ -265,6 +303,8 @@ class LiveStreamWorker(QObject):
 
     def _try_connect(self) -> None:
         if self._closing or self._connecting or self._ws is not None or self._loop is None:
+            return
+        if self._closed_for_good:
             return
         if self._reconnect_wait_active():
             return
@@ -277,6 +317,7 @@ class LiveStreamWorker(QObject):
 
     async def _connect(self, token: str, base: str) -> None:
         url = ws_url_from_http(base)
+        ws = None
         try:
             if self._connect_ws is None:
                 import websockets
@@ -301,9 +342,14 @@ class LiveStreamWorker(QObject):
                     }
                 )
             )
+            raw = await asyncio.wait_for(ws.recv(), timeout=_CONNECT_OPEN_TIMEOUT_S)
+            frame = _json_object(raw)
+            if frame is None or frame.get("type") != "hello":
+                raise ConnectionError("live hello missing")
             self._ws = ws
             self._reconnect_attempt = 0
             self._connecting = False
+            self._closed_for_good = False
             if self._reconnect_timer is not None:
                 self._reconnect_timer.stop()
             if self._loop is not None:
@@ -318,10 +364,18 @@ class LiveStreamWorker(QObject):
                 )
         except asyncio.CancelledError:
             self._connecting = False
+            if ws is not None and self._ws is not ws:
+                await self._close_connection(ws)
             raise
-        except Exception:
+        except Exception as exc:
             self._connecting = False
-            self._ws = None
+            if self._ws is ws:
+                self._ws = None
+            if ws is not None and self._ws is not ws:
+                await self._close_connection(ws)
+            if is_auth_failure_close(exc):
+                self._note_auth_failure()
+                return
             self.error_occurred.emit("Live stream қатесі: ConnectionError")
             self._schedule_reconnect()
 
@@ -332,11 +386,8 @@ class LiveStreamWorker(QObject):
                 del incoming
         except asyncio.CancelledError:
             raise
-        except Exception:
-            if self._ws is ws:
-                self._ws = None
-                if not self._closing:
-                    self._schedule_reconnect()
+        except Exception as exc:
+            self._handle_socket_lost(ws, exc)
 
     async def _send_json(self, payload: dict) -> None:
         ws = self._ws
@@ -346,11 +397,8 @@ class LiveStreamWorker(QObject):
             await ws.send(json.dumps(payload))
         except asyncio.CancelledError:
             raise
-        except Exception:
-            if self._ws is ws:
-                self._ws = None
-                if not self._closing:
-                    self._schedule_reconnect()
+        except Exception as exc:
+            self._handle_socket_lost(ws, exc)
 
     async def _close_connection(self, ws) -> None:
         close = getattr(ws, "close", None)
@@ -366,8 +414,23 @@ class LiveStreamWorker(QObject):
     def _reconnect_wait_active(self) -> bool:
         return self._reconnect_timer is not None and self._reconnect_timer.isActive()
 
-    def _schedule_reconnect(self) -> None:
+    def _handle_socket_lost(self, ws, exc: BaseException) -> None:
+        if self._ws is ws:
+            self._ws = None
         if self._closing:
+            return
+        if is_auth_failure_close(exc):
+            self._note_auth_failure()
+            return
+        self._schedule_reconnect()
+
+    def _note_auth_failure(self) -> None:
+        self._closed_for_good = True
+        if self._reconnect_timer is not None:
+            self._reconnect_timer.stop()
+
+    def _schedule_reconnect(self) -> None:
+        if self._closing or self._closed_for_good:
             return
         if self._reconnect_wait_active():
             return

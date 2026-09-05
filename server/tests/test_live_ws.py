@@ -5,6 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from server.app.api import live
+from server.app.db.session import get_db
 from server.app.main import app
 from server.tests.conftest import _TEST_API_KEY
 from server.tests.test_accounts_people import _auth
@@ -13,8 +14,10 @@ from server.tests.test_accounts_people import _auth
 @pytest.fixture(autouse=True)
 def _reset_live_hub() -> None:
     live.hub.reset()
+    live._publisher_sockets.clear()
     yield
     live.hub.reset()
+    live._publisher_sockets.clear()
 
 
 @contextmanager
@@ -146,3 +149,56 @@ def test_cookie_viewer_ignores_auth_and_does_not_publish(client) -> None:
         pong = viewer.receive_json()
         assert pong["type"] == "pong"
         assert live.hub.publisher_state(account_id) == "offline"
+
+
+def test_ws_closes_db_session_after_handshake(client, db_session_factory) -> None:
+    headers, _body = _auth(client, "live-db@school.kz", "secret1", "Оқушы", "student")
+    token = headers["Authorization"].split(" ", 1)[1]
+    closed_at: list[str] = []
+
+    def _override_get_db():
+        db = db_session_factory()
+        original_close = db.close
+
+        def tracking_close() -> None:
+            closed_at.append("closed")
+            original_close()
+
+        db.close = tracking_close  # type: ignore[method-assign]
+        try:
+            yield db
+        finally:
+            original_close()
+
+    app.dependency_overrides[get_db] = _override_get_db
+    closed_at.clear()
+    with _cookie_free_client() as desktop_http:
+        with desktop_http.websocket_connect("/api/v1/live/ws") as desktop:
+            desktop.send_json({"type": "auth", "token": token, "api_key": _TEST_API_KEY})
+            hello = desktop.receive_json()
+            assert hello["type"] == "hello"
+            assert closed_at, "db session must be closed before the receive loop"
+            desktop.send_json({"type": "ping"})
+            assert desktop.receive_json()["type"] == "pong"
+
+
+def test_new_desktop_publisher_disconnects_previous(client) -> None:
+    headers, body = _auth(client, "live-dup@school.kz", "secret1", "Оқушы", "student")
+    token = headers["Authorization"].split(" ", 1)[1]
+    account_id = body["account_id"]
+    with _cookie_free_client() as desktop_http:
+        with desktop_http.websocket_connect("/api/v1/live/ws") as old:
+            old.send_json({"type": "auth", "token": token, "api_key": _TEST_API_KEY})
+            assert old.receive_json()["type"] == "hello"
+            with desktop_http.websocket_connect("/api/v1/live/ws") as new:
+                new.send_json({"type": "auth", "token": token, "api_key": _TEST_API_KEY})
+                assert new.receive_json()["type"] == "hello"
+                try:
+                    old.receive_json()
+                    raise AssertionError("expected previous desktop websocket to close")
+                except Exception as exc:
+                    assert exc.__class__.__name__ != "AssertionError"
+                new.send_json({"type": "status", "state": "measuring", "experiment_id": "ohms-law"})
+                new.send_json({"type": "ping"})
+                assert new.receive_json()["type"] == "pong"
+                assert live.hub.publisher_state(account_id) == "measuring"

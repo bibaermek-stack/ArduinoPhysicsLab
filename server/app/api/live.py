@@ -17,6 +17,7 @@ from server.app.services.people_service import list_linked_students
 
 router = APIRouter(tags=["live"])
 hub = LiveHub()
+_publisher_sockets: dict[str, WebSocket] = {}
 
 
 def _account_from_token(db: Session, token: str) -> AccountRecord | None:
@@ -88,48 +89,57 @@ async def live_ws(websocket: WebSocket, db: Session = Depends(get_db)) -> None:
         await _close(websocket, 4403)
         return
     send = _make_send(websocket)
-    viewer_id = f"{account.id}:view:{id(websocket)}"
-    watch = frozenset({account.id})
-    if kind == "viewer" and account.role == "teacher":
+    account_id = account.id
+    account_role = account.role
+    viewer_id = f"{account_id}:view:{id(websocket)}"
+    watch = frozenset({account_id})
+    if kind == "viewer" and account_role == "teacher":
         watch = frozenset(row.id for row in list_linked_students(db, account))
+    db.close()
     try:
         if kind == "desktop":
-            hub.set_publisher(account.id, send)
+            previous_ws = _publisher_sockets.get(account_id)
+            _publisher_sockets[account_id] = websocket
+            hub.set_publisher(account_id, send)
+            if previous_ws is not None and previous_ws is not websocket:
+                await _close(previous_ws, 1000)
         else:
             hub.add_viewer(viewer_id, watch, send)
             for student_id in watch:
                 for frame in hub.buffer_for(student_id):
                     await websocket.send_json(frame)
-        await websocket.send_json({"type": "hello", "role": account.role})
+        await _send_json(websocket, {"type": "hello", "role": account_role})
         while True:
             message = await websocket.receive_json()
             if not isinstance(message, dict):
                 continue
             mtype = message.get("type")
             if mtype == "ping":
-                await websocket.send_json({"type": "pong"})
+                await _send_json(websocket, {"type": "pong"})
             elif mtype == "samples" and kind == "desktop":
                 points = message.get("points") or []
                 if not isinstance(points, list):
                     continue
                 hub.publish_samples(
-                    account.id,
+                    account_id,
                     experiment_id=str(message.get("experiment_id") or ""),
                     session_id=str(message.get("session_id") or ""),
                     points=points[:50],
                 )
             elif mtype == "status" and kind == "desktop":
                 hub.publish_status(
-                    account.id,
+                    account_id,
                     state=str(message.get("state") or "idle"),
                     experiment_id=str(message.get("experiment_id") or ""),
                 )
             elif mtype == "command":
                 continue
-    except WebSocketDisconnect:
+    except (WebSocketDisconnect, RuntimeError):
         pass
     finally:
         if kind == "desktop":
-            hub.clear_publisher_if(account.id, send)
+            hub.clear_publisher_if(account_id, send)
+            if _publisher_sockets.get(account_id) is websocket:
+                _publisher_sockets.pop(account_id, None)
         else:
             hub.remove_viewer(viewer_id)
