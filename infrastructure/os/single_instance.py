@@ -8,12 +8,34 @@ used to deliver ``send_raise()``.
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
+from typing import Any
 
 from PySide6.QtCore import QSharedMemory
 from PySide6.QtNetwork import QLocalServer, QLocalSocket
 
 _RAISE_TIMEOUT_MS = 1000
+
+
+def window_to_raise(
+    main_windows: Sequence[Any],
+    cloud_role_pages: Sequence[Any],
+    role_selection_page: Any,
+    account_auth_page: Any,
+) -> Any:
+    """Pick the window a second launch should surface.
+
+    Closed cloud role pickers are ignored so a stale picker cannot cover
+    login or fire leftover role-selected slots.
+    """
+    if main_windows:
+        return main_windows[-1]
+    for page in reversed(cloud_role_pages):
+        if page.isVisible():
+            return page
+    if role_selection_page is not None and role_selection_page.isVisible():
+        return role_selection_page
+    return account_auth_page
 
 
 class SingleInstance:

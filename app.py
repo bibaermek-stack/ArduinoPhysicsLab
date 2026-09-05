@@ -42,7 +42,7 @@ from domain.services.sync_migration import (
     backfill_sync_ids,
 )
 from infrastructure.os.protocol_handler import register_protocol
-from infrastructure.os.single_instance import SingleInstance
+from infrastructure.os.single_instance import SingleInstance, window_to_raise
 from infrastructure.storage.app_preferences import AppPreferences
 from infrastructure.storage.sqlite_student_progress_repository import SqliteStudentProgressRepository
 from infrastructure.storage.sqlite_student_repository import SqliteStudentRepository
@@ -366,6 +366,7 @@ def run() -> int:
         account_auth_page.hide()
         for page in cloud_role_page_holder:
             page.close()
+        cloud_role_page_holder.clear()
 
     def _show_cloud_role_picker() -> None:
         picker = RoleSelectionPage(
@@ -452,14 +453,14 @@ def run() -> int:
         role_selection_page.showMaximized()
 
     def _raise_existing_window() -> None:
-        if main_window_holder:
-            window = main_window_holder[-1]
-        elif cloud_role_page_holder:
-            window = cloud_role_page_holder[-1]
-        elif role_selection_page.isVisible():
-            window = role_selection_page
-        else:
-            window = account_auth_page
+        window = window_to_raise(
+            main_window_holder,
+            cloud_role_page_holder,
+            role_selection_page,
+            account_auth_page,
+        )
+        if window is None:
+            return
         window.showMaximized()
         window.raise_()
         window.activateWindow()

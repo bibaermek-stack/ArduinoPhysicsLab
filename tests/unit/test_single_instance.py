@@ -45,3 +45,39 @@ def test_send_raise_invokes_on_raise(qt_application: QApplication) -> None:
     assert raised == [1]
     owner.close()
     peer.close()
+
+
+class _Window:
+    def __init__(self, visible: bool = True) -> None:
+        self._visible = visible
+
+    def isVisible(self) -> bool:
+        return self._visible
+
+    def close(self) -> None:
+        self._visible = False
+
+
+def test_window_to_raise_skips_closed_cloud_picker() -> None:
+    from infrastructure.os.single_instance import window_to_raise
+
+    auth = _Window(True)
+    picker = _Window(True)
+    role = _Window(False)
+    picker.close()
+    assert window_to_raise([], [picker], role, auth) is auth
+
+
+def test_window_to_raise_prefers_main_then_visible_picker() -> None:
+    from infrastructure.os.single_instance import window_to_raise
+
+    main = _Window()
+    picker = _Window()
+    role = _Window()
+    auth = _Window()
+    assert window_to_raise([main], [picker], role, auth) is main
+    assert window_to_raise([], [picker], role, auth) is picker
+    picker.close()
+    assert window_to_raise([], [picker], role, auth) is role
+    role.close()
+    assert window_to_raise([], [picker], role, auth) is auth
